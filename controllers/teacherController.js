@@ -7,7 +7,7 @@ exports.getStudentById = async (req, res) => {
   try {
     const student = await User.findOne({
       userId: req.params.userId,
-      role: "students",
+      role: "student",
       teacherId: req.user.id
     })
       .select("-password")
