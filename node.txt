@@ -1,0 +1,8 @@
+APIs
+signup = http://localhost:5000/api/auth/signup
+login = http://localhost:5000/api/auth/login
+get all users = http://localhost:5000/api/users
+get one user by id = http://localhost:5000/api/users/693ef44a296ad75157701c97
+update by id = http://localhost:5000/api/users/693ef44a296ad75157701c97
+delete by id = http://localhost:5000/api/users/693efb34ed19a336eaa58e71
+
