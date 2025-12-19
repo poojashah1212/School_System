@@ -18,6 +18,10 @@ exports.uploadQuizCSV = async (req, res) => {
 
     try {
       await Quiz.create({
+        title: row.title,
+        class: row.class,
+        subject: row.subject,
+
         question: row.question,
         optionA: row.optionA,
         optionB: row.optionB,
@@ -33,7 +37,8 @@ exports.uploadQuizCSV = async (req, res) => {
       skipped++;
       results.push({
         row: i + 2,
-        question: row.question,
+        title: row.title || null,
+        question: row.question || null,
         reasons: ["Database error"]
       });
     }
@@ -54,9 +59,8 @@ exports.getMyQuizzes = async (req, res) => {
   try {
     const teacherId = req.user.id;
 
-    const quizzes = await Quiz.find({ teacherId })
-      .sort({ createdAt: -1 });
-
+    const quizzes = await Quiz.find({ teacherId });
+      
     res.json({
       total: quizzes.length,
       quizzes
@@ -73,7 +77,7 @@ exports.updateQuiz = async (req, res) => {
 
     const quiz = await Quiz.findOneAndUpdate(
       { _id: quizId, teacherId },
-      req.body,
+      req.body, 
       { new: true }
     );
 
