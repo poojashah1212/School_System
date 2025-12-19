@@ -3,6 +3,7 @@ const fs = require("fs");
 
 exports.uploadQuizCSV = async (req, res) => {
   const teacherId = req.user.id;
+  const { title, class: className, subject } = req.body;
 
   let inserted = 0;
   let skipped = req.csvSkippedDetails.length;
@@ -18,9 +19,9 @@ exports.uploadQuizCSV = async (req, res) => {
 
     try {
       await Quiz.create({
-        title: row.title,
-        class: row.class,
-        subject: row.subject,
+        title,
+        class: className,
+        subject,
 
         question: row.question,
         optionA: row.optionA,
@@ -29,6 +30,7 @@ exports.uploadQuizCSV = async (req, res) => {
         optionD: row.optionD,
         correctOption: row.correctOption,
         marks: row.marks,
+
         teacherId
       });
 
@@ -37,7 +39,7 @@ exports.uploadQuizCSV = async (req, res) => {
       skipped++;
       results.push({
         row: i + 2,
-        title: row.title || null,
+        title,
         question: row.question || null,
         reasons: ["Database error"]
       });
@@ -56,40 +58,23 @@ exports.uploadQuizCSV = async (req, res) => {
 };
 
 exports.getMyQuizzes = async (req, res) => {
-  try {
-    const teacherId = req.user.id;
-
-    const quizzes = await Quiz.find({ teacherId });
-      
-    res.json({
-      total: quizzes.length,
-      quizzes
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
+  const teacherId = req.user.id;    
+  const quizzes = await Quiz.find({ teacherId });
+  res.json(quizzes);
 };
 
 exports.updateQuiz = async (req, res) => {
-  try {
-    const quizId = req.params.id;
-    const teacherId = req.user.id;
+  const quizId = req.params.id;
+  const teacherId = req.user.id;  
+  const updateData = req.body;
 
-    const quiz = await Quiz.findOneAndUpdate(
-      { _id: quizId, teacherId },
-      req.body, 
-      { new: true }
-    );
+  const quiz = await Quiz.findOne({ _id: quizId, teacherId });
+  if (!quiz) {
+    return res.status(404).json({ error: "Quiz not found" });
+  } 
+  Object.assign(quiz, updateData);
+  await quiz.save();
 
-    if (!quiz) {
-      return res.status(404).json({ message: "Quiz not found" });
-    }
-
-    res.json({
-      message: "Quiz updated successfully",
-      quiz
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
+  res.json({ message: "Quiz updated successfully", quiz });
 };
+
