@@ -6,6 +6,8 @@ const isTeacher = require("../middleware/isTeacher");
 const upload = require("../middleware/upload"); 
 const uploadCsv = require("../middleware/uploadCsv"); 
 const authMiddleware = require("../middleware/authMiddleware");
+const { uploadQuizCSV } = require("../controllers/quizController");
+const { quizCSVValidation } = require("../middleware/validation/quizCSV.validation");
 
 const {
   studentCreate,
@@ -59,6 +61,13 @@ router.post(
   uploadCsv.single("file"), 
   csvUploadValidation, 
   uploadStudentsCSV
+);
+
+router.post(
+  "/quiz/upload-csv",
+  uploadCsv.single("file"),
+  quizCSVValidation,
+  uploadQuizCSV
 );
 
 module.exports = router;
