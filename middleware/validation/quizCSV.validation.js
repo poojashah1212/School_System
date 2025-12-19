@@ -38,6 +38,14 @@ exports.quizCSVValidation = (req, res, next) => {
     return res.status(400).json({ message: "CSV file is required" });
   }
 
+  const { title, class: className, subject } = req.body;
+
+  if (!title || !className || !subject) {
+    return res.status(400).json({
+      message: "title, class and subject are required in body"
+    });
+  }
+
   const rows = [];
   const skippedDetails = [];
 
@@ -46,7 +54,21 @@ exports.quizCSVValidation = (req, res, next) => {
     .on("data", (row) => rows.push(row))
     .on("end", async () => {
       for (let i = 0; i < rows.length; i++) {
-        const fakeReq = { body: rows[i] };
+
+        const fakeReq = {
+          body: {
+            title,              
+            class: className,   
+            subject,           
+            question: rows[i].question,
+            optionA: rows[i].optionA,
+            optionB: rows[i].optionB,
+            optionC: rows[i].optionC,
+            optionD: rows[i].optionD,
+            correctOption: rows[i].correctOption,
+            marks: rows[i].marks
+          }
+        };
 
         for (const rule of quizValidators) {
           await rule.run(fakeReq);
@@ -56,11 +78,12 @@ exports.quizCSVValidation = (req, res, next) => {
 
         if (!errors.isEmpty()) {
           skippedDetails.push({
-            row: i + 2, 
-            title: rows[i].title || null,
+            row: i + 2,
             question: rows[i].question || null,
             reasons: errors.array().map(e => e.msg)
           });
+        } else {
+          rows[i] = fakeReq.body; 
         }
       }
 
