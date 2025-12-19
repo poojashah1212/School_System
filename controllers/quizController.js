@@ -49,3 +49,43 @@ exports.uploadQuizCSV = async (req, res) => {
     skippedDetails: results
   });
 };
+
+exports.getMyQuizzes = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    const quizzes = await Quiz.find({ teacherId })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      total: quizzes.length,
+      quizzes
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.updateQuiz = async (req, res) => {
+  try {
+    const quizId = req.params.id;
+    const teacherId = req.user.id;
+
+    const quiz = await Quiz.findOneAndUpdate(
+      { _id: quizId, teacherId },
+      req.body,
+      { new: true }
+    );
+
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    res.json({
+      message: "Quiz updated successfully",
+      quiz
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
