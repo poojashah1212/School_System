@@ -1,47 +1,31 @@
 const mongoose = require("mongoose");
 
+const questionSchema = new mongoose.Schema({
+  question: {
+    type: String,
+    required: true
+  },
+  options: {
+    type: [String], // ["A text", "B text", "C text", "D text"]
+    required: true,
+    validate: v => v.length === 4
+  },
+  correctOption: {
+    type: String,
+    enum: ["A", "B", "C", "D"],
+    required: true
+  }
+});
+
 const quizSchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
-      required: true,
-      trim: true
-    },
+    title: { type: String, required: true },
+    class: { type: String, required: true },
+    subject: { type: String, required: true },
 
-    class: {
-      type: String,
-      required: true,
-      trim: true
-    },
+    questions: [questionSchema],
 
-    subject: {
-      type: String,
-      required: true,
-      trim: true
-    },
-
-    question: {
-      type: String,
-      required: true,
-      trim: true
-    },
-
-    optionA: { type: String, required: true },
-    optionB: { type: String, required: true },
-    optionC: { type: String, required: true },
-    optionD: { type: String, required: true },
-
-    correctOption: {
-      type: String,
-      enum: ["A", "B", "C", "D"],
-      required: true
-    },
-
-    marks: {
-      type: Number,
-      required: true,
-      min: 1
-    },
+    totalMarks: { type: Number },
 
     teacherId: {
       type: mongoose.Schema.Types.ObjectId,
