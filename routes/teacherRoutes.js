@@ -6,10 +6,11 @@ const isTeacher = require("../middleware/isTeacher");
 const upload = require("../middleware/upload"); 
 const uploadCsv = require("../middleware/uploadCsv"); 
 const authMiddleware = require("../middleware/authMiddleware");
-const { uploadQuizCSV, updateQuiz } = require("../controllers/quizController");
-const { quizCSVValidation } = require("../middleware/validation/quizCSV.validation");
-const { getMyQuizzes } = require("../controllers/quizController");
-const { updateQuizValidation } = require("../middleware/validation/quizCSV.validation");
+const { createQuizValidation } = require("../middleware/validation/quizValidation");
+const { createQuiz } = require("../controllers/quizController");
+const { updateQuiz } = require("../controllers/quizController");
+const { updateSingleQuestion } = require("../controllers/quizController");
+const { quizSingleQuestionValidation } = require("../middleware/validation/quizValidation");
 
 const {
   studentCreate,
@@ -30,6 +31,14 @@ const {
 } = require("../controllers/teacherController");
 
 router.use(jwtAuth, isTeacher);
+
+router.put(
+  "/quiz/:quizId/question/:index",
+  quizSingleQuestionValidation,
+  updateSingleQuestion
+);
+
+
 
 router.post(
   "/students",
@@ -64,15 +73,12 @@ router.post(
   csvUploadValidation, 
   uploadStudentsCSV
 );
+router.post("/quiz", createQuizValidation, createQuiz);
 
-router.post(
-  "/quiz/upload-csv",
-  uploadCsv.single("file"),
-  quizCSVValidation,
-  uploadQuizCSV
+router.put(
+  "/quiz/:id",
+  createQuizValidation,
+  updateQuiz
 );
 
-router.get("/quiz", getMyQuizzes);
-
-router.put("/quiz/:id", updateQuiz);
 module.exports = router;
