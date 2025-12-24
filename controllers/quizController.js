@@ -103,7 +103,7 @@ exports.submitQuiz = async (req, res) => {
   try {
     const studentId = req.user.id;
     const answers = req.body;
-    const quiz = req.quiz; // from validation middleware
+    const quiz = req.quiz;
 
     const student = await User.findById(studentId);
     if (!student || !student.teacherId) {
@@ -112,14 +112,14 @@ exports.submitQuiz = async (req, res) => {
       });
     }
 
-    // student–teacher security
+    
     if (quiz.teacherId.toString() !== student.teacherId.toString()) {
       return res.status(403).json({
         message: "You cannot attempt another teacher's quiz"
       });
     }
 
-    // prevent duplicate attempt
+
     const alreadyAttempted = await Marks.findOne({
       studentId,
       quizId: quiz._id
@@ -155,5 +155,27 @@ exports.submitQuiz = async (req, res) => {
     return res.status(500).json({
       message: err.message
     });
+  }
+};
+exports.getQuizForStudent = async (req, res) => {
+  try{
+    const quizId = req.params.id;
+    const studentId = req.user.id;
+    const quiz = await Quiz.findById(quizId).select('-questions.correctOption');
+
+    if(!quiz){
+      return res.status(404).json({message: "Quiz not found"});
+    }
+    const student = await User.findById(req.user.id);
+    if(!student || !student.teacherId){
+      return res.status(403).json({message: "Student not linked to teacher"});
+    }
+    if(quiz.teacherId.toString() !== student.teacherId.toString()){
+      return res.status(403).json({message: "You cannot access another teacher's quiz"});
+    }
+    res.json({quiz}); 
+  }
+  catch(err){
+    res.status(500).json({message: err.message});
   }
 };

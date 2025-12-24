@@ -79,6 +79,7 @@ exports.createStudent = async (req, res) => {
       password: hashed,
       class: className,
       teacherId: req.user.id,
+      timezone: req.body.timezone || "Asia/Kolkata",
       profileImage: req.file ? `/uploads/${req.file.filename}` : ""
     });
 
@@ -100,7 +101,8 @@ exports.updateStudent = async (req, res) => {
       mobileNo,
       city,
       state,
-      class: className
+      class: className,
+      timezone
     } = req.body;
 
     const updateData = {};
@@ -109,7 +111,7 @@ exports.updateStudent = async (req, res) => {
     if (city) updateData.city = city.trim();
     if (state) updateData.state = state.trim();
     if (className) updateData.class = className;
-
+    if (timezone) updateData.timezone = timezone;
     if (email) {
       const emailExists = await User.findOne({
         email: email.toLowerCase().trim(),
@@ -203,7 +205,8 @@ exports.uploadStudentsCSV = async (req, res) => {
       class: className,
       city,
       state,
-      mobileNo
+      mobileNo,
+      timezone
     } = row;
 
     const exists = await User.findOne({
@@ -234,7 +237,8 @@ exports.uploadStudentsCSV = async (req, res) => {
         city: city || "",
         state: state || "",
         mobileNo,
-        teacherId
+        teacherId,
+        timezone: timezone || "Asia/Kolkata"
       });
 
       inserted++;

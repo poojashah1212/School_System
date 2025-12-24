@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema(
     return this.role === "student";
   }
 },  
+  timezone: {
+    type: String,
+    default: "Asia/Kolkata" 
+  },
     email: {
       type: String,
       required: [true, "Email is required"],
@@ -74,6 +78,7 @@ const userSchema = new mongoose.Schema(
   type: String,
   default: ""
 }
+
 
   },
   { timestamps: true }

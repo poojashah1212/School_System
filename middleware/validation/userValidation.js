@@ -64,7 +64,8 @@ const studentUpdate = [
     .withMessage("Class cannot be empty"),
 
   body("city").optional().trim(),
-  body("state").optional().trim()
+  body("state").optional().trim(),
+  body("timezone").optional().trim()
 ];
 
 
@@ -97,6 +98,7 @@ const csvStudentValidators = [
   body("age").notEmpty().isInt({ min: 1 }).withMessage("age is required and must be positive integer"),
   body("class").notEmpty().withMessage("class is required for student"),
   body("mobileNo").matches(/^[0-9]{10}$/).withMessage("Mobile number must be exactly 10 digits"),
+  body("timezone").optional().trim()
 ];
 
 

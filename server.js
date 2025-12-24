@@ -2,7 +2,12 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const connectDB = require("./config/db");
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 const app = express();
 
 
@@ -16,6 +21,8 @@ connectDB();
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/users"));
 app.use("/api/teachers", require("./routes/teacherRoutes"));
+app.use("/api/teacher-availability", require("./routes/teacherAvailabilityRoutes"));
+app.use("/api/sessions", require("./routes/sessionRoutes"));
 
 
 app.use((req, res) => {
