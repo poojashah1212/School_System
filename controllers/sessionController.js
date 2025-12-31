@@ -1,4 +1,4 @@
-const dayjs = require("dayjs");
+const moment = require("moment-timezone");
 const Session = require("../models/Session");
 const TeacherAvailability = require("../models/TeacherAvailability");
 const User = require("../models/user");
@@ -107,6 +107,10 @@ exports.getStudentSessions = async (req, res) => {
   try {
     const studentId = req.user.id;
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const student = await User.findById(studentId);
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
@@ -115,23 +119,31 @@ exports.getStudentSessions = async (req, res) => {
     const timezone = student.timezone || "Asia/Kolkata";
     const teacherId = student.teacherId;
 
-    const sessions = await Session.find({
+      const query = {
       teacherId,
-      $or: [
-        { studentId: null },
-        { studentId: studentId }
-      ]
-    }).sort({ startTime: 1 });
+      $or: [{ studentId: null }, { studentId }]
+    };
+
+    const totalSessions = await Session.countDocuments(query);
+    const sessions = await Session.find(query)
+      .sort({ startTime: 1 })
+      .skip(skip)
+      .limit(limit);
+   
 
     const formattedSessions = sessions.map(s => ({
       _id: s._id,
       title: s.title,
       type: s.studentId ? "personal" : "common",
-      startTime: dayjs(s.startTime).tz(timezone).format("DD-MM-YYYY HH:mm"),
-      endTime: dayjs(s.endTime).tz(timezone).format("DD-MM-YYYY HH:mm"),
+      startTime: moment(s.startTime).tz(timezone).format("DD-MM-YYYY HH:mm"),
+      endTime: moment(s.endTime).tz(timezone).format("DD-MM-YYYY HH:mm"),
     }));
 
     res.json({
+      page,
+      limit,
+      totalSessions,
+      totalPages: Math.ceil(totalSessions / limit),
       sessions: formattedSessions
     });
 
