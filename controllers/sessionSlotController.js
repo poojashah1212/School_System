@@ -3,6 +3,7 @@ const TeacherAvailability = require("../models/TeacherAvailability");
 const SessionSlot = require("../models/sessionSlot");
 const User = require("../models/user");
 const generateAvailableSlots = require("../utils/generateAvailableSlots");
+const { redisClient } = require("../config/redis");
 
 exports.createSessionSlots = async (req, res) => {
   try {
@@ -75,12 +76,14 @@ exports.createSessionSlots = async (req, res) => {
     });
 
 
-    const availableSlots = generateAvailableSlots({
+    const availableSlots = await generateAvailableSlots({
       date: parsedDate,
       availability: dayAvailability,
       sessionDuration,
       breakDuration,
       bookedSlots: [], 
+      sessionId: session._id,
+      teacherId,
       teacherTimezone,
       studentTimezone: studentTimezone || teacherTimezone
     });
@@ -136,12 +139,15 @@ exports.getMySessionSlots = async (req, res) => {
 
       if (!dayAvailability) continue;
 
-      let slots = generateAvailableSlots({
+      let slots = await generateAvailableSlots({
         date: session.date,
         availability: dayAvailability,
         sessionDuration: session.sessionDuration,
         breakDuration: session.breakDuration,
         bookedSlots: session.bookedSlots,
+        teacherId: teacher._id,
+        sessionId: session._id,
+        studentId: student._id,
         teacherTimezone: teacher.timezone || "Asia/Kolkata",
         studentTimezone: student.timezone || "Asia/Kolkata"
       });
@@ -152,7 +158,7 @@ exports.getMySessionSlots = async (req, res) => {
           return bookedStart === slot.startTime;
         });
       });
-
+      
       response.push({
         sessionId: session._id,
         title: session.title,
@@ -169,14 +175,14 @@ exports.getMySessionSlots = async (req, res) => {
       },
       sessions: response
     });
-
+    
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
 exports.confirmSessionSlot = async (req, res) => {
-  try {
+   try {
     const { sessionId, startTime } = req.body;
     const studentId = req.user.id;
 
@@ -199,6 +205,15 @@ exports.confirmSessionSlot = async (req, res) => {
     ).utc();
 
     const slotEndUTC = slotStartUTC.clone().add(session.sessionDuration, "minutes");
+    const isValidSlot = session.availableSlots?.some(slot =>
+      moment(slot.startTime).utc().isSame(slotStartUTC)
+    );
+
+    if (!isValidSlot) {
+      return res.status(400).json({
+        message: "Invalid slot. Please select from available slots only"
+      });
+    }
 
     if (session.bookedSlots.some(s => s.startTime.getTime() === slotStartUTC.toDate().getTime()))
       return res.status(400).json({ message: "This slot is already booked" });

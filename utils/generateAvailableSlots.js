@@ -1,14 +1,34 @@
 const moment = require("moment-timezone");
+const { redisClient } = require("../config/redis");
 
-const generateAvailableSlots = ({
+const generateAvailableSlots = async ({
   date,
   availability,
   sessionDuration,
   breakDuration,
   bookedSlots = [],
+  teacherId,
+  sessionId,
+  studentId,
   teacherTimezone,
   studentTimezone
 }) => {
+  const studentRedisKey = `slots:student:${studentId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${studentTimezone}`;
+
+  const teacherRedisKey = `slots:teacher:${teacherId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${teacherTimezone}`;
+
+  const studentCached = await redisClient.get(studentRedisKey);
+  if (studentCached) {
+    console.log("Student Cache HIT:", studentRedisKey);
+    return JSON.parse(studentCached);
+  }
+
+  const teacherCached = await redisClient.get(teacherRedisKey);
+  if (teacherCached) {
+    console.log("Teacher Cache HIT:", teacherRedisKey);
+    return JSON.parse(teacherCached);
+  }
+
   const slots = [];
 
   let current = moment.tz(
@@ -50,6 +70,17 @@ const generateAvailableSlots = ({
 
     current = slotEndTeacherTZ.clone().add(breakDuration, "minutes");
   }
+ await redisClient.setEx(
+    studentRedisKey,
+    60 * 60 * 24,
+    JSON.stringify(slots)
+  );
+
+  await redisClient.setEx(
+    teacherRedisKey,
+    60 * 60 * 24,
+    JSON.stringify(slots)
+  );
 
   return slots;
 };

@@ -27,7 +27,7 @@
     "moment-timezone": "^0.6.0",
     "mongoose": "^9.0.1",
     "multer": "^2.0.2",
-    "redis": "^5.10.0",
+    "redis": "^4.7.1",
     "regex": "^6.1.0",
     "timezone": "^1.0.23"
   },

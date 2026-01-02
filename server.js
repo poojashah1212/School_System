@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const connectDB = require("./config/db");
-
+const { connectRedis } = require("./config/redis");
 const app = express();
 
 
@@ -12,6 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 connectDB();
+connectRedis();
 
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/users"));
