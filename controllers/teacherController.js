@@ -5,13 +5,30 @@ const bcrypt = require("bcryptjs");
 
 exports.getStudentById = async (req, res) => {
   try {
-    const student = await User.findOne({
-      userId: req.params.userId,
-      role: "student",
-      teacherId: req.user.id
-    })
-      .select("-password")
-      .populate("teacherId", "fullName email");
+    const studentId = req.params.userId;
+    let student = null;
+    
+    // First try by MongoDB _id
+    if (studentId.match(/^[0-9a-fA-F]{24}$/)) {
+      student = await User.findOne({
+        _id: studentId,
+        role: "student",
+        teacherId: req.user.id
+      })
+        .select("-password")
+        .populate("teacherId", "fullName email");
+    }
+    
+    // If not found by _id, try by userId field
+    if (!student) {
+      student = await User.findOne({
+        userId: studentId,
+        role: "student",
+        teacherId: req.user.id
+      })
+        .select("-password")
+        .populate("teacherId", "fullName email");
+    }
 
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
@@ -39,7 +56,7 @@ exports.getMyStudents = async (req, res) => {
 };
 
 exports.createStudent = async (req, res) => {
-    console.log("REQ BODY:", req.body);
+  console.log("REQ BODY:", req.body);
   console.log("REQ FILE:", req.file);
   console.log("REQ USER:", req.user);
   try {
@@ -48,13 +65,14 @@ exports.createStudent = async (req, res) => {
       fullName,
       email,
       password,
+      age,
       class: className,
       city,
       state,
       mobileNo
     } = req.body;
 
-    if (!userId || !email || !password) {
+    if (!userId || !email || !password || !age) {
       return res.status(400).json({ message: "Required fields missing" });
     }
 
@@ -73,6 +91,7 @@ exports.createStudent = async (req, res) => {
       userId,
       fullName,
       email,
+      age,
       city,
       state,
       mobileNo,
@@ -83,7 +102,17 @@ exports.createStudent = async (req, res) => {
       profileImage: req.file ? `/uploads/${req.file.filename}` : ""
     });
 
-    res.status(201).json(student);
+    // Get updated student count
+    const totalStudents = await User.countDocuments({
+      role: "student",
+      teacherId: req.user.id
+    });
+
+    res.status(201).json({
+      message: "Student created successfully",
+      student: student,
+      totalStudents: totalStudents
+    });
   } catch (err) {
     console.error("CREATE STUDENT ERROR:", err);
     res.status(500).json({ message: "Server error" });
@@ -99,6 +128,7 @@ exports.updateStudent = async (req, res) => {
       fullName,
       email,
       mobileNo,
+      age,
       city,
       state,
       class: className,
@@ -108,14 +138,202 @@ exports.updateStudent = async (req, res) => {
     const updateData = {};
 
     if (fullName) updateData.fullName = fullName.trim();
+    if (age) updateData.age = age;
     if (city) updateData.city = city.trim();
     if (state) updateData.state = state.trim();
     if (className) updateData.class = className;
     if (timezone) updateData.timezone = timezone;
     if (email) {
+      const emailQuery = { email: email.toLowerCase().trim() };
+      
+      // Add exclusion based on ID type
+      if (userId.match(/^[0-9a-fA-F]{24}$/)) {
+        emailQuery._id = { $ne: userId };
+      } else {
+        emailQuery.userId = { $ne: userId };
+      }
+      
+      const emailExists = await User.findOne(emailQuery);
+
+      if (emailExists) {
+        return res.status(400).json({
+          message: "Email already used by another user"
+        });
+      }
+
+      updateData.email = email.toLowerCase().trim();
+    }
+
+    if (mobileNo) {
+      const mobileQuery = { mobileNo };
+      
+      // Add exclusion based on ID type
+      if (userId.match(/^[0-9a-fA-F]{24}$/)) {
+        mobileQuery._id = { $ne: userId };
+      } else {
+        mobileQuery.userId = { $ne: userId };
+      }
+      
+      const mobileExists = await User.findOne(mobileQuery);
+
+      if (mobileExists) {
+        return res.status(400).json({
+          message: "Mobile number already used by another user"
+        });
+      }
+
+      updateData.mobileNo = mobileNo;
+    }
+
+    if (req.file) {
+      updateData.profileImage = `/uploads/profiles/${req.file.filename}`;
+    }
+
+    let student = null;
+    
+    // First try by MongoDB _id
+    if (userId.match(/^[0-9a-fA-F]{24}$/)) {
+      student = await User.findOneAndUpdate({
+        _id: userId,
+        role: "student",
+        teacherId: teacherId
+      }, updateData, { new: true }).select("-password");
+    }
+    
+    // If not found by _id, try by userId field
+    if (!student) {
+      student = await User.findOneAndUpdate({
+        userId: userId,
+        role: "student",
+        teacherId: teacherId
+      }, updateData, { new: true }).select("-password");
+    }
+
+    if (!student) {
+      return res.status(404).json({
+        message: "Student not found"
+      });
+    }
+
+    // Get updated student count
+    const totalStudents = await User.countDocuments({
+      role: "student",
+      teacherId: teacherId
+    });
+
+    return res.json({
+      message: "Student profile updated successfully",
+      student: student,
+      totalStudents: totalStudents
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Server error"
+    });
+  }
+};
+
+exports.deleteStudent = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const studentId = req.params.userId;
+    
+    // Try to find and delete the student by either _id or userId
+    let deletedStudent = null;
+    
+    // First try by MongoDB _id
+    if (studentId.match(/^[0-9a-fA-F]{24}$/)) {
+      deletedStudent = await User.findOneAndDelete({
+        _id: studentId,
+        role: "student",
+        teacherId: teacherId
+      });
+    }
+    
+    // If not found by _id, try by userId field
+    if (!deletedStudent) {
+      deletedStudent = await User.findOneAndDelete({
+        userId: studentId,
+        role: "student",
+        teacherId: teacherId
+      });
+    }
+
+    if (!deletedStudent) {
+      return res.status(404).json({ 
+        message: "Student not found" 
+      });
+    }
+
+    // Get updated student count
+    const totalStudents = await User.countDocuments({
+      role: "student",
+      teacherId: teacherId
+    });
+
+    res.json({ 
+      message: "Student deleted successfully",
+      studentName: deletedStudent.fullName,
+      totalStudents: totalStudents
+    });
+  } catch (error) {
+    console.error("Delete student error:", error);
+    res.status(500).json({ 
+      message: "Server error while deleting student" 
+    });
+  }
+};
+exports.myProfile = async (req, res) => {
+  const user = await User.findById(req.user.id)
+    .select("-password")
+    .populate("teacherId", "fullName email");
+
+  res.json(user);
+};
+
+// Get teacher profile
+exports.getTeacherProfile = async (req, res) => {
+  try {
+    const teacher = await User.findById(req.user.id).select("-password");
+    
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    res.json(teacher);
+  } catch (error) {
+    console.error("Error getting teacher profile:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Update teacher profile
+exports.updateTeacherProfile = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const {
+      fullName,
+      email,
+      mobileNo,
+      age,
+      city,
+      state,
+      timezone
+    } = req.body;
+
+    const updateData = {};
+
+    if (fullName) updateData.fullName = fullName.trim();
+    if (age) updateData.age = age;
+    if (city) updateData.city = city.trim();
+    if (state) updateData.state = state.trim();
+    if (timezone) updateData.timezone = timezone;
+    
+    if (email) {
       const emailExists = await User.findOne({
         email: email.toLowerCase().trim(),
-        userId: { $ne: userId }
+        _id: { $ne: teacherId }
       });
 
       if (emailExists) {
@@ -130,7 +348,7 @@ exports.updateStudent = async (req, res) => {
     if (mobileNo) {
       const mobileExists = await User.findOne({
         mobileNo,
-        userId: { $ne: userId }
+        _id: { $ne: teacherId }
       });
 
       if (mobileExists) {
@@ -146,40 +364,28 @@ exports.updateStudent = async (req, res) => {
       updateData.profileImage = `/uploads/profiles/${req.file.filename}`;
     }
 
-    const student = await User.findOneAndUpdate({userId,role: "student",teacherId },updateData,{ new: true }).select("-password");
+    const updatedTeacher = await User.findByIdAndUpdate(
+      teacherId,
+      updateData,
+      { new: true }
+    ).select("-password");
 
-    if (!student) {
+    if (!updatedTeacher) {
       return res.status(404).json({
-        message: "Student not found or not authorized"
+        message: "Teacher not found"
       });
     }
 
-    return res.json({
-      message: "Student profile updated successfully",
-      student
+    res.json({
+      message: "Profile updated successfully",
+      teacher: updatedTeacher
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
+    console.error("Error updating teacher profile:", error);
+    res.status(500).json({
       message: "Server error"
     });
   }
-};
-
-exports.deleteStudent = async (req, res) => {
-  await User.findOneAndDelete({
-    userId: req.params.userId,
-    teacherId: req.user.id
-  });
-
-  res.json({ message: "Student deleted" });
-};
-exports.myProfile = async (req, res) => {
-  const user = await User.findById(req.user.id)
-    .select("-password")
-    .populate("teacherId", "fullName email");
-
-  res.json(user);
 };
 
 

@@ -37,9 +37,12 @@ exports.createQuizValidation = [
 
   body("questions.*.correctOption")
     .isIn(["A", "B", "C", "D"])
-    .withMessage("Correct option must be A, B, C or D")
-];
+    .withMessage("Correct option must be A, B, C or D"),
 
+  body("totalMarks")
+    .isInt({ min: 1 })
+    .withMessage("Total marks must be a positive integer")
+];
 
 exports.quizSingleQuestionValidation = [
 

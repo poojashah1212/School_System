@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - School System</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/teacherDashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>School System</span>
+            </div>
+
+            <nav class="nav">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item" data-page="students">
+                    <i class="fas fa-users"></i>
+                    Students
+                </a>
+                <a href="#" class="nav-item" data-page="quiz">
+                    <i class="fas fa-question-circle"></i>
+                    Quiz Management
+                </a>
+                <a href="#" class="nav-item" data-page="availability">
+                    <i class="fas fa-clock"></i>
+                    Availability
+                </a>
+                <a href="#" class="nav-item" data-page="holidays">
+                    <i class="fas fa-calendar-alt"></i>
+                    Holidays
+                </a>
+                <a href="#" class="nav-item" data-page="marks">
+                    <i class="fas fa-chart-bar"></i>
+                    Marks
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Header with Profile -->
+            <header class="header">
+                <h1>Teacher Dashboard</h1>
+                <div class="header-right">
+                    <div class="search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search students, quizzes...">
+                    </div>
+                    <div class="profile-dropdown">
+                        <img src="https://picsum.photos/seed/teacher/40/40.jpg" alt="Teacher" class="profile-img">
+                        <div class="profile-info">
+                            <span class="teacher-name">John Smith</span>
+                            <span class="teacher-role">Teacher</span>
+                        </div>
+                        <div class="dropdown">
+                            <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="#" id="viewProfileBtn">
+                                    <i class="fas fa-user"></i>
+                                    <span>Profile</span>
+                                </a>
+                                <a class="dropdown-item" href="#" id="logoutBtn">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- Dashboard Page -->
+                <div class="page active" id="dashboard-page">
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Students</h3>
+                                <p class="stat-number" id="totalStudents">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Quizzes</h3>
+                                <p class="stat-number" id="totalQuizzes">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon orange">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Available Slots</h3>
+                                <p class="stat-number" id="availableSlots">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cards">
+                        <div class="card">
+                            <h3>Recent Students</h3>
+                            <div id="recentStudents">
+                                <p class="empty">No students added yet</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>Recent Quizzes</h3>
+                            <div id="recentQuizzes">
+                                <p class="empty">No quizzes created yet</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>Holidays</h3>
+                            <div id="holidays">
+                                <p class="empty">No holidays added yet</p>
+                            </div>
+                            <button class="btn-primary btn-sm" onclick="dashboard.showAddHolidayModal()">
+                                <i class="fas fa-plus"></i> Add Holiday
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Management Page -->
+                <div class="page" id="students-page">
+                    <div class="page-header">
+                        <h2>Manage Students</h2>
+                        <div class="header-actions">
+                            <button class="btn-primary" id="addStudentBtn">
+                                <i class="fas fa-plus"></i>
+                                Add Student
+                            </button>
+                            <button class="btn-secondary" id="uploadCsvBtn">
+                                <i class="fas fa-file-upload"></i>
+                                Upload CSV File
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="students-grid" id="studentsGrid">
+                        <p class="empty">No students found</p>
+                    </div>
+                </div>
+
+                <!-- Quiz Management Page -->
+                <div class="page" id="quiz-page">
+                    <div class="page-header">
+                        <h2>Manage Quiz</h2>
+                        <button class="btn-primary" id="createQuizBtn">
+                            <i class="fas fa-plus"></i>
+                            Create Quiz
+                        </button>
+                    </div>
+
+                    <div class="quiz-list" id="quizList">
+                        <p class="empty">No quizes created yet</p>
+                    </div>
+                </div>
+
+                <!-- Availability Page -->
+                <div class="page" id="availability-page">
+                    <div class="page-header">
+                        <h2>Manage Availability</h2>
+                        <button class="btn-primary" id="addAvailabilityBtn">
+                            <i class="fas fa-plus"></i>
+                            Add Session
+                        </button>
+                    </div>
+
+                    <div class="form-card">
+                        <form id="availabilityForm">
+                            <div class="form-row">
+                                <input type="date" id="availabilityDate" required>
+                                <input type="time" id="startTime" required>
+                                <input type="time" id="endTime" required>
+                                <button type="submit" class="btn-primary">Add</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>Your Available Slots</h3>
+                        <div id="availabilitySlots">
+                            <p class="empty">No slots added</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Holidays Page -->
+                <div class="page" id="holidays-page">
+                    <div class="page-header">
+                        <h2>Holiday Management</h2>
+                        <button class="btn-primary" id="addHolidayBtn">
+                            <i class="fas fa-plus"></i>
+                            Add Holiday
+                        </button>
+                    </div>
+
+                    <div class="holiday-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Holidays</h3>
+                                <p class="stat-number" id="totalHolidays">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Upcoming</h3>
+                                <p class="stat-number" id="upcomingHolidays">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon orange">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>This Month</h3>
+                                <p class="stat-number" id="thisMonthHolidays">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>All Holidays</h3>
+                        <div class="holiday-filters">
+                            <select id="holidayFilter">
+                                <option value="all">All Holidays</option>
+                                <option value="upcoming">Upcoming</option>
+                                <option value="past">Past</option>
+                                <option value="personal">Personal</option>
+                                <option value="public">Public</option>
+                            </select>
+                            <input type="month" id="holidayMonthFilter" placeholder="Filter by month">
+                        </div>
+                        <div id="holidaysList">
+                            <p class="empty">No holidays added yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marks Page -->
+                <div class="page" id="marks-page">
+                    <div class="page-header">
+                        <h2>Student Marks</h2>
+                        <button class="btn-primary" id="addMarksBtn">
+                            <i class="fas fa-plus"></i>
+                            Add Marks
+                        </button>
+                    </div>
+
+                    <div class="form-card">
+                        <form id="marksForm">
+                            <div class="form-row">
+                                <select id="studentSelect" required>
+                                    <option value="">Select Student</option>
+                                </select>
+                                <input type="text" id="subject" placeholder="Subject" required>
+                                <input type="number" id="marks" placeholder="Marks" min="0" max="100" required>
+                                <button type="submit" class="btn-primary">Add</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>Marks Record</h3>
+                        <div class="table-container">
+                            <table class="marks-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Subject</th>
+                                        <th>Marks</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" class="empty">No records found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="addStudentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Student</h3>
+                <button class="modal-close" id="closeStudentModal">&times;</button>
+            </div>
+            <form id="addStudentForm" enctype="multipart/form-data">
+                <div class="form-row">
+                    <input type="text" name="userId" placeholder="User ID" required>
+                    <input type="text" name="fullName" placeholder="Full Name" required>
+                </div>
+                <div class="form-row">
+                    <input type="email" name="email" placeholder="Email" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                </div>
+                <div class="form-row">
+                    <input type="number" name="age" placeholder="Age" min="1" max="120" required>
+                    <input type="tel" name="mobileNo" placeholder="Mobile Number" maxlength="10" required>
+                </div>
+                <div class="form-row">
+                    <input type="text" name="city" placeholder="City" required>
+                    <input type="text" name="state" placeholder="State" required>
+                </div>
+                <div class="form-row">
+                    <input type="text" name="class" placeholder="Class (Optional)">
+                    <input type="text" name="timezone" placeholder="Timezone (Optional)">
+                </div>
+                <div class="form-group">
+                    <label>Profile Image (Optional)</label>
+                    <input type="file" name="image" accept="image/*">
+                </div>
+                <button type="submit" class="btn-primary">Add Student</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="uploadCsvModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Upload Students CSV</h3>
+                <button class="modal-close" id="closeCsvModal">&times;</button>
+            </div>
+            <form id="uploadCsvForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Choose CSV File</label>
+                    <input type="file" name="file" accept=".csv" required>
+                    <small>Upload a CSV file to add student data</small>
+                </div>
+                <button type="submit" class="btn-primary">Upload CSV</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="createQuizModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Quiz</h3>
+                <button class="modal-close" id="closeQuizModal">&times;</button>
+            </div>
+            <form id="createQuizForm">
+                <div class="form-group">
+                    <label>Quiz Title</label>
+                    <input type="text" name="title" placeholder="Enter quiz title" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Class</label>
+                        <input type="text" name="class" placeholder="e.g., 10th Grade" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" name="subject" placeholder="e.g., Mathematics" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Total Marks</label>
+                    <input type="number" name="totalMarks" placeholder="Enter total marks" min="1" required>
+                </div>
+                <div id="questionsContainer">
+                    <h4>Questions</h4>
+                    <div class="question-item">
+                        <input type="text" name="questions[]" placeholder="Question 1" required>
+                        <input type="text" name="options1[]" placeholder="Option A" required>
+                        <input type="text" name="options1[]" placeholder="Option B" required>
+                        <input type="text" name="options1[]" placeholder="Option C" required>
+                        <input type="text" name="options1[]" placeholder="Option D" required>
+                        <select name="answers[]">
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" class="btn-secondary" id="addQuestionBtn">Add Question</button>
+                <button type="submit" class="btn-primary">Create Quiz</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Teacher Profile Modal -->
+    <div class="modal" id="teacherProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>My Profile</h3>
+                <button class="modal-close" id="closeProfileModal">&times;</button>
+            </div>
+            <div class="profile-view" id="profileView">
+                <div class="profile-avatar-section">
+                    <img id="profileAvatar" src="https://picsum.photos/seed/teacher/100/100.jpg" alt="Profile"
+                        class="profile-avatar-large">
+                    <div class="profile-info-display">
+                        <h4 id="profileName">Teacher Name</h4>
+                        <p id="profileEmail">teacher@example.com</p>
+                        <p><strong>Mobile:</strong> <span id="profileMobile">-</span></p>
+                        <p><strong>Age:</strong> <span id="profileAge">-</span></p>
+                        <p><strong>City:</strong> <span id="profileCity">-</span></p>
+                        <p><strong>State:</strong> <span id="profileState">-</span></p>
+                        <p><strong>Timezone:</strong> <span id="profileTimezone">-</span></p>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <button type="button" class="btn-primary" id="editProfileBtn">Edit Profile</button>
+                </div>
+            </div>
+
+            <form id="editProfileForm" class="profile-edit" style="display: none;">
+                <div class="profile-avatar-section">
+                    <img id="profileAvatarEdit" src="https://picsum.photos/seed/teacher/100/100.jpg" alt="Profile"
+                        class="profile-avatar-large">
+                    <div class="form-group">
+                        <label>Profile Image</label>
+                        <input type="file" name="profileImage" accept="image/*" id="profileImageInput">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="fullName" id="editFullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" id="editEmail" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Mobile Number</label>
+                        <input type="tel" name="mobileNo" id="editMobileNo" maxlength="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Age</label>
+                        <input type="number" name="age" id="editAge" min="1" max="120" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" name="city" id="editCity" required>
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" name="state" id="editState" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Timezone</label>
+                    <input type="text" name="timezone" id="editTimezone" placeholder="e.g., Asia/Kolkata">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="messages" id="messages"></div>
+
+    <script src="../js/teacherDashboard.js"></script>
+</body>
+
+</html>

@@ -5,6 +5,7 @@ const roleAuth = require("../middleware/roleAuth");
 const {
   setWeeklyAvailability,
   addHoliday,
+  getHolidays,
   getTeacherAvailabilityForStudent
 } = require("../controllers/teacherAvailabilityController");
 
@@ -28,6 +29,13 @@ router.post(
   addHolidayValidation,
   runValidation,
   addHoliday
+);
+
+router.get(
+  "/holidays",
+  jwtAuth,
+  roleAuth("teacher"),
+  getHolidays
 );
 
 router.get(

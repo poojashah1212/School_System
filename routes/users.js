@@ -16,8 +16,11 @@ router.use(auth);
 
 router.get("/", userController.getAll);
 router.get("/:id", userController.getOne);
+router.get("/profile", userController.myProfile);
 
 router.put("/students/:userId", upload.single("image"), studentUpdate, runValidation, updateStudent);
-router.get("/quiz/:id",quizController.getQuizForStudent);
+router.get("/quiz/:id", quizController.getQuizForStudent);
 router.post("/quiz/:quizId/submit", validateQuizAttempt, quizController.submitQuiz);
+router.get("/quiz/available", quizController.getAvailableQuizzesForStudent);
+router.get("/quiz/results", quizController.getStudentResults);
 module.exports = router;

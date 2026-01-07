@@ -87,6 +87,32 @@ exports.addHoliday = async (req, res) => {
   }
 };
 
+exports.getHolidays = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    
+    const availability = await TeacherAvailability.findOne({ teacherId })
+      .select("holidays")
+      .sort({ "holidays.startDate": 1 });
+
+    if (!availability) {
+      return res.json({ holidays: [] });
+    }
+
+    // Sort holidays by start date and get upcoming ones
+    const today = new Date();
+    const holidays = availability.holidays
+      .filter(holiday => holiday.endDate >= today)
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+      .slice(0, 3); // Get next 3 holidays
+
+    res.json({ holidays });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 exports.getTeacherAvailabilityForStudent = async (req, res) => {
     console.log("User role from token:", req.user.role);
 

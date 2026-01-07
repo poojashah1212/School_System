@@ -29,6 +29,12 @@ exports.update = async (req, res) => {
   res.json({ message: "Updated", user });
 };
 
+exports.myProfile = async (req, res) => {
+  const user = await User.findById(req.user.id).select("-password");
+  if (!user) return res.status(404).json({ message: "User Not Found" });
+  res.json(user);
+};
+
 exports.remove = async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
   res.json({ message: "User Deleted" });
