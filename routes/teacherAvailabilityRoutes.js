@@ -4,6 +4,7 @@ const roleAuth = require("../middleware/roleAuth");
 
 const {
   setWeeklyAvailability,
+  getWeeklyAvailability,
   addHoliday,
   getHolidays,
   getTeacherAvailabilityForStudent
@@ -12,6 +13,13 @@ const {
 const {weeklyAvailabilityValidation, addHolidayValidation} = require("../middleware/validation/availabilityValidation");
 const { runValidation } = require("../middleware/validate");
 const router = express.Router();
+
+router.get(
+  "/availability",
+  jwtAuth,
+  roleAuth("teacher"),
+  getWeeklyAvailability
+);
 
 router.post(
   "/availability",

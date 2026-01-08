@@ -1,0 +1,32 @@
+<!-- Student Header Component -->
+<header class="header">
+    <h1>Student Dashboard</h1>
+    <div class="header-right">
+        <div class="search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search quizzes...">
+        </div>
+        <div class="profile-dropdown">
+            <img src="https://picsum.photos/seed/student/40/40.jpg" alt="Student" class="profile-img">
+            <div class="profile-info">
+                <span class="student-name" id="header-student-name">Student Name</span>
+                <span class="student-role">Student</span>
+            </div>
+            <div class="dropdown">
+                <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <a class="dropdown-item" href="#" id="viewProfileBtn">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                    <a class="dropdown-item" href="#" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

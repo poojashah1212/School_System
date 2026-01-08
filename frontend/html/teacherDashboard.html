@@ -13,76 +13,12 @@
 
 <body>
     <div class="dashboard">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="fas fa-graduation-cap"></i>
-                <span>School System</span>
-            </div>
-
-            <nav class="nav">
-                <a href="#" class="nav-item active" data-page="dashboard">
-                    <i class="fas fa-home"></i>
-                    Dashboard
-                </a>
-                <a href="#" class="nav-item" data-page="students">
-                    <i class="fas fa-users"></i>
-                    Students
-                </a>
-                <a href="#" class="nav-item" data-page="quiz">
-                    <i class="fas fa-question-circle"></i>
-                    Quiz Management
-                </a>
-                <a href="#" class="nav-item" data-page="availability">
-                    <i class="fas fa-clock"></i>
-                    Availability
-                </a>
-                <a href="#" class="nav-item" data-page="holidays">
-                    <i class="fas fa-calendar-alt"></i>
-                    Holidays
-                </a>
-                <a href="#" class="nav-item" data-page="marks">
-                    <i class="fas fa-chart-bar"></i>
-                    Marks
-                </a>
-            </nav>
-        </aside>
-
+        <!-- Sidebar will be loaded here by component loader -->
+        
         <!-- Main Content -->
         <main class="main">
-            <!-- Header with Profile -->
-            <header class="header">
-                <h1>Teacher Dashboard</h1>
-                <div class="header-right">
-                    <div class="search">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search students, quizzes...">
-                    </div>
-                    <div class="profile-dropdown">
-                        <img src="https://picsum.photos/seed/teacher/40/40.jpg" alt="Teacher" class="profile-img">
-                        <div class="profile-info">
-                            <span class="teacher-name">John Smith</span>
-                            <span class="teacher-role">Teacher</span>
-                        </div>
-                        <div class="dropdown">
-                            <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <a class="dropdown-item" href="#" id="viewProfileBtn">
-                                    <i class="fas fa-user"></i>
-                                    <span>Profile</span>
-                                </a>
-                                <a class="dropdown-item" href="#" id="logoutBtn">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    <span>Logout</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
+            <!-- Header will be loaded here by component loader -->
+            
             <div class="content">
                 <!-- Dashboard Page -->
                 <div class="page active" id="dashboard-page">
@@ -134,9 +70,6 @@
                             <div id="holidays">
                                 <p class="empty">No holidays added yet</p>
                             </div>
-                            <button class="btn-primary btn-sm" onclick="dashboard.showAddHolidayModal()">
-                                <i class="fas fa-plus"></i> Add Holiday
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -181,27 +114,19 @@
                 <div class="page" id="availability-page">
                     <div class="page-header">
                         <h2>Manage Availability</h2>
-                        <button class="btn-primary" id="addAvailabilityBtn">
-                            <i class="fas fa-plus"></i>
-                            Add Session
-                        </button>
+                        <div class="header-actions">
+                            <button class="btn-primary" id="setWeeklyAvailabilityBtn">
+                                <i class="fas fa-calendar-week"></i>
+                                Set Weekly Schedule
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="form-card">
-                        <form id="availabilityForm">
-                            <div class="form-row">
-                                <input type="date" id="availabilityDate" required>
-                                <input type="time" id="startTime" required>
-                                <input type="time" id="endTime" required>
-                                <button type="submit" class="btn-primary">Add</button>
-                            </div>
-                        </form>
-                    </div>
-
+                    <!-- Weekly Availability Section -->
                     <div class="card">
-                        <h3>Your Available Slots</h3>
-                        <div id="availabilitySlots">
-                            <p class="empty">No slots added</p>
+                        <h3>Weekly Schedule</h3>
+                        <div id="weeklyAvailabilityDisplay" class="weekly-availability-display">
+                            <p class="empty">No weekly schedule set</p>
                         </div>
                     </div>
                 </div>
@@ -256,8 +181,7 @@
                                 <option value="personal">Personal</option>
                                 <option value="public">Public</option>
                             </select>
-                            <input type="month" id="holidayMonthFilter" placeholder="Filter by month">
-                        </div>
+                                                    </div>
                         <div id="holidaysList">
                             <p class="empty">No holidays added yet</p>
                         </div>
@@ -306,6 +230,62 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sessions Page -->
+                <div class="page" id="sessions-page">
+                    <div class="page-header">
+                        <h2>Session Management</h2>
+                        <button class="btn-primary" id="createSessionBtn">
+                            <i class="fas fa-plus"></i>
+                            Create Session Slots
+                        </button>
+                    </div>
+
+                    <div class="session-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Sessions</h3>
+                                <p class="stat-number" id="totalSessions">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Available Slots</h3>
+                                <p class="stat-number" id="availableSlots">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon orange">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Booked Slots</h3>
+                                <p class="stat-number" id="bookedSlots">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Session List</h3>
+                        <div class="session-filters">
+                            <select id="sessionFilter">
+                                <option value="all">All Sessions</option>
+                                <option value="today">Today</option>
+                                <option value="upcoming">Upcoming</option>
+                                <option value="past">Past</option>
+                            </select>
+                        </div>
+                        <div id="sessionsList">
+                            <p class="empty">No sessions created yet</p>
                         </div>
                     </div>
                 </div>
@@ -496,6 +476,193 @@
         </div>
     </div>
 
+    <!-- Weekly Availability Modal -->
+    <div class="modal" id="weeklyAvailabilityModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Set Weekly Availability</h3>
+                <button class="modal-close" id="closeWeeklyAvailabilityModal">&times;</button>
+            </div>
+            <form id="weeklyAvailabilityForm">
+                <div class="weekly-availability-grid">
+                    <div class="day-slot">
+                        <div class="day-header">
+                            <label>Monday</label>
+                            <button type="button" class="btn-clear-day" data-day="monday" title="Clear Monday">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="time-inputs">
+                            <div class="time-input-wrapper">
+                                <input type="time" name="mondayStartTime" placeholder="Start">
+                            </div>
+                            <span class="time-separator">to</span>
+                            <div class="time-input-wrapper">
+                                <input type="time" name="mondayEndTime" placeholder="End">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="day-slot">
+                        <div class="day-header">
+                            <label>Tuesday</label>
+                            <button type="button" class="btn-clear-day" data-day="tuesday" title="Clear Tuesday">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="time-inputs">
+                            <div class="time-input-wrapper">
+                                <input type="time" name="tuesdayStartTime" placeholder="Start">
+                            </div>
+                            <span class="time-separator">to</span>
+                            <div class="time-input-wrapper">
+                                <input type="time" name="tuesdayEndTime" placeholder="End">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="day-slot">
+                        <div class="day-header">
+                            <label>Wednesday</label>
+                            <button type="button" class="btn-clear-day" data-day="wednesday" title="Clear Wednesday">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="time-inputs">
+                            <div class="time-input-wrapper">
+                                <input type="time" name="wednesdayStartTime" placeholder="Start">
+                            </div>
+                            <span class="time-separator">to</span>
+                            <div class="time-input-wrapper">
+                                <input type="time" name="wednesdayEndTime" placeholder="End">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="day-slot">
+                        <div class="day-header">
+                            <label>Thursday</label>
+                            <button type="button" class="btn-clear-day" data-day="thursday" title="Clear Thursday">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="time-inputs">
+                            <div class="time-input-wrapper">
+                                <input type="time" name="thursdayStartTime" placeholder="Start">
+                            </div>
+                            <span class="time-separator">to</span>
+                            <div class="time-input-wrapper">
+                                <input type="time" name="thursdayEndTime" placeholder="End">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="day-slot">
+                        <div class="day-header">
+                            <label>Friday</label>
+                            <button type="button" class="btn-clear-day" data-day="friday" title="Clear Friday">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="time-inputs">
+                            <div class="time-input-wrapper">
+                                <input type="time" name="fridayStartTime" placeholder="Start">
+                            </div>
+                            <span class="time-separator">to</span>
+                            <div class="time-input-wrapper">
+                                <input type="time" name="fridayEndTime" placeholder="End">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="day-slot">
+                        <div class="day-header">
+                            <label>Saturday</label>
+                            <button type="button" class="btn-clear-day" data-day="saturday" title="Clear Saturday">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="time-inputs">
+                            <div class="time-input-wrapper">
+                                <input type="time" name="saturdayStartTime" placeholder="Start">
+                            </div>
+                            <span class="time-separator">to</span>
+                            <div class="time-input-wrapper">
+                                <input type="time" name="saturdayEndTime" placeholder="End">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="day-slot">
+                        <div class="day-header">
+                            <label>Sunday</label>
+                            <button type="button" class="btn-clear-day" data-day="sunday" title="Clear Sunday">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="time-inputs">
+                            <div class="time-input-wrapper">
+                                <input type="time" name="sundayStartTime" placeholder="Start">
+                            </div>
+                            <span class="time-separator">to</span>
+                            <div class="time-input-wrapper">
+                                <input type="time" name="sundayEndTime" placeholder="End">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="clearWeeklyAvailability">
+                        <i class="fas fa-trash-alt"></i> Clear All
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Save Weekly Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Session Modal -->
+    <div class="modal" id="createSessionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Session Slots</h3>
+                <button class="modal-close" id="closeSessionModal">&times;</button>
+            </div>
+            <form id="createSessionForm">
+                <div class="form-group">
+                    <label for="sessionTitle">Session Title *</label>
+                    <input type="text" name="title" id="sessionTitle" placeholder="e.g., Mathematics Tutoring" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sessionDate">Date *</label>
+                        <input type="date" name="date" id="sessionDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionDuration">Session Duration (minutes) *</label>
+                        <input type="number" name="sessionDuration" id="sessionDuration" min="15" max="180" value="30" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="breakDuration">Break Duration (minutes) *</label>
+                        <input type="number" name="breakDuration" id="breakDuration" min="0" max="30" value="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentSelect">Student (Optional)</label>
+                        <select name="student_id" id="studentSelect">
+                            <option value="">All Students</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="studentTimezone">Student Timezone</label>
+                    <input type="text" name="studentTimezone" id="studentTimezone" placeholder="e.g., Asia/Kolkata">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelSessionBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Session Slots</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div class="loading" id="loading">
         <div class="spinner"></div>
@@ -504,6 +671,7 @@
     <!-- Messages Container -->
     <div class="messages" id="messages"></div>
 
+    <script src="../js/componentLoader.js"></script>
     <script src="../js/teacherDashboard.js"></script>
 </body>
 

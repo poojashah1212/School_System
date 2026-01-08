@@ -280,7 +280,6 @@ body {
     gap: 20px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    overflow: hidden;
 }
 
 .stat-card::before {
@@ -383,6 +382,26 @@ body {
 .card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 24px rgba(59, 130, 246, 0.1);
+}
+
+/* Holidays card specific styling */
+#holidays {
+    max-height: none !important;
+    overflow-y: auto !important;
+    max-height: 500px !important;
+    min-height: 300px !important;
+}
+
+#holidays .holiday-item {
+    margin-bottom: 12px;
+}
+
+/* Ensure cards grid doesn't restrict height */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 24px;
+    align-items: start;
 }
 
 .card h3 {

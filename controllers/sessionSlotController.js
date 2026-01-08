@@ -198,6 +198,18 @@ exports.confirmSessionSlot = async (req, res) => {
     if (session.allowedStudentId && String(session.allowedStudentId) !== String(studentId))
       return res.status(403).json({ message: "Not allowed" });
 
+    // Check if session date is a holiday
+    const teacherAvailability = await TeacherAvailability.findOne({ teacherId: session.teacherId });
+    if (teacherAvailability) {
+      const sessionDate = moment(session.date, "DD-MM-YYYY").startOf("day").toDate();
+      const isHoliday = teacherAvailability.holidays.some(
+        h => sessionDate >= h.startDate && sessionDate <= h.endDate
+      );
+      if (isHoliday) {
+        return res.status(400).json({ message: "Session date is a holiday. Please select a different date." });
+      }
+    }
+
     const slotStartUTC = moment.tz(
       `${moment(session.date).format("DD-MM-YYYY")} ${startTime}`,
       "DD-MM-YYYY HH:mm",

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - School System</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/studentDashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>School System</span>
+            </div>
+            
+            <nav class="nav">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item" data-page="sessions">
+                    <i class="fas fa-calendar"></i>
+                    Sessions
+                </a>
+                <a href="#" class="nav-item" data-page="results">
+                    <i class="fas fa-chart-line"></i>
+                    My Results
+                </a>
+            </nav>
+
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-details">
+                    <div class="user-name" id="user-name">Loading...</div>
+                    <div class="user-role">Student</div>
+                </div>
+                <button class="logout-btn" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-content">
+                    <h1 class="page-title">Student Dashboard</h1>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="content">
+                <!-- Dashboard Page -->
+                <div class="page" id="dashboard-page">
+                    <!-- Welcome Section -->
+                    <section class="welcome-section">
+                        <div class="welcome-card">
+                            <h2>Welcome back, <span id="student-name">Student</span>! 👋</h2>
+                            <p>Ready to continue your learning journey?</p>
+                        </div>
+                    </section>
+
+                    <!-- Stats Grid -->
+                    <section class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number" id="completed-quizzes">0</h3>
+                                <p class="stat-label">Completed Tests</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number" id="average-score">0%</h3>
+                                <p class="stat-label">Average Score</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number" id="best-score">0%</h3>
+                                <p class="stat-label">Best Score</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number" id="total-attempts">0</h3>
+                                <p class="stat-label">Total Attempts</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Recent Activity -->
+                    <section class="recent-activity">
+                        <h3>Recent Activity</h3>
+                        <div class="activity-list" id="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-quiz"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p class="activity-text">No recent activity</p>
+                                    <p class="activity-time">Start taking quizzes to see your progress</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Results Page -->
+                <div class="page hidden" id="results-page">
+                    <div class="page-header">
+                        <h2>My Results</h2>
+                        <div class="summary-stats">
+                            <div class="summary-item">
+                                <span class="summary-label">Total Attempts:</span>
+                                <span class="summary-value" id="total-attempts">0</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Average Score:</span>
+                                <span class="summary-value" id="results-average">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="results-table-container">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Quiz Title</th>
+                                    <th>Subject</th>
+                                    <th>Score</th>
+                                    <th>Total Marks</th>
+                                    <th>Percentage</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-tbody">
+                                <tr>
+                                    <td colspan="6" class="no-results">No quiz results available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Sessions Page -->
+                <div class="page hidden" id="sessions-page">
+                    <div class="page-header">
+                        <h2>Available Sessions</h2>
+                        <div class="session-tabs">
+                            <button class="tab-btn active" data-tab="available">Available Sessions</button>
+                            <button class="tab-btn" data-tab="confirmed">My Sessions</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Available Sessions Tab -->
+                    <div class="tab-content active" id="available-tab">
+                        <div class="sessions-grid" id="available-sessions">
+                            <div class="empty-state">
+                                <i class="fas fa-calendar-times"></i>
+                                <h3>No Available Sessions</h3>
+                                <p>Check back later for new session slots</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Confirmed Sessions Tab -->
+                    <div class="tab-content" id="confirmed-tab">
+                        <div class="sessions-grid" id="confirmed-sessions">
+                            <div class="empty-state">
+                                <i class="fas fa-calendar-check"></i>
+                                <h3>No Confirmed Sessions</h3>
+                                <p>Book a session to see it here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Message Container -->
+    <div class="message-container" id="message-container"></div>
+
+    <script src="../js/studentDashboard.js"></script>
+</body>
+</html>

@@ -1,6 +1,24 @@
 const TeacherAvailability = require("../models/TeacherAvailability");
 const { parseDDMMYYYY } = require("../utils/dateParser");
 
+exports.getWeeklyAvailability = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    
+    const availability = await TeacherAvailability.findOne({ teacherId })
+      .select("weeklyAvailability");
+
+    if (!availability) {
+      return res.json({ weeklyAvailability: [] });
+    }
+
+    res.json({ weeklyAvailability: availability.weeklyAvailability });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 exports.setWeeklyAvailability = async (req, res) => {
   try {
     const teacherId = req.user.id;
@@ -99,12 +117,11 @@ exports.getHolidays = async (req, res) => {
       return res.json({ holidays: [] });
     }
 
-    // Sort holidays by start date and get upcoming ones
+    // Sort holidays by start date and get all upcoming ones
     const today = new Date();
     const holidays = availability.holidays
       .filter(holiday => holiday.endDate >= today)
-      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-      .slice(0, 3); // Get next 3 holidays
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
     res.json({ holidays });
   } catch (err) {

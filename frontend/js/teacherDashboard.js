@@ -236,6 +236,14 @@ class TeacherDashboard {
             });
         }
 
+        // Holiday filter
+        const holidayFilter = document.getElementById('holidayFilter');
+        if (holidayFilter) {
+            holidayFilter.addEventListener('change', (e) => {
+                this.filterHolidays(e.target.value);
+            });
+        }
+
         const closeQuizModal = document.getElementById('closeQuizModal');
         if (closeQuizModal) {
             closeQuizModal.addEventListener('click', () => {
@@ -276,19 +284,90 @@ class TeacherDashboard {
             });
         }
 
-        const availabilityForm = document.getElementById('availabilityForm');
-        if (availabilityForm) {
-            availabilityForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.addAvailability();
+        // Weekly availability
+        const setWeeklyAvailabilityBtn = document.getElementById('setWeeklyAvailabilityBtn');
+        if (setWeeklyAvailabilityBtn) {
+            setWeeklyAvailabilityBtn.addEventListener('click', () => {
+                this.showWeeklyAvailabilityModal();
             });
         }
+
+        const closeWeeklyAvailabilityModal = document.getElementById('closeWeeklyAvailabilityModal');
+        if (closeWeeklyAvailabilityModal) {
+            closeWeeklyAvailabilityModal.addEventListener('click', () => {
+                const modal = document.getElementById('weeklyAvailabilityModal');
+                if (modal) modal.classList.remove('show');
+            });
+        }
+
+        const weeklyAvailabilityForm = document.getElementById('weeklyAvailabilityForm');
+        if (weeklyAvailabilityForm) {
+            weeklyAvailabilityForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.setWeeklyAvailability();
+            });
+        }
+
+        const clearWeeklyAvailability = document.getElementById('clearWeeklyAvailability');
+        if (clearWeeklyAvailability) {
+            clearWeeklyAvailability.addEventListener('click', () => {
+                this.clearWeeklyAvailabilityForm();
+            });
+        }
+
+        // Individual day clear buttons
+        document.querySelectorAll('.btn-clear-day').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const day = button.dataset.day;
+                this.clearDayAvailability(day);
+            });
+        });
 
         const marksForm = document.getElementById('marksForm');
         if (marksForm) {
             marksForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.addMarks();
+            });
+        }
+
+        // Session management
+        const createSessionBtn = document.getElementById('createSessionBtn');
+        if (createSessionBtn) {
+            createSessionBtn.addEventListener('click', () => {
+                this.showCreateSessionModal();
+            });
+        }
+
+        const closeSessionModal = document.getElementById('closeSessionModal');
+        if (closeSessionModal) {
+            closeSessionModal.addEventListener('click', () => {
+                const modal = document.getElementById('createSessionModal');
+                if (modal) modal.classList.remove('show');
+            });
+        }
+
+        const cancelSessionBtn = document.getElementById('cancelSessionBtn');
+        if (cancelSessionBtn) {
+            cancelSessionBtn.addEventListener('click', () => {
+                const modal = document.getElementById('createSessionModal');
+                if (modal) modal.classList.remove('show');
+            });
+        }
+
+        const createSessionForm = document.getElementById('createSessionForm');
+        if (createSessionForm) {
+            createSessionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createSessionSlots();
+            });
+        }
+
+        const sessionFilter = document.getElementById('sessionFilter');
+        if (sessionFilter) {
+            sessionFilter.addEventListener('change', (e) => {
+                this.filterSessions(e.target.value);
             });
         }
 
@@ -299,6 +378,64 @@ class TeacherDashboard {
                     modal.classList.remove('show');
                 }
             });
+        });
+
+        // Time picker emoji functionality
+        this.setupTimePickerListeners();
+    }
+
+    setupTimePickerListeners() {
+        // Add time picker buttons to all time input wrappers
+        document.querySelectorAll('.time-input-wrapper').forEach(wrapper => {
+            const timeInput = wrapper.querySelector('input[type="time"]');
+            
+            // Remove existing button if any
+            const existingBtn = wrapper.querySelector('.time-picker-btn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+            
+            if (timeInput) {
+                // Create time picker button
+                const timePickerBtn = document.createElement('button');
+                timePickerBtn.className = 'time-picker-btn';
+                timePickerBtn.innerHTML = '🕐';
+                timePickerBtn.type = 'button';
+                timePickerBtn.setAttribute('aria-label', 'Select time');
+                
+                // Add click event to trigger time picker
+                timePickerBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    timeInput.focus();
+                    timeInput.click();
+                    timeInput.showPicker?.();
+                });
+                
+                // Add keyboard support
+                timePickerBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        timeInput.focus();
+                        timeInput.click();
+                        timeInput.showPicker?.();
+                    }
+                });
+                
+                // Append button to wrapper
+                wrapper.appendChild(timePickerBtn);
+                
+                // Also make the wrapper clickable (except the input itself)
+                wrapper.addEventListener('click', (e) => {
+                    if (e.target !== timeInput && e.target !== timePickerBtn) {
+                        e.preventDefault();
+                        timeInput.focus();
+                        timeInput.click();
+                        timeInput.showPicker?.();
+                    }
+                });
+            }
         });
     }
 
@@ -322,7 +459,8 @@ class TeacherDashboard {
             quiz: 'Quiz Management',
             availability: 'Availability',
             holidays: 'Holiday Management',
-            marks: 'Marks'
+            marks: 'Marks',
+            sessions: 'Session Management'
         };
         const headerTitle = document.querySelector('.header h1');
         if (headerTitle) {
@@ -352,6 +490,9 @@ class TeacherDashboard {
                 break;
             case 'marks':
                 await this.loadMarksData();
+                break;
+            case 'sessions':
+                await this.loadSessionsData();
                 break;
         }
     }
@@ -481,12 +622,10 @@ class TeacherDashboard {
                 const result = await response.json();
                 const holidays = result.holidays || [];
                 this.updateRecentHolidays(holidays);
-            } else {
-                const error = await response.json();
-                console.error('Load holidays error:', error);
             }
         } catch (error) {
-            console.error('Error loading holiday data:', error);
+            // Silently handle holiday loading errors
+            console.log('Holiday data not available');
         }
     }
 
@@ -532,47 +671,353 @@ class TeacherDashboard {
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Add Holiday</h3>
-                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
-                <form id="addHolidayForm">
-                    <div class="form-row">
-                        <input type="date" name="startDate" required>
-                        <input type="date" name="endDate" required>
+                <form id="addHolidayForm" novalidate>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="singleDayHoliday" onchange="dashboard.toggleSingleDayHoliday()">
+                            Single Day Holiday
+                        </label>
                     </div>
-                    <div class="form-row">
-                        <select name="reason" required>
+                    <div class="form-row" id="dateRangeRow">
+                        <div class="form-group">
+                            <label for="startDate">Start Date *</label>
+                            <input type="date" name="startDate" id="startDate" required>
+                            <small class="form-hint">Select holiday start date</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">End Date *</label>
+                            <input type="date" name="endDate" id="endDate" required>
+                            <small class="form-hint">Select holiday end date</small>
+                        </div>
+                    </div>
+                    <div class="form-row" id="singleDateRow" style="display: none;">
+                        <div class="form-group">
+                            <label for="singleDate">Holiday Date *</label>
+                            <input type="date" name="singleDate" id="singleDate">
+                            <small class="form-hint">Select holiday date</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reason">Reason *</label>
+                        <select name="reason" id="reason" required>
                             <option value="">Select Reason</option>
                             <option value="personal">Personal</option>
                             <option value="public">Public Holiday</option>
                         </select>
                     </div>
-                    <div class="form-row">
-                        <textarea name="note" placeholder="Add a note (optional)" rows="3"></textarea>
+                    <div class="form-group">
+                        <label for="note">Note (Optional)</label>
+                        <textarea name="note" id="note" placeholder="Add a note (optional)" rows="3"></textarea>
                     </div>
-                    <button type="submit" class="btn-primary">Add Holiday</button>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Holiday</button>
+                    </div>
                 </form>
             </div>
         `;
         document.body.appendChild(modal);
         modal.classList.add('show');
 
-        // Add event listener for form submission
+        // Set minimum date to today for all date inputs
+        this.setMinDateForDateInputs();
+
+        // Add event listener for form submission with validation
         document.getElementById('addHolidayForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            this.addHoliday();
+            if (this.validateHolidayForm()) {
+                this.addHoliday();
+            }
         });
+
+        // Add real-time validation
+        this.setupHolidayValidation();
+    }
+
+    setMinDateForDateInputs() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayString = `${year}-${month}-${day}`;
+        
+        // Set min date for all date inputs
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            input.min = todayString;
+        });
+    }
+
+    setupHolidayValidation() {
+        // Date validation for HTML5 date inputs
+        const dateInputs = document.querySelectorAll('input[name="startDate"], input[name="endDate"], input[name="singleDate"]');
+        
+        dateInputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                this.validateDateFormat(e.target);
+            });
+            
+            input.addEventListener('blur', (e) => {
+                this.validateDateFormat(e.target);
+            });
+        });
+
+        // Reason validation
+        const reasonSelect = document.getElementById('reason');
+        if (reasonSelect) {
+            reasonSelect.addEventListener('change', (e) => {
+                this.validateReason(e.target);
+            });
+        }
+    }
+
+    validateDateFormat(input) {
+        const value = input.value.trim();
+        const formGroup = input.closest('.form-group');
+        let errorElement = formGroup.querySelector('.error-message');
+        
+        // Remove existing error
+        if (errorElement) {
+            errorElement.remove();
+        }
+        input.classList.remove('error');
+        
+        if (!value) {
+            if (input.hasAttribute('required')) {
+                this.showFieldError(input, 'Date is required');
+                return false;
+            }
+            return true;
+        }
+        
+        // HTML5 date inputs already validate format, but we need to check if it's a valid date
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+            this.showFieldError(input, 'Invalid date');
+            return false;
+        }
+        
+        // Validate date is not in the past (HTML5 date inputs use YYYY-MM-DD format)
+        if (this.isPastDateISO(value)) {
+            this.showFieldError(input, 'Holiday cannot be created for past dates');
+            return false;
+        }
+        
+        // Validate date range if both dates are present
+        if (input.name === 'endDate' && document.getElementById('startDate').value) {
+            const startDate = document.getElementById('startDate').value;
+            if (startDate > value) {
+                this.showFieldError(input, 'End date cannot be before start date');
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    validateReason(select) {
+        const formGroup = select.closest('.form-group');
+        let errorElement = formGroup.querySelector('.error-message');
+        
+        // Remove existing error
+        if (errorElement) {
+            errorElement.remove();
+        }
+        select.classList.remove('error');
+        
+        if (!select.value) {
+            this.showFieldError(select, 'Please select a reason');
+            return false;
+        }
+        
+        return true;
+    }
+
+    validateHolidayForm() {
+        const form = document.getElementById('addHolidayForm');
+        const isSingleDay = document.getElementById('singleDayHoliday').checked;
+        let isValid = true;
+        
+        // Clear all previous errors
+        form.querySelectorAll('.error-message').forEach(error => error.remove());
+        form.querySelectorAll('.error').forEach(field => field.classList.remove('error'));
+        
+        if (isSingleDay) {
+            const singleDateInput = document.getElementById('singleDate');
+            if (!this.validateDateFormat(singleDateInput)) {
+                isValid = false;
+            }
+        } else {
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            
+            if (!this.validateDateFormat(startDateInput)) {
+                isValid = false;
+            }
+            
+            if (!this.validateDateFormat(endDateInput)) {
+                isValid = false;
+            }
+            
+            // Validate date range
+            if (startDateInput.value && endDateInput.value) {
+                if (startDateInput.value > endDateInput.value) {
+                    this.showFieldError(endDateInput, 'End date cannot be before start date');
+                    isValid = false;
+                }
+            }
+            
+            // Additional check: start date should not be in past
+            if (startDateInput.value && this.isPastDateISO(startDateInput.value)) {
+                this.showFieldError(startDateInput, 'Holiday cannot be created for past dates');
+                isValid = false;
+            }
+        }
+        
+        // Validate reason
+        const reasonSelect = document.getElementById('reason');
+        if (!this.validateReason(reasonSelect)) {
+            isValid = false;
+        }
+        
+        // Validate note (optional but if present, must be string)
+        const noteTextarea = document.getElementById('note');
+        if (noteTextarea.value && typeof noteTextarea.value !== 'string') {
+            this.showFieldError(noteTextarea, 'Note must be text');
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+
+    showFieldError(field, message) {
+        field.classList.add('error');
+        const formGroup = field.closest('.form-group');
+        let errorElement = formGroup.querySelector('.error-message');
+        
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            formGroup.appendChild(errorElement);
+        }
+        
+        errorElement.textContent = message;
+    }
+
+    isValidDate(dateString) {
+        const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
+        if (!dateRegex.test(dateString)) return false;
+        
+        const [day, month, year] = dateString.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        
+        return (
+            date.getFullYear() === year &&
+            date.getMonth() === month - 1 &&
+            date.getDate() === day &&
+            year >= 1900 && year <= 2100
+        );
+    }
+
+    compareDates(date1, date2) {
+        const [d1, m1, y1] = date1.split('-').map(Number);
+        const [d2, m2, y2] = date2.split('-').map(Number);
+        
+        const date1Obj = new Date(y1, m1 - 1, d1);
+        const date2Obj = new Date(y2, m2 - 1, d2);
+        
+        return date1Obj - date2Obj;
+    }
+
+    isPastDate(dateString) {
+        const [day, month, year] = dateString.split('-').map(Number);
+        const holidayDate = new Date(year, month - 1, day);
+        
+        // Set current date to start of day for accurate comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Set holiday date to start of day for accurate comparison
+        holidayDate.setHours(0, 0, 0, 0);
+        
+        return holidayDate < today;
+    }
+
+    isPastDateISO(dateString) {
+        // dateString is in YYYY-MM-DD format from HTML5 date input
+        const holidayDate = new Date(dateString);
+        
+        // Set current date to start of day for accurate comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Set holiday date to start of day for accurate comparison
+        holidayDate.setHours(0, 0, 0, 0);
+        
+        return holidayDate < today;
+    }
+
+    convertISOToDDMMYYYY(isoDateString) {
+        // Convert YYYY-MM-DD to DD-MM-YYYY
+        if (!isoDateString) return '';
+        
+        const [year, month, day] = isoDateString.split('-');
+        return `${day}-${month}-${year}`;
+    }
+
+    toggleSingleDayHoliday() {
+        const isSingleDay = document.getElementById('singleDayHoliday').checked;
+        const dateRangeRow = document.getElementById('dateRangeRow');
+        const singleDateRow = document.getElementById('singleDateRow');
+        
+        if (isSingleDay) {
+            dateRangeRow.style.display = 'none';
+            singleDateRow.style.display = 'flex';
+            // Remove required from date range inputs
+            document.querySelector('input[name="startDate"]').removeAttribute('required');
+            document.querySelector('input[name="endDate"]').removeAttribute('required');
+            // Add required to single date input
+            document.querySelector('input[name="singleDate"]').setAttribute('required', '');
+        } else {
+            dateRangeRow.style.display = 'flex';
+            singleDateRow.style.display = 'none';
+            // Add required back to date range inputs
+            document.querySelector('input[name="startDate"]').setAttribute('required', '');
+            document.querySelector('input[name="endDate"]').setAttribute('required', '');
+            // Remove required from single date input
+            document.querySelector('input[name="singleDate"]').removeAttribute('required');
+        }
     }
 
     async addHoliday() {
         const formData = new FormData(document.getElementById('addHolidayForm'));
+        const isSingleDay = document.getElementById('singleDayHoliday').checked;
+        
+        let startDate, endDate;
+        
+        if (isSingleDay) {
+            // For single day holiday, use the same date for both start and end
+            const singleDate = this.convertISOToDDMMYYYY(formData.get('singleDate'));
+            startDate = singleDate;
+            endDate = singleDate;
+        } else {
+            // For multi-day holiday, use start and end dates
+            startDate = this.convertISOToDDMMYYYY(formData.get('startDate'));
+            endDate = this.convertISOToDDMMYYYY(formData.get('endDate'));
+        }
+        
         const holidayData = {
-            startDate: formData.get('startDate'),
-            endDate: formData.get('endDate'),
+            startDate,
+            endDate,
             reason: formData.get('reason'),
             note: formData.get('note')
         };
 
         try {
+            this.showLoading();
+            
             const response = await fetch('/api/teacher-availability/holidays', {
                 method: 'POST',
                 headers: {
@@ -583,17 +1028,30 @@ class TeacherDashboard {
             });
 
             if (response.ok) {
-                this.showMessage('Holiday added successfully', 'success');
+                const result = await response.json();
+                
+                // Show success message
+                this.showMessage('Holiday created successfully', 'success');
+                
+                // Close modal
                 document.querySelector('.modal').remove();
-                this.loadHolidaysData();
-                this.loadHolidaysPageData(); // Refresh holidays page if open
+                
+                // Refresh holiday data to ensure it's added to the UI
+                await this.loadHolidaysData();
+                await this.loadHolidaysPageData();
+                
+                console.log('Holiday created and added to database:', result);
+                
             } else {
                 const error = await response.json();
-                this.showMessage(error.message || 'Failed to add holiday', 'error');
+                this.showMessage(error.message || 'Failed to create holiday', 'error');
+                console.error('Failed to create holiday:', error);
             }
         } catch (error) {
-            console.error('Error adding holiday:', error);
-            this.showMessage('Error adding holiday', 'error');
+            this.showMessage('Error creating holiday', 'error');
+            console.error('Error creating holiday:', error);
+        } finally {
+            this.hideLoading();
         }
     }
 
@@ -601,7 +1059,7 @@ class TeacherDashboard {
         try {
             this.showLoading();
             
-            // Get all holidays for the teacher
+            // Get all holidays for teacher
             const response = await fetch('/api/teacher-availability/holidays', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -611,16 +1069,14 @@ class TeacherDashboard {
             if (response.ok) {
                 const result = await response.json();
                 const holidays = result.holidays || [];
+                // Store all holidays for filtering
+                this.allHolidays = holidays;
                 this.updateHolidaysPage(holidays);
                 this.updateHolidayStats(holidays);
-            } else {
-                const error = await response.json();
-                console.error('Load holidays error:', error);
-                this.showMessage(error.message || 'Failed to load holidays', 'error');
             }
         } catch (error) {
-            console.error('Error loading holidays page data:', error);
-            this.showMessage('Error loading holidays', 'error');
+            // Silently handle holiday page loading errors
+            console.log('Holiday page data not available');
         } finally {
             this.hideLoading();
         }
@@ -669,15 +1125,45 @@ class TeacherDashboard {
         document.getElementById('totalHolidays').textContent = holidays.length;
         
         // Upcoming holidays
-        const upcoming = holidays.filter(h => new Date(holiday.startDate) >= today);
+        const upcoming = holidays.filter(h => new Date(h.startDate) >= today);
         document.getElementById('upcomingHolidays').textContent = upcoming.length;
         
         // This month holidays
         const thisMonth = holidays.filter(h => {
-            const holidayDate = new Date(holiday.startDate);
+            const holidayDate = new Date(h.startDate);
             return holidayDate.getMonth() === currentMonth && holidayDate.getFullYear() === currentYear;
         });
         document.getElementById('thisMonthHolidays').textContent = thisMonth.length;
+    }
+
+    filterHolidays(filterType) {
+        if (!this.allHolidays) {
+            return;
+        }
+
+        let filteredHolidays = this.allHolidays;
+        const today = new Date();
+
+        switch(filterType) {
+            case 'upcoming':
+                filteredHolidays = this.allHolidays.filter(h => new Date(h.startDate) >= today);
+                break;
+            case 'past':
+                filteredHolidays = this.allHolidays.filter(h => new Date(h.startDate) < today);
+                break;
+            case 'personal':
+                filteredHolidays = this.allHolidays.filter(h => h.reason === 'personal');
+                break;
+            case 'public':
+                filteredHolidays = this.allHolidays.filter(h => h.reason === 'public');
+                break;
+            case 'all':
+            default:
+                filteredHolidays = this.allHolidays;
+                break;
+        }
+
+        this.updateHolidaysPage(filteredHolidays);
     }
 
     async loadStudentsData() {
@@ -1561,20 +2047,280 @@ class TeacherDashboard {
     }
 
     async loadAvailabilityData() {
-        // Mock implementation - would need actual availability API
-        document.getElementById('availabilitySlots').innerHTML = '<p class="empty">No slots added</p>';
+        try {
+            this.showLoading();
+            
+            // Load weekly availability from database
+            await this.loadWeeklyAvailability();
+            
+        } catch (error) {
+            console.error('Error loading availability data:', error);
+            this.showMessage('Error loading availability data', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async loadWeeklyAvailability() {
+        try {
+            const response = await fetch('/api/teacher-availability/availability', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.updateWeeklyAvailabilityDisplay(result.weeklyAvailability);
+            } else {
+                const error = await response.json();
+                console.error('Load weekly availability error:', error);
+            }
+        } catch (error) {
+            console.error('Error loading weekly availability:', error);
+        }
+    }
+
+    updateWeeklyAvailabilityDisplay(weeklyAvailability) {
+        const container = document.getElementById('weeklyAvailabilityDisplay');
+        if (!weeklyAvailability || weeklyAvailability.length === 0) {
+            container.innerHTML = '<p class="empty">No weekly schedule set</p>';
+            return;
+        }
+
+        const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const sortedAvailability = weeklyAvailability.sort((a, b) => 
+            dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
+        );
+
+        container.innerHTML = sortedAvailability.map(slot => `
+            <div class="weekly-slot">
+                <div class="day-name">${this.capitalizeFirst(slot.day)}</div>
+                <div class="time-range">${slot.startTime} - ${slot.endTime}</div>
+            </div>
+        `).join('');
+    }
+
+    showWeeklyAvailabilityModal() {
+        // Load current availability first
+        this.loadWeeklyAvailabilityForForm();
+        
+        const modal = document.getElementById('weeklyAvailabilityModal');
+        if (modal) modal.classList.add('show');
+        
+        // Re-attach event listeners for clear buttons after modal is shown
+        setTimeout(() => {
+            this.setupTimePickerListeners();
+            document.querySelectorAll('.btn-clear-day').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const day = button.dataset.day;
+                    this.clearDayAvailability(day);
+                });
+            });
+        }, 100);
+    }
+
+    async loadWeeklyAvailabilityForForm() {
+        try {
+            const response = await fetch('/api/teacher-availability/availability', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.populateWeeklyAvailabilityForm(result.weeklyAvailability);
+            }
+        } catch (error) {
+            console.error('Error loading weekly availability for form:', error);
+        }
+    }
+
+    populateWeeklyAvailabilityForm(weeklyAvailability) {
+        if (!weeklyAvailability) return;
+
+        weeklyAvailability.forEach(slot => {
+            const day = slot.day;
+            const startInput = document.querySelector(`input[name="${day}StartTime"]`);
+            const endInput = document.querySelector(`input[name="${day}EndTime"]`);
+            
+            if (startInput) startInput.value = slot.startTime;
+            if (endInput) endInput.value = slot.endTime;
+        });
+    }
+
+    async setWeeklyAvailability() {
+        const formData = new FormData(document.getElementById('weeklyAvailabilityForm'));
+        const weeklyAvailability = [];
+        const validationErrors = [];
+        
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+        
+        // Clear previous validation errors
+        this.clearValidationErrors();
+        
+        for (const day of days) {
+            const startTime = formData.get(`${day}StartTime`);
+            const endTime = formData.get(`${day}EndTime`);
+            
+            if (startTime && endTime) {
+                // Validate time format
+                if (!timeRegex.test(startTime)) {
+                    validationErrors.push(`${this.capitalizeFirst(day)} start time format is invalid (HH:MM)`);
+                    this.highlightFieldError(`${day}StartTime`);
+                    continue;
+                }
+                
+                if (!timeRegex.test(endTime)) {
+                    validationErrors.push(`${this.capitalizeFirst(day)} end time format is invalid (HH:MM)`);
+                    this.highlightFieldError(`${day}EndTime`);
+                    continue;
+                }
+                
+                // Validate that end time is after start time
+                if (startTime >= endTime) {
+                    validationErrors.push(`${this.capitalizeFirst(day)} end time must be after start time`);
+                    this.highlightFieldError(`${day}EndTime`);
+                    continue;
+                }
+                
+                weeklyAvailability.push({
+                    day,
+                    startTime,
+                    endTime
+                });
+            }
+        }
+
+        if (validationErrors.length > 0) {
+            this.showValidationErrors(validationErrors);
+            return;
+        }
+
+        if (weeklyAvailability.length === 0) {
+            this.showMessage('Please set availability for at least one day', 'error');
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            const response = await fetch('/api/teacher-availability/availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ weeklyAvailability })
+            });
+
+            if (response.ok) {
+                this.showMessage('Weekly availability updated successfully', 'success');
+                document.getElementById('weeklyAvailabilityModal').classList.remove('show');
+                await this.loadWeeklyAvailability();
+            } else {
+                const error = await response.json();
+                if (error.errors && Array.isArray(error.errors)) {
+                    this.showValidationErrors(error.errors);
+                } else {
+                    this.showMessage(error.message || 'Failed to update weekly availability', 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Error setting weekly availability:', error);
+            this.showMessage('Error updating weekly availability', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    clearValidationErrors() {
+        // Remove all error highlights
+        document.querySelectorAll('.time-input-wrapper').forEach(wrapper => {
+            wrapper.classList.remove('error');
+        });
+        
+        // Remove error messages
+        document.querySelectorAll('.validation-error').forEach(error => {
+            error.remove();
+        });
+    }
+
+    highlightFieldError(fieldName) {
+        const input = document.querySelector(`input[name="${fieldName}"]`);
+        if (input) {
+            const wrapper = input.closest('.time-input-wrapper');
+            if (wrapper) {
+                wrapper.classList.add('error');
+            }
+        }
+    }
+
+    showValidationErrors(errors) {
+        const errorContainer = document.createElement('div');
+        errorContainer.className = 'validation-errors';
+        errorContainer.innerHTML = `
+            <div class="error-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                Please fix the following errors:
+            </div>
+            <ul class="error-list">
+                ${errors.map(error => `<li>${error}</li>`).join('')}
+            </ul>
+        `;
+        
+        const form = document.getElementById('weeklyAvailabilityForm');
+        form.insertBefore(errorContainer, form.firstChild);
+        
+        // Scroll to top of form to show errors
+        errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (errorContainer.parentNode) {
+                errorContainer.remove();
+            }
+        }, 10000);
+    }
+
+    clearWeeklyAvailabilityForm() {
+        const form = document.getElementById('weeklyAvailabilityForm');
+        if (form) {
+            form.reset();
+        }
+    }
+
+    clearDayAvailability(day) {
+        // Clear the time inputs for the specific day
+        const startInput = document.querySelector(`input[name="${day}StartTime"]`);
+        const endInput = document.querySelector(`input[name="${day}EndTime"]`);
+        
+        if (startInput) startInput.value = '';
+        if (endInput) endInput.value = '';
+        
+        // Show feedback
+        this.showMessage(`${this.capitalizeFirst(day)} availability cleared`, 'info');
+    }
+
+    capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    convertToDDMMYYYY(dateString) {
+        if (!dateString) return '';
+        
+        // Convert from YYYY-MM-DD to DD-MM-YYYY
+        const [year, month, day] = dateString.split('-');
+        return `${day}-${month}-${year}`;
     }
 
     async loadMarksData() {
         // Mock implementation - would need actual marks API
         const tbody = document.querySelector('#marks-page tbody');
         tbody.innerHTML = '<tr><td colspan="5" class="empty">No records found</td></tr>';
-    }
-
-    async addAvailability() {
-        // Mock implementation
-        this.showMessage('Availability added successfully', 'success');
-        document.getElementById('availabilityForm').reset();
     }
 
     async addMarks() {
@@ -1756,6 +2502,483 @@ class TeacherDashboard {
         }, 5000);
     }
 
+    // Session Management Functions
+    async loadSessionsData() {
+        try {
+            this.showLoading();
+            
+            // Load teacher sessions
+            const response = await fetch('/api/sessions/teacher', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.updateSessionsList(data.sessions || []);
+                this.updateSessionStats(data);
+            } else {
+                this.showMessage('Failed to load sessions', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading sessions:', error);
+            this.showMessage('Error loading sessions', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    updateSessionStats(data) {
+        const totalSessions = data.pagination?.totalSessions || 0;
+        let totalSlots = 0;
+        let bookedSlots = 0;
+
+        if (data.sessions) {
+            data.sessions.forEach(session => {
+                if (session.availableSlots) {
+                    totalSlots += session.availableSlots.length;
+                }
+                if (session.bookedSlots) {
+                    bookedSlots += session.bookedSlots.length;
+                }
+            });
+        }
+
+        document.getElementById('totalSessions').textContent = totalSessions;
+        document.getElementById('availableSlots').textContent = totalSlots - bookedSlots;
+        document.getElementById('bookedSlots').textContent = bookedSlots;
+    }
+
+    updateSessionsList(sessions) {
+        const container = document.getElementById('sessionsList');
+        
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = '<p class="empty">No sessions created yet</p>';
+            return;
+        }
+
+        container.innerHTML = sessions.map(session => {
+            const availableSlots = session.availableSlots || [];
+            const bookedSlots = session.bookedSlots || [];
+            const totalSlots = availableSlots.length + bookedSlots.length;
+            const status = this.getSessionStatus(session);
+            
+            return `
+                <div class="session-item">
+                    <div class="session-header">
+                        <div>
+                            <h4 class="session-title">${session.title || 'Untitled Session'}</h4>
+                            <p class="session-date">${this.formatSessionDate(session.date)}</p>
+                        </div>
+                        <span class="session-status ${status}">${status}</span>
+                    </div>
+                    
+                    <div class="session-details">
+                        <div class="session-detail">
+                            <span class="session-detail-label">Duration</span>
+                            <span class="session-detail-value">${session.sessionDuration || 30} min</span>
+                        </div>
+                        <div class="session-detail">
+                            <span class="session-detail-label">Break</span>
+                            <span class="session-detail-value">${session.breakDuration || 5} min</span>
+                        </div>
+                        <div class="session-detail">
+                            <span class="session-detail-label">Total Slots</span>
+                            <span class="session-detail-value">${totalSlots}</span>
+                        </div>
+                        <div class="session-detail">
+                            <span class="session-detail-label">Available</span>
+                            <span class="session-detail-value">${availableSlots.length}</span>
+                        </div>
+                        <div class="session-detail">
+                            <span class="session-detail-label">Booked</span>
+                            <span class="session-detail-value">${bookedSlots.length}</span>
+                        </div>
+                    </div>
+                    
+                    ${availableSlots.length > 0 ? `
+                        <div class="session-slots">
+                            <span class="session-detail-label" style="width: 100%; margin-bottom: 8px;">Available Time Slots:</span>
+                            ${availableSlots.slice(0, 5).map(slot => `
+                                <span class="slot-badge">
+                                    ${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}
+                                </span>
+                            `).join('')}
+                            ${availableSlots.length > 5 ? `
+                                <span class="slot-badge">+${availableSlots.length - 5} more</span>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    ${bookedSlots.length > 0 ? `
+                        <div class="session-slots">
+                            <span class="session-detail-label" style="width: 100%; margin-bottom: 8px;">Booked Slots:</span>
+                            ${bookedSlots.slice(0, 3).map(slot => `
+                                <span class="slot-badge booked">
+                                    ${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}
+                                </span>
+                            `).join('')}
+                            ${bookedSlots.length > 3 ? `
+                                <span class="slot-badge booked">+${bookedSlots.length - 3} more</span>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="session-actions">
+                        <button class="primary" onclick="dashboard.viewSessionDetails('${session._id}')">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        <button class="danger" onclick="dashboard.deleteSession('${session._id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    getSessionStatus(session) {
+        const sessionDate = new Date(session.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (sessionDate < today) {
+            return 'completed';
+        } else if (sessionDate.getTime() === today.getTime()) {
+            return 'active';
+        } else {
+            return 'active';
+        }
+    }
+
+    formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+        });
+    }
+
+    async viewSessionDetails(sessionId) {
+        try {
+            this.showLoading();
+            
+            const response = await fetch(`/api/session-slots/${sessionId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const session = await response.json();
+                this.showSessionDetailsModal(session);
+            } else {
+                this.showMessage('Failed to load session details', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading session details:', error);
+            this.showMessage('Error loading session details', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    showSessionDetailsModal(session) {
+        const modal = document.createElement('div');
+        modal.className = 'modal show';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Session Details</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="session-details-modal">
+                        <h4>${session.title || 'Untitled Session'}</h4>
+                        <p><strong>Date:</strong> ${this.formatSessionDate(session.date)}</p>
+                        <p><strong>Duration:</strong> ${session.sessionDuration || 30} minutes</p>
+                        <p><strong>Break Duration:</strong> ${session.breakDuration || 5} minutes</p>
+                        
+                        <h5>Available Slots (${session.availableSlots?.length || 0})</h5>
+                        <div class="slots-list">
+                            ${session.availableSlots?.length > 0 ? 
+                                session.availableSlots.map(slot => `
+                                    <div class="slot-item">
+                                        <span>${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}</span>
+                                        <span class="slot-status available">Available</span>
+                                    </div>
+                                `).join('') : 
+                                '<p class="empty">No available slots</p>'
+                            }
+                        </div>
+                        
+                        <h5>Booked Slots (${session.bookedSlots?.length || 0})</h5>
+                        <div class="slots-list">
+                            ${session.bookedSlots?.length > 0 ? 
+                                session.bookedSlots.map(slot => `
+                                    <div class="slot-item">
+                                        <span>${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}</span>
+                                        <span class="slot-status booked">Booked</span>
+                                    </div>
+                                `).join('') : 
+                                '<p class="empty">No booked slots</p>'
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    async deleteSession(sessionId) {
+        if (!confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            const response = await fetch(`/api/session-slots/${sessionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                this.showMessage('Session deleted successfully', 'success');
+                await this.loadSessionsData();
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to delete session', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting session:', error);
+            this.showMessage('Error deleting session', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    formatSessionDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            weekday: 'short',
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+    }
+
+    showCreateSessionModal() {
+        // Load students for the dropdown
+        this.loadStudentsForSession();
+        
+        const modal = document.getElementById('createSessionModal');
+        if (modal) {
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('sessionDate').min = today;
+            
+            modal.classList.add('show');
+        }
+    }
+
+    async loadStudentsForSession() {
+        try {
+            const response = await fetch('/api/teachers/students', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const students = await response.json();
+                const select = document.getElementById('studentSelect');
+                
+                select.innerHTML = '<option value="">All Students</option>';
+                students.forEach(student => {
+                    select.innerHTML += `<option value="${student._id}">${student.fullName}</option>`;
+                });
+            }
+        } catch (error) {
+            console.error('Error loading students:', error);
+        }
+    }
+
+    async createSessionSlots() {
+        try {
+            this.showLoading();
+            
+            const formData = new FormData(document.getElementById('createSessionForm'));
+            const data = Object.fromEntries(formData.entries());
+            
+            // Convert date format to DD-MM-YYYY
+            const date = new Date(data.date);
+            const formattedDate = `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+            data.date = formattedDate;
+            
+            // Remove empty student_id
+            if (!data.student_id) {
+                delete data.student_id;
+            }
+
+            const response = await fetch('/api/sessions/slots', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.showMessage('Session slots created successfully!', 'success');
+                
+                // Close modal
+                const modal = document.getElementById('createSessionModal');
+                if (modal) modal.classList.remove('show');
+                
+                // Reset form
+                document.getElementById('createSessionForm').reset();
+                
+                // Reload sessions data
+                await this.loadSessionsData();
+                
+                // Show created slots info
+                if (result.availableSlots && result.availableSlots.length > 0) {
+                    this.showSessionSlotsResult(result);
+                }
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to create session slots', 'error');
+            }
+        } catch (error) {
+            console.error('Error creating session slots:', error);
+            this.showMessage('Error creating session slots', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    showSessionSlotsResult(result) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Session Slots Created</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div class="session-result">
+                    <p><strong>Session:</strong> ${result.title}</p>
+                    <p><strong>Date:</strong> ${result.date}</p>
+                    <p><strong>Total Slots Created:</strong> ${result.availableSlots.length}</p>
+                    <div class="slots-preview">
+                        <h4>Available Time Slots:</h4>
+                        <div class="slots-list">
+                            ${result.availableSlots.slice(0, 5).map(slot => 
+                                `<span class="slot-time">${slot.startTime} - ${slot.endTime}</span>`
+                            ).join('')}
+                            ${result.availableSlots.length > 5 ? `<span class="slot-more">+${result.availableSlots.length - 5} more</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-primary" onclick="this.closest('.modal').remove()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.classList.add('show');
+    }
+
+    async viewSessionDetails(sessionId) {
+        try {
+            this.showLoading();
+            
+            const response = await fetch(`/api/sessions/teacher?id=${sessionId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const session = await response.json();
+                this.showSessionDetailsModal(session);
+            } else {
+                this.showMessage('Failed to load session details', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading session details:', error);
+            this.showMessage('Error loading session details', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    showSessionDetailsModal(session) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Session Details</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div class="session-details-full">
+                    <div class="detail-row">
+                        <label>Title:</label>
+                        <span>${session.title || 'Untitled Session'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Date:</label>
+                        <span>${this.formatSessionDate(session.date)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Session Duration:</label>
+                        <span>${session.sessionDuration || 30} minutes</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Break Duration:</label>
+                        <span>${session.breakDuration || 5} minutes</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Total Slots:</label>
+                        <span>${session.availableSlots?.length || 0}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Booked Slots:</label>
+                        <span>${session.bookedSlots?.length || 0}</span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-primary" onclick="this.closest('.modal').remove()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.classList.add('show');
+    }
+
+    filterSessions(filter) {
+        // This would filter the sessions based on the selected filter
+        // For now, just reload the data
+        this.loadSessionsData();
+    }
+
     logout() {
         localStorage.removeItem('token');
         window.location.href = '/index.html';
@@ -1768,6 +2991,11 @@ class TeacherDashboard {
 }
 
 // Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load components first
+    const componentLoader = new ComponentLoader();
+    await componentLoader.loadAllComponents('teacher');
+    
+    // Then initialize dashboard
     window.dashboard = new TeacherDashboard();
 });
