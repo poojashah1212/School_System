@@ -103,6 +103,23 @@ class TeacherDashboard {
         }
     }
 
+    // Modal helper functions
+    showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+    }
+
+    hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+    }
+
     setupEventListeners() {
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -285,9 +302,9 @@ class TeacherDashboard {
         }
 
         // Weekly availability
-        const setWeeklyAvailabilityBtn = document.getElementById('setWeeklyAvailabilityBtn');
-        if (setWeeklyAvailabilityBtn) {
-            setWeeklyAvailabilityBtn.addEventListener('click', () => {
+        const editWeeklyAvailabilityBtn = document.getElementById('editWeeklyAvailabilityBtn');
+        if (editWeeklyAvailabilityBtn) {
+            editWeeklyAvailabilityBtn.addEventListener('click', () => {
                 this.showWeeklyAvailabilityModal();
             });
         }
@@ -295,8 +312,7 @@ class TeacherDashboard {
         const closeWeeklyAvailabilityModal = document.getElementById('closeWeeklyAvailabilityModal');
         if (closeWeeklyAvailabilityModal) {
             closeWeeklyAvailabilityModal.addEventListener('click', () => {
-                const modal = document.getElementById('weeklyAvailabilityModal');
-                if (modal) modal.classList.remove('show');
+                this.hideModal('weeklyAvailabilityModal');
             });
         }
 
@@ -364,6 +380,22 @@ class TeacherDashboard {
             });
         }
 
+        // Student type dropdown change handler
+        const studentTypeSelect = document.getElementById('studentType');
+        if (studentTypeSelect) {
+            studentTypeSelect.addEventListener('change', (e) => {
+                this.handleStudentTypeChange(e.target.value);
+            });
+        }
+
+        // Session date change handler for real-time holiday validation
+        const sessionDateInput = document.getElementById('sessionDate');
+        if (sessionDateInput) {
+            sessionDateInput.addEventListener('change', async (e) => {
+                await this.validateSessionDate(e.target.value);
+            });
+        }
+
         const sessionFilter = document.getElementById('sessionFilter');
         if (sessionFilter) {
             sessionFilter.addEventListener('change', (e) => {
@@ -375,68 +407,179 @@ class TeacherDashboard {
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    modal.classList.remove('show');
+                    this.hideModal(modal.id);
                 }
             });
         });
 
-        // Time picker emoji functionality
-        this.setupTimePickerListeners();
-    }
+// Time picker emoji functionality
+this.setupTimePickerListeners();
+}
 
-    setupTimePickerListeners() {
-        // Add time picker buttons to all time input wrappers
-        document.querySelectorAll('.time-input-wrapper').forEach(wrapper => {
-            const timeInput = wrapper.querySelector('input[type="time"]');
-            
-            // Remove existing button if any
-            const existingBtn = wrapper.querySelector('.time-picker-btn');
-            if (existingBtn) {
-                existingBtn.remove();
-            }
-            
-            if (timeInput) {
-                // Create time picker button
-                const timePickerBtn = document.createElement('button');
-                timePickerBtn.className = 'time-picker-btn';
-                timePickerBtn.innerHTML = '🕐';
-                timePickerBtn.type = 'button';
-                timePickerBtn.setAttribute('aria-label', 'Select time');
-                
-                // Add click event to trigger time picker
-                timePickerBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    timeInput.focus();
-                    timeInput.click();
-                    timeInput.showPicker?.();
-                });
-                
-                // Add keyboard support
-                timePickerBtn.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        timeInput.focus();
-                        timeInput.click();
-                        timeInput.showPicker?.();
-                    }
-                });
-                
-                // Append button to wrapper
-                wrapper.appendChild(timePickerBtn);
-                
-                // Also make the wrapper clickable (except the input itself)
-                wrapper.addEventListener('click', (e) => {
-                    if (e.target !== timeInput && e.target !== timePickerBtn) {
-                        e.preventDefault();
-                        timeInput.focus();
-                        timeInput.click();
-                        timeInput.showPicker?.();
-                    }
-                });
+setupTimePickerListeners() {
+    // Add time picker functionality to all text inputs in availability modal
+    document.querySelectorAll('#weeklyAvailabilityModal input[type="text"]').forEach(timeInput => {
+        // Validate time input format
+        timeInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            const timePattern = /^([0-2][0-9]):([0-5][0-9])$/;
+            if (value && !timePattern.test(value)) {
+                e.target.setCustomValidity('Please enter time in HH:MM format (24-hour)');
+            } else {
+                e.target.setCustomValidity('');
             }
         });
+        
+        // Add click event to show custom time picker when clicking on time icon
+        const timeIcon = timeInput.nextElementSibling;
+        if (timeIcon && timeIcon.classList.contains('time-icon')) {
+            timeIcon.style.pointerEvents = 'auto';
+            timeIcon.style.cursor = 'pointer';
+            
+            timeIcon.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.showCustomTimePicker(timeInput);
+            });
+            
+            timeIcon.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.showCustomTimePicker(timeInput);
+                }
+            });
+        }
+        
+        // Also add click event to input itself
+        timeInput.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.showCustomTimePicker(timeInput);
+        });
+        
+        // Prevent default time picker from opening (not needed for text inputs)
+        timeInput.addEventListener('focus', (e) => {
+            e.preventDefault();
+            this.showCustomTimePicker(timeInput);
+        });
+    });
+}
+
+    showCustomTimePicker(timeInput) {
+        // Remove any existing custom time picker
+        const existingPicker = document.querySelector('.custom-time-picker');
+        if (existingPicker) {
+            existingPicker.remove();
+        }
+
+        // Get current time value and ensure it's in 24-hour format
+        let currentValue = timeInput.value || '00:00';
+        
+        // Handle potential 12-hour to 24-hour conversion issues
+        if (currentValue.includes('AM') || currentValue.includes('PM')) {
+            // If it contains AM/PM, convert to 24-hour format
+            const [timePart, period] = currentValue.split(' ');
+            const [hours, minutes] = timePart.split(':');
+            let hour24 = parseInt(hours);
+            
+            if (period === 'PM' && hour24 !== 12) {
+                hour24 += 12;
+            } else if (period === 'AM' && hour24 === 12) {
+                hour24 = 0;
+            }
+            
+            currentValue = `${hour24.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+        }
+        
+        const [currentHour, currentMinute] = currentValue.split(':');
+
+        // Create custom time picker dropdown
+        const picker = document.createElement('div');
+        picker.className = 'custom-time-picker';
+        
+        picker.innerHTML = `
+            <div class="time-picker-header">
+                <span>Select Time (24-hour)</span>
+                <button class="close-picker" type="button">&times;</button>
+            </div>
+            <div class="time-selects-container">
+                <div class="time-select-group">
+                    <label for="time_hour">Hour:</label>
+                    <select id="time_hour" name="time_hour">
+                        ${Array.from({length: 24}, (_, i) => 
+                            `<option value="${i.toString().padStart(2, '0')}" ${currentHour === i.toString().padStart(2, '0') ? 'selected' : ''}>${i.toString().padStart(2, '0')}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <div class="time-select-group">
+                    <label for="time_minute">Minute:</label>
+                    <select id="time_minute" name="time_minute">
+                        ${Array.from({length: 60}, (_, i) => 
+                            `<option value="${i.toString().padStart(2, '0')}" ${currentMinute === i.toString().padStart(2, '0') ? 'selected' : ''}>${i.toString().padStart(2, '0')}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="time-picker-actions">
+                <button type="button" class="btn-set-time">Set Time</button>
+            </div>
+        `;
+
+        // Position picker at the bottom center of the viewport
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const pickerWidth = 280;
+        const pickerHeight = 300;
+        
+        // Center horizontally and position at bottom with margin
+        const left = (viewportWidth - pickerWidth) / 2;
+        const top = viewportHeight - pickerHeight - 20; // 20px margin from bottom
+
+        picker.style.position = 'fixed';
+        picker.style.top = `${top}px`;
+        picker.style.left = `${left}px`;
+        picker.style.zIndex = '10000';
+
+        // Add to document
+        document.body.appendChild(picker);
+
+        // Handle set time button
+        picker.querySelector('.btn-set-time').addEventListener('click', () => {
+            const hourSelect = picker.querySelector('#time_hour');
+            const minuteSelect = picker.querySelector('#time_minute');
+            const selectedTime = `${hourSelect.value}:${minuteSelect.value}`;
+            
+            // Set the time value directly in 24-hour format
+            timeInput.value = selectedTime;
+            
+            // Force the input to recognize 24-hour format
+            timeInput.setAttribute('value', selectedTime);
+            
+            picker.remove();
+            
+            // Trigger change event
+            const changeEvent = new Event('change', { bubbles: true });
+            timeInput.dispatchEvent(changeEvent);
+        });
+
+        // Handle close button
+        picker.querySelector('.close-picker').addEventListener('click', () => {
+            picker.remove();
+        });
+
+        // Close on outside click
+        const handleClickOutside = (e) => {
+            if (!picker.contains(e.target) && e.target !== timeInput) {
+                picker.remove();
+                document.removeEventListener('click', handleClickOutside);
+            }
+        };
+        
+        // Use setTimeout to avoid immediate trigger
+        setTimeout(() => {
+            document.addEventListener('click', handleClickOutside);
+        }, 100);
     }
 
     navigateToPage(page) {
@@ -1410,7 +1553,11 @@ class TeacherDashboard {
                 }
                 
                 // Close modal
-                document.getElementById('editStudentModal').classList.remove('show');
+                const modal = document.getElementById('editStudentModal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    modal.remove(); // Remove modal from DOM
+                }
                 
                 // Refresh both students list and dashboard
                 await Promise.all([
@@ -1418,7 +1565,7 @@ class TeacherDashboard {
                     this.loadDashboardData()
                 ]);
                 
-                // Show success animation
+                // Show success animation (this includes the success message)
                 this.showUpdateSuccessAnimation();
             } else {
                 const error = await response.json();
@@ -2096,17 +2243,44 @@ class TeacherDashboard {
         container.innerHTML = sortedAvailability.map(slot => `
             <div class="weekly-slot">
                 <div class="day-name">${this.capitalizeFirst(slot.day)}</div>
-                <div class="time-range">${slot.startTime} - ${slot.endTime}</div>
+                <div class="time-range">${this.formatTime24Hour(slot.startTime)} - ${this.formatTime24Hour(slot.endTime)}</div>
             </div>
         `).join('');
+    }
+
+    formatTime24Hour(timeString) {
+        // Ensure the time is in 24-hour format (HH:MM)
+        // If it's already in 24-hour format, return as-is
+        if (!timeString) return '';
+        
+        // Check if the time is in 12-hour format and convert if needed
+        const hasAMPM = timeString.includes('AM') || timeString.includes('PM');
+        
+        if (!hasAMPM) {
+            // Already in 24-hour format, ensure it has leading zeros
+            const [hours, minutes] = timeString.split(':');
+            return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+        }
+        
+        // Convert from 12-hour to 24-hour format
+        const [time, period] = timeString.trim().split(' ');
+        const [hours, minutes] = time.split(':');
+        let hour24 = parseInt(hours);
+        
+        if (period === 'PM' && hour24 !== 12) {
+            hour24 += 12;
+        } else if (period === 'AM' && hour24 === 12) {
+            hour24 = 0;
+        }
+        
+        return `${hour24.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
     }
 
     showWeeklyAvailabilityModal() {
         // Load current availability first
         this.loadWeeklyAvailabilityForForm();
         
-        const modal = document.getElementById('weeklyAvailabilityModal');
-        if (modal) modal.classList.add('show');
+        this.showModal('weeklyAvailabilityModal');
         
         // Re-attach event listeners for clear buttons after modal is shown
         setTimeout(() => {
@@ -2146,8 +2320,8 @@ class TeacherDashboard {
             const startInput = document.querySelector(`input[name="${day}StartTime"]`);
             const endInput = document.querySelector(`input[name="${day}EndTime"]`);
             
-            if (startInput) startInput.value = slot.startTime;
-            if (endInput) endInput.value = slot.endTime;
+            if (startInput) startInput.value = this.formatTime24Hour(slot.startTime);
+            if (endInput) endInput.value = this.formatTime24Hour(slot.endTime);
         });
     }
 
@@ -2219,7 +2393,7 @@ class TeacherDashboard {
 
             if (response.ok) {
                 this.showMessage('Weekly availability updated successfully', 'success');
-                document.getElementById('weeklyAvailabilityModal').classList.remove('show');
+                this.hideModal('weeklyAvailabilityModal');
                 await this.loadWeeklyAvailability();
             } else {
                 const error = await response.json();
@@ -2239,7 +2413,7 @@ class TeacherDashboard {
 
     clearValidationErrors() {
         // Remove all error highlights
-        document.querySelectorAll('.time-input-wrapper').forEach(wrapper => {
+        document.querySelectorAll('.time-range-wrapper').forEach(wrapper => {
             wrapper.classList.remove('error');
         });
         
@@ -2252,7 +2426,7 @@ class TeacherDashboard {
     highlightFieldError(fieldName) {
         const input = document.querySelector(`input[name="${fieldName}"]`);
         if (input) {
-            const wrapper = input.closest('.time-input-wrapper');
+            const wrapper = input.closest('.time-range-wrapper');
             if (wrapper) {
                 wrapper.classList.add('error');
             }
@@ -2289,7 +2463,17 @@ class TeacherDashboard {
     clearWeeklyAvailabilityForm() {
         const form = document.getElementById('weeklyAvailabilityForm');
         if (form) {
-            form.reset();
+            // Clear all time input fields manually
+            const timeInputs = form.querySelectorAll('input[type="text"]');
+            timeInputs.forEach(input => {
+                input.value = '';
+            });
+            
+            // Clear any validation errors
+            this.clearValidationErrors();
+            
+            // Show feedback to user
+            this.showMessage('All availability cleared', 'info');
         }
     }
 
@@ -2502,13 +2686,237 @@ class TeacherDashboard {
         }, 5000);
     }
 
-    // Session Management Functions
-    async loadSessionsData() {
+    // Student Management Functions
+    async loadStudentsData() {
         try {
             this.showLoading();
             
-            // Load teacher sessions
-            const response = await fetch('/api/sessions/teacher', {
+            console.log('Loading students data...');
+            
+            // Load teacher students
+            const response = await fetch('/api/teachers/students', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            console.log('Students API Response Status:', response.status);
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Students API Response:', data);
+                console.log('Total students in DB:', Array.isArray(data) ? data.length : (data.students?.length || 0));
+                
+                // Handle different response formats
+                const students = Array.isArray(data) ? data : (data.students || []);
+                this.updateStudentsList(students);
+            } else {
+                const error = await response.json();
+                console.error('Students API Error:', error);
+                this.showMessage(error.message || 'Failed to load students', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading students:', error);
+            this.showMessage('Error loading students', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    updateStudentsList(students) {
+        const container = document.getElementById('studentsList');
+        
+        if (!students || students.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 48px 20px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px;">
+                    <div style="color: #9ca3af; font-size: 36px; margin-bottom: 16px;">👥</div>
+                    <h3 style="color: #374151; margin: 0 0 8px 0; font-weight: 500; font-size: 18px;">No Students Found</h3>
+                    <p style="color: #6b7280; margin: 0; font-size: 14px;">Add students to manage your classroom</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="students-grid">
+                ${students.map(student => `
+                    <div class="student-card">
+                        <div class="student-card-header">
+                            <img src="${student.profileImage || `https://picsum.photos/seed/${student._id}/48/48.jpg`}" alt="${student.fullName}" class="student-avatar">
+                            <h3 class="student-name">${student.fullName}</h3>
+                        </div>
+                        <div class="student-meta">
+                            <div class="student-meta-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>${student.email}</span>
+                            </div>
+                            <div class="student-meta-item">
+                                <i class="fas fa-phone"></i>
+                                <span>${student.mobileNo || 'N/A'}</span>
+                            </div>
+                            <div class="student-meta-item">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>${student.grade || student.class || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="student-actions">
+                            <button class="btn-action edit" onclick="dashboard.editStudent('${student._id}')" title="Edit Student">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action delete" onclick="dashboard.deleteStudent('${student._id}')" title="Delete Student">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    editStudent(studentId) {
+        console.log('Edit student:', studentId);
+        this.showEditStudentModal(studentId);
+    }
+
+    async showEditStudentModal(studentId) {
+        try {
+            // Fetch student data
+            const response = await fetch(`/api/teachers/students/${studentId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const student = await response.json();
+                this.renderEditStudentModal(student);
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to load student data', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading student data:', error);
+            this.showMessage('Error loading student data', 'error');
+        }
+    }
+
+    renderEditStudentModal(student) {
+        const modal = document.createElement('div');
+        modal.className = 'modal show';
+        modal.innerHTML = `
+            <div class="modal-content modal-minimal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-user-edit"></i> Edit Student</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <form id="editStudentForm">
+                    <input type="hidden" name="userId" value="${student._id || student.userId}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editFullName">Full Name</label>
+                            <input type="text" id="editFullName" name="fullName" value="${student.fullName || ''}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editEmail">Email</label>
+                            <input type="email" id="editEmail" name="email" value="${student.email || ''}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editPhone">Phone</label>
+                            <input type="tel" id="editPhone" name="mobileNo" value="${student.phone || student.mobileNo || ''}" placeholder="+1234567890">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editGrade">Class</label>
+                            <input type="text" id="editGrade" name="class" value="${student.grade || student.class || ''}" placeholder="Enter class">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editAge">Age</label>
+                            <input type="number" id="editAge" name="age" value="${student.age || ''}" min="1" max="120">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editCity">City</label>
+                            <input type="text" id="editCity" name="city" value="${student.city || ''}" placeholder="Enter city">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editState">State</label>
+                            <input type="text" id="editState" name="state" value="${student.state || ''}" placeholder="Enter state">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editTimezone">Timezone</label>
+                            <input type="text" id="editTimezone" name="timezone" value="${student.timezone || ''}" placeholder="Enter timezone">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editProfileImage">Profile Image</label>
+                        <input type="file" id="editProfileImage" name="image" accept="image/*">
+                        <small style="color: #64748b; font-size: 12px;">Leave empty to keep current image</small>
+                        ${student.profileImage ? `<div style="margin-top: 8px;"><img src="${student.profileImage}" alt="Current profile" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;"></div>` : ''}
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Update Student
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Add form submit event listener
+        modal.querySelector('#editStudentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateStudent();
+        });
+    }
+
+    async deleteStudent(studentId) {
+        if (!confirm('Are you sure you want to delete this student?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/teachers/students/${studentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                this.showMessage('Student deleted successfully', 'success');
+                await this.loadStudentsData(); // Reload students list
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to delete student', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting student:', error);
+            this.showMessage('Error deleting student', 'error');
+        }
+    }
+
+    // Session Management Functions
+    async loadSessionsData(page = 1, limit = 10) {
+        try {
+            this.showLoading();
+            
+            // Load teacher sessions with pagination
+            const response = await fetch(`/api/sessions/teacher?page=${page}&limit=${limit}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -2516,10 +2924,42 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const data = await response.json();
-                this.updateSessionsList(data.sessions || []);
-                this.updateSessionStats(data);
+                console.log('Sessions API Response:', data);
+                
+                // Fetch available slots for each session
+                const sessionsWithSlots = await Promise.all(
+                    (data.sessions || []).map(async (session) => {
+                        try {
+                            const slotResponse = await fetch(`/api/sessions/${session._id}/details`, {
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                }
+                            });
+                            
+                            if (slotResponse.ok) {
+                                const sessionDetails = await slotResponse.json();
+                                return {
+                                    ...session,
+                                    availableSlots: sessionDetails.availableSlots || [],
+                                    bookedSlots: sessionDetails.bookedSlots || []
+                                };
+                            }
+                            return session;
+                        } catch (error) {
+                            return session;
+                        }
+                    })
+                );
+                
+                console.log('Sessions with slots:', sessionsWithSlots);
+                console.log('Pagination data:', data.pagination);
+                
+                this.updateSessionsList(sessionsWithSlots, data.pagination);
+                this.updateSessionStats({...data, sessions: sessionsWithSlots});
             } else {
-                this.showMessage('Failed to load sessions', 'error');
+                const error = await response.json();
+                console.error('Sessions API Error:', error);
+                this.showMessage(error.message || 'Failed to load sessions', 'error');
             }
         } catch (error) {
             console.error('Error loading sessions:', error);
@@ -2550,92 +2990,182 @@ class TeacherDashboard {
         document.getElementById('bookedSlots').textContent = bookedSlots;
     }
 
-    updateSessionsList(sessions) {
+    async filterSessions(filter) {
+        try {
+            this.showLoading();
+            
+            // Load teacher sessions with filter
+            const response = await fetch(`/api/sessions/teacher?type=${filter}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.updateSessionsList(data.sessions || []);
+                this.updateSessionStats(data);
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to load sessions', 'error');
+            }
+        } catch (error) {
+            console.error('Error filtering sessions:', error);
+            this.showMessage('Error filtering sessions', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    updateSessionsList(sessions, pagination = null) {
         const container = document.getElementById('sessionsList');
         
+        // Debug logging
+        console.log('updateSessionsList called with:', { sessions: sessions?.length, pagination });
+        
         if (!sessions || sessions.length === 0) {
-            container.innerHTML = '<p class="empty">No sessions created yet</p>';
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; background: white; border: 1px solid #e3f2fd; border-radius: 8px;">
+                    <div style="color: #1976d2; font-size: 48px; margin-bottom: 20px;">📅</div>
+                    <h3 style="color: #1976d2; margin: 0 0 8px 0; font-weight: 500;">No Sessions Created Yet</h3>
+                    <p style="color: #546e7a; margin: 0; font-size: 14px;">Create your first session to start managing your schedule</p>
+                </div>
+            `;
+            
+            // Show pagination even with no sessions if pagination data exists
+            if (pagination && pagination.totalPages > 0) {
+                container.innerHTML += this.generatePaginationHTML(pagination);
+            }
             return;
         }
 
-        container.innerHTML = sessions.map(session => {
+        const sessionsHtml = sessions.map(session => {
             const availableSlots = session.availableSlots || [];
             const bookedSlots = session.bookedSlots || [];
             const totalSlots = availableSlots.length + bookedSlots.length;
             const status = this.getSessionStatus(session);
+            const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0;
             
             return `
-                <div class="session-item">
-                    <div class="session-header">
+                <div class="session-item" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; margin-bottom: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <!-- Session Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e3f2fd;">
                         <div>
-                            <h4 class="session-title">${session.title || 'Untitled Session'}</h4>
-                            <p class="session-date">${this.formatSessionDate(session.date)}</p>
+                            <h3 style="margin: 0; color: #1976d2; font-size: 18px; font-weight: 500;">${session.title || 'Untitled Session'}</h3>
+                            <p style="margin: 4px 0 0 0; color: #546e7a; font-size: 14px;">${this.formatSessionDate(session.date)}</p>
                         </div>
-                        <span class="session-status ${status}">${status}</span>
-                    </div>
-                    
-                    <div class="session-details">
-                        <div class="session-detail">
-                            <span class="session-detail-label">Duration</span>
-                            <span class="session-detail-value">${session.sessionDuration || 30} min</span>
-                        </div>
-                        <div class="session-detail">
-                            <span class="session-detail-label">Break</span>
-                            <span class="session-detail-value">${session.breakDuration || 5} min</span>
-                        </div>
-                        <div class="session-detail">
-                            <span class="session-detail-label">Total Slots</span>
-                            <span class="session-detail-value">${totalSlots}</span>
-                        </div>
-                        <div class="session-detail">
-                            <span class="session-detail-label">Available</span>
-                            <span class="session-detail-value">${availableSlots.length}</span>
-                        </div>
-                        <div class="session-detail">
-                            <span class="session-detail-label">Booked</span>
-                            <span class="session-detail-value">${bookedSlots.length}</span>
+                        <div style="text-align: right;">
+                            <span style="background: ${status === 'completed' ? '#2196f3' : '#1976d2'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500; text-transform: uppercase;">
+                                ${status}
+                            </span>
                         </div>
                     </div>
                     
-                    ${availableSlots.length > 0 ? `
-                        <div class="session-slots">
-                            <span class="session-detail-label" style="width: 100%; margin-bottom: 8px;">Available Time Slots:</span>
-                            ${availableSlots.slice(0, 5).map(slot => `
-                                <span class="slot-badge">
-                                    ${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}
-                                </span>
-                            `).join('')}
-                            ${availableSlots.length > 5 ? `
-                                <span class="slot-badge">+${availableSlots.length - 5} more</span>
-                            ` : ''}
+                    <!-- Session Stats -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #e3f2fd; margin-bottom: 16px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: white; padding: 12px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${totalSlots}</div>
+                            <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
                         </div>
-                    ` : ''}
-                    
-                    ${bookedSlots.length > 0 ? `
-                        <div class="session-slots">
-                            <span class="session-detail-label" style="width: 100%; margin-bottom: 8px;">Booked Slots:</span>
-                            ${bookedSlots.slice(0, 3).map(slot => `
-                                <span class="slot-badge booked">
-                                    ${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}
-                                </span>
-                            `).join('')}
-                            ${bookedSlots.length > 3 ? `
-                                <span class="slot-badge booked">+${bookedSlots.length - 3} more</span>
-                            ` : ''}
+                        <div style="background: white; padding: 12px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${availableSlots.length}</div>
+                            <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Available</div>
                         </div>
-                    ` : ''}
+                        <div style="background: white; padding: 12px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${bookedSlots.length}</div>
+                            <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Booked</div>
+                        </div>
+                    </div>
                     
-                    <div class="session-actions">
-                        <button class="primary" onclick="dashboard.viewSessionDetails('${session._id}')">
-                            <i class="fas fa-eye"></i> View Details
-                        </button>
-                        <button class="danger" onclick="dashboard.deleteSession('${session._id}')">
-                            <i class="fas fa-trash"></i> Delete
+                    <!-- Session Info -->
+                    <div style="display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; color: #546e7a;">
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #1976d2;">⏱</span> ${session.sessionDuration || 30} min
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #1976d2;">☕</span> ${session.breakDuration || 5} min break
+                        </span>
+                    </div>
+                    
+                    <!-- Slots Preview -->
+                    <div style="margin-bottom: 16px;">
+                        ${availableSlots.length > 0 ? `
+                            <div style="margin-bottom: 12px;">
+                                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">Available Slots (${availableSlots.length})</div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                    ${availableSlots.map(slot => `
+                                        <span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+                                            ${slot.startTime} - ${slot.endTime}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${bookedSlots.length > 0 ? `
+                            <div>
+                                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">Booked Slots (${bookedSlots.length})</div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                    ${bookedSlots.map(slot => `
+                                        <span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+                                            👤 ${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${availableSlots.length === 0 && bookedSlots.length === 0 ? `
+                            <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 4px; color: #546e7a; font-size: 13px;">
+                                No slot information available
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #e3f2fd;">
+                        <button onclick="dashboard.deleteSession('${session._id}')" style="background: white; color: #1976d2; border: 1px solid #1976d2; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;">
+                            Delete
                         </button>
                     </div>
                 </div>
             `;
         }).join('');
+
+        const paginationHtml = this.generatePaginationHTML(pagination);
+        container.innerHTML = sessionsHtml + paginationHtml;
+    }
+
+    generatePaginationHTML(pagination) {
+        if (!pagination || pagination.totalPages <= 1) {
+            return '';
+        }
+
+        return `
+            <div class="session-pagination">
+                <button 
+                    onclick="dashboard.loadSessionsData(${pagination.currentPage - 1}, ${pagination.limit})"
+                    class="pagination-btn"
+                    ${pagination.currentPage === 1 ? 'disabled' : ''}>
+                    Previous
+                </button>
+                
+                ${Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => `
+                    <button 
+                        onclick="dashboard.loadSessionsData(${page}, ${pagination.limit})"
+                        class="pagination-btn ${page === pagination.currentPage ? 'active' : ''}">
+                        ${page}
+                    </button>
+                `).join('')}
+                
+                <button 
+                    onclick="dashboard.loadSessionsData(${pagination.currentPage + 1}, ${pagination.limit})"
+                    class="pagination-btn"
+                    ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}>
+                    Next
+                </button>
+            </div>
+        `;
     }
 
     getSessionStatus(session) {
@@ -2652,12 +3182,18 @@ class TeacherDashboard {
         }
     }
 
-    formatTime(dateString) {
-        const date = new Date(dateString);
+    formatTime(timeString) {
+        // If it's already a time string (like "09:00"), return as is
+        if (typeof timeString === 'string' && timeString.includes(':')) {
+            return timeString;
+        }
+        
+        // If it's a Date object, format it
+        const date = new Date(timeString);
         return date.toLocaleTimeString('en-US', { 
             hour: '2-digit', 
             minute: '2-digit',
-            hour12: true 
+            hour12: false 
         });
     }
 
@@ -2665,7 +3201,7 @@ class TeacherDashboard {
         try {
             this.showLoading();
             
-            const response = await fetch(`/api/session-slots/${sessionId}`, {
+            const response = await fetch(`/api/sessions/${sessionId}/details`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -2673,9 +3209,11 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const session = await response.json();
+                console.log('Session data received:', session);
                 this.showSessionDetailsModal(session);
             } else {
-                this.showMessage('Failed to load session details', 'error');
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to load session details', 'error');
             }
         } catch (error) {
             console.error('Error loading session details:', error);
@@ -2686,45 +3224,136 @@ class TeacherDashboard {
     }
 
     showSessionDetailsModal(session) {
+        const availableSlots = session.availableSlots || [];
+        const bookedSlots = session.bookedSlots || [];
+        const totalSlots = availableSlots.length + bookedSlots.length;
+        
         const modal = document.createElement('div');
         modal.className = 'modal show';
         modal.innerHTML = `
-            <div class="modal-content">
+            <div class="modal-content" style="max-width: 800px;">
                 <div class="modal-header">
-                    <h3>Session Details</h3>
+                    <h3><i class="fas fa-clock"></i> Session Details</h3>
                     <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="session-details-modal">
-                        <h4>${session.title || 'Untitled Session'}</h4>
-                        <p><strong>Date:</strong> ${this.formatSessionDate(session.date)}</p>
-                        <p><strong>Duration:</strong> ${session.sessionDuration || 30} minutes</p>
-                        <p><strong>Break Duration:</strong> ${session.breakDuration || 5} minutes</p>
-                        
-                        <h5>Available Slots (${session.availableSlots?.length || 0})</h5>
-                        <div class="slots-list">
-                            ${session.availableSlots?.length > 0 ? 
-                                session.availableSlots.map(slot => `
-                                    <div class="slot-item">
-                                        <span>${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}</span>
-                                        <span class="slot-status available">Available</span>
-                                    </div>
-                                `).join('') : 
-                                '<p class="empty">No available slots</p>'
-                            }
+                        <!-- Session Header -->
+                        <div class="session-header-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                            <h2 style="margin: 0; font-size: 24px;">${session.title || 'Untitled Session'}</h2>
+                            <div style="display: flex; gap: 20px; margin-top: 10px;">
+                                <span style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 15px;">
+                                    <i class="fas fa-calendar"></i> ${this.formatSessionDate(session.date)}
+                                </span>
+                                <span style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 15px;">
+                                    <i class="fas fa-clock"></i> ${session.sessionDuration || 30} min
+                                </span>
+                            </div>
                         </div>
                         
-                        <h5>Booked Slots (${session.bookedSlots?.length || 0})</h5>
-                        <div class="slots-list">
-                            ${session.bookedSlots?.length > 0 ? 
-                                session.bookedSlots.map(slot => `
-                                    <div class="slot-item">
-                                        <span>${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}</span>
-                                        <span class="slot-status booked">Booked</span>
-                                    </div>
-                                `).join('') : 
-                                '<p class="empty">No booked slots</p>'
-                            }
+                        <!-- Session Statistics -->
+                        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                            <div class="stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #007bff;">
+                                <div style="font-size: 24px; font-weight: bold; color: #007bff;">${totalSlots}</div>
+                                <div style="color: #6c757d; font-size: 14px;">Total Slots</div>
+                            </div>
+                            <div class="stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #28a745;">
+                                <div style="font-size: 24px; font-weight: bold; color: #28a745;">${availableSlots.length}</div>
+                                <div style="color: #6c757d; font-size: 14px;">Available</div>
+                            </div>
+                            <div class="stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #ffc107;">
+                                <div style="font-size: 24px; font-weight: bold; color: #ffc107;">${bookedSlots.length}</div>
+                                <div style="color: #6c757d; font-size: 14px;">Booked</div>
+                            </div>
+                            <div class="stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #17a2b8;">
+                                <div style="font-size: 24px; font-weight: bold; color: #17a2b8;">${totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0}%</div>
+                                <div style="color: #6c757d; font-size: 14px;">Occupancy</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Session Information -->
+                        <div class="session-info-section" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                            <h4 style="margin-top: 0; color: #495057; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">
+                                <i class="fas fa-info-circle"></i> Session Information
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                                <div>
+                                    <strong style="color: #6c757d;">Session Type:</strong>
+                                    <div style="margin-top: 5px;">${session.allowedStudentId ? '👤 Personal Session' : '👥 Common Session'}</div>
+                                </div>
+                                <div>
+                                    <strong style="color: #6c757d;">Session Duration:</strong>
+                                    <div style="margin-top: 5px;">⏱️ ${session.sessionDuration || 30} minutes</div>
+                                </div>
+                                <div>
+                                    <strong style="color: #6c757d;">Break Duration:</strong>
+                                    <div style="margin-top: 5px;">☕ ${session.breakDuration || 5} minutes</div>
+                                </div>
+                                <div>
+                                    <strong style="color: #6c757d;">Created:</strong>
+                                    <div style="margin-top: 5px;">📅 ${this.formatDate(session.createdAt)}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Available Slots Section -->
+                        <div class="available-slots-section">
+                            <h4 style="color: #28a745; margin-bottom: 15px;">
+                                <i class="fas fa-check-circle"></i> Available Slots (${availableSlots.length})
+                            </h4>
+                            <div class="slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                                ${availableSlots.length > 0 ? 
+                                    availableSlots.map((slot, index) => `
+                                        <div class="slot-card available" style="background: white; border: 2px solid #28a745; border-radius: 8px; padding: 15px; text-align: center; transition: transform 0.2s;">
+                                            <div style="font-weight: bold; color: #28a745; margin-bottom: 8px;">
+                                                Slot #${index + 1}
+                                            </div>
+                                            <div style="font-size: 18px; color: #495057;">
+                                                <i class="fas fa-clock"></i> ${slot.startTime} - ${slot.endTime}
+                                            </div>
+                                            <div style="margin-top: 8px; background: #d4edda; color: #155724; padding: 5px; border-radius: 15px; font-size: 12px;">
+                                                Available
+                                            </div>
+                                        </div>
+                                    `).join('') : 
+                                    '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #6c757d;">No available slots</div>'
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- Booked Slots Section -->
+                        <div class="booked-slots-section" style="margin-top: 20px;">
+                            <h4 style="color: #ffc107; margin-bottom: 15px;">
+                                <i class="fas fa-user-check"></i> Booked Slots (${bookedSlots.length})
+                            </h4>
+                            <div class="slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+                                ${bookedSlots.length > 0 ? 
+                                    bookedSlots.map((slot, index) => `
+                                        <div class="slot-card booked" style="background: white; border: 2px solid #ffc107; border-radius: 8px; padding: 15px;">
+                                            <div style="font-weight: bold; color: #ffc107; margin-bottom: 8px;">
+                                                Slot #${index + 1}
+                                            </div>
+                                            <div style="font-size: 16px; color: #495057; margin-bottom: 10px;">
+                                                <i class="fas fa-clock"></i> ${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}
+                                            </div>
+                                            ${slot.bookedBy ? `
+                                                <div style="background: #fff3cd; padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107;">
+                                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                                        <div style="width: 30px; height: 30px; background: #ffc107; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                            <i class="fas fa-user" style="color: white;"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div style="font-weight: bold; color: #856404;">${slot.bookedBy.fullName}</div>
+                                                            <div style="font-size: 12px; color: #856404;">${slot.bookedBy.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `).join('') : 
+                                    '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #6c757d;">No booked slots</div>'
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2741,6 +3370,16 @@ class TeacherDashboard {
         });
     }
 
+    formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric'
+        });
+    }
+
     async deleteSession(sessionId) {
         if (!confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
             return;
@@ -2749,7 +3388,7 @@ class TeacherDashboard {
         try {
             this.showLoading();
             
-            const response = await fetch(`/api/session-slots/${sessionId}`, {
+            const response = await fetch(`/api/sessions/${sessionId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -2757,7 +3396,10 @@ class TeacherDashboard {
             });
 
             if (response.ok) {
-                this.showMessage('Session deleted successfully', 'success');
+                const result = await response.json();
+                this.showMessage(result.message || 'Session deleted successfully', 'success');
+                
+                // Reload sessions list
                 await this.loadSessionsData();
             } else {
                 const error = await response.json();
@@ -2772,7 +3414,23 @@ class TeacherDashboard {
     }
 
     formatSessionDate(dateString) {
-        const date = new Date(dateString);
+        if (!dateString) return 'No date set';
+        
+        let date;
+        // Handle different date formats
+        if (typeof dateString === 'string') {
+            // If it's already formatted, return as is
+            if (dateString.includes('/')) return dateString;
+            date = new Date(dateString);
+        } else {
+            date = new Date(dateString);
+        }
+        
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return 'Invalid Date';
+        }
+        
         return date.toLocaleDateString('en-US', { 
             weekday: 'short',
             month: 'short', 
@@ -2791,7 +3449,59 @@ class TeacherDashboard {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('sessionDate').min = today;
             
+            // Clear any existing date validation errors
+            const dateInput = document.getElementById('sessionDate');
+            const formGroup = dateInput.closest('.form-group');
+            const existingError = formGroup.querySelector('.error-message');
+            if (existingError) {
+                existingError.remove();
+            }
+            dateInput.classList.remove('error');
+            
+            // Set default timezone based on user's browser timezone
+            this.setDefaultTimezone();
+            
             modal.classList.add('show');
+        }
+    }
+
+    setDefaultTimezone() {
+        const timezoneSelect = document.getElementById('studentTimezone');
+        if (!timezoneSelect) return;
+        
+        // Get user's browser timezone
+        const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
+        // Try to find matching option in the dropdown
+        const matchingOption = Array.from(timezoneSelect.options).find(option => option.value === browserTimezone);
+        
+        if (matchingOption) {
+            timezoneSelect.value = browserTimezone;
+        } else {
+            // If exact match not found, try to find a timezone in the same region
+            const region = browserTimezone.split('/')[0];
+            const regionalOption = Array.from(timezoneSelect.options).find(option => 
+                option.value.startsWith(region + '/')
+            );
+            
+            if (regionalOption) {
+                timezoneSelect.value = regionalOption.value;
+            }
+        }
+    }
+
+    handleStudentTypeChange(studentType) {
+        const particularStudentGroup = document.getElementById('particularStudentGroup');
+        
+        if (studentType === 'particular') {
+            particularStudentGroup.style.display = 'block';
+        } else {
+            particularStudentGroup.style.display = 'none';
+            // Clear the particular student selection when switching back to "All Students"
+            const particularStudentSelect = document.getElementById('particularStudentSelect');
+            if (particularStudentSelect) {
+                particularStudentSelect.value = '';
+            }
         }
     }
 
@@ -2805,15 +3515,88 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const students = await response.json();
-                const select = document.getElementById('studentSelect');
+                const particularStudentSelect = document.getElementById('particularStudentSelect');
                 
-                select.innerHTML = '<option value="">All Students</option>';
+                // Populate the particular student dropdown
+                particularStudentSelect.innerHTML = '<option value="">Select a student</option>';
                 students.forEach(student => {
-                    select.innerHTML += `<option value="${student._id}">${student.fullName}</option>`;
+                    particularStudentSelect.innerHTML += `<option value="${student._id}">${student.fullName}</option>`;
                 });
             }
         } catch (error) {
             console.error('Error loading students:', error);
+        }
+    }
+
+    async checkDateIsHoliday(dateString) {
+        try {
+            const response = await fetch('/api/teacher-availability/holidays', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const holidays = result.holidays || [];
+                
+                // Parse the input date (assuming it's in YYYY-MM-DD format from the date input)
+                const checkDate = new Date(dateString);
+                const checkDateStr = checkDate.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
+                
+                // Check if the date falls within any holiday range
+                for (const holiday of holidays) {
+                    const startDate = new Date(holiday.startDate);
+                    const endDate = new Date(holiday.endDate);
+                    const startDateStr = startDate.toISOString().split('T')[0];
+                    const endDateStr = endDate.toISOString().split('T')[0];
+                    
+                    // Check if the selected date is within the holiday range
+                    if (checkDateStr >= startDateStr && checkDateStr <= endDateStr) {
+                        return {
+                            isHoliday: true,
+                            holiday: holiday
+                        };
+                    }
+                }
+            }
+            
+            return { isHoliday: false };
+        } catch (error) {
+            console.error('Error checking holiday:', error);
+            return { isHoliday: false };
+        }
+    }
+
+    async validateSessionDate(dateString) {
+        if (!dateString) return;
+        
+        const holidayCheck = await this.checkDateIsHoliday(dateString);
+        const dateInput = document.getElementById('sessionDate');
+        const formGroup = dateInput.closest('.form-group');
+        
+        // Remove existing error message
+        const existingError = formGroup.querySelector('.error-message');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Remove error styling
+        dateInput.classList.remove('error');
+        
+        if (holidayCheck.isHoliday) {
+            // Add error styling
+            dateInput.classList.add('error');
+            
+            // Create and show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.style.color = '#ef4444';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.style.marginTop = '4px';
+            errorDiv.textContent = `Holiday: ${holidayCheck.holiday.reason}${holidayCheck.holiday.startDate !== holidayCheck.holiday.endDate ? ' (' + this.formatDate(holidayCheck.holiday.startDate) + ' to ' + this.formatDate(holidayCheck.holiday.endDate) + ')' : ''}`;
+            
+            formGroup.appendChild(errorDiv);
         }
     }
 
@@ -2824,14 +3607,27 @@ class TeacherDashboard {
             const formData = new FormData(document.getElementById('createSessionForm'));
             const data = Object.fromEntries(formData.entries());
             
+            // Check if the selected date is a holiday
+            const holidayCheck = await this.checkDateIsHoliday(data.date);
+            if (holidayCheck.isHoliday) {
+                this.hideLoading();
+                this.showMessage(`Session date cannot be a holiday. ${holidayCheck.holiday.reason} holiday from ${this.formatDate(holidayCheck.holiday.startDate)}${holidayCheck.holiday.startDate !== holidayCheck.holiday.endDate ? ' to ' + this.formatDate(holidayCheck.holiday.endDate) : ''}.`, 'error');
+                return;
+            }
+            
             // Convert date format to DD-MM-YYYY
             const date = new Date(data.date);
             const formattedDate = `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
             data.date = formattedDate;
             
-            // Remove empty student_id
-            if (!data.student_id) {
+            // Handle student selection based on studentType
+            if (data.studentType === 'particular' && data.student_id) {
+                // Keep student_id for particular student
+                delete data.studentType; // Remove the temporary field
+            } else {
+                // Remove student_id for all students or if no particular student selected
                 delete data.student_id;
+                delete data.studentType; // Remove the temporary field
             }
 
             const response = await fetch('/api/sessions/slots', {
@@ -2987,6 +3783,87 @@ class TeacherDashboard {
     async loadTeacherData() {
         // Load initial data for current page
         await this.loadPageData(this.currentPage);
+    }
+
+    showMessage(message, type = 'info') {
+        // Remove any existing messages
+        const existingMessages = document.querySelectorAll('.message');
+        existingMessages.forEach(msg => msg.remove());
+
+        // Create message element
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        messageDiv.textContent = message;
+
+        // Style based on type
+        const styles = {
+            success: {
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: 'white',
+                icon: '✓'
+            },
+            error: {
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: 'white',
+                icon: '✕'
+            },
+            info: {
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                color: 'white',
+                icon: 'ℹ'
+            }
+        };
+
+        const style = styles[type] || styles.info;
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: ${style.background};
+            color: ${style.color};
+            font-weight: 500;
+            font-size: 14px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease-out;
+            max-width: 400px;
+        `;
+
+        messageDiv.innerHTML = `<span style="font-weight: 600;">${style.icon}</span> ${message}`;
+
+        // Add to document
+        document.body.appendChild(messageDiv);
+
+        // Auto remove after 4 seconds
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, 300);
+            }
+        }, 4000);
+    }
+
+    showLoading() {
+        const loadingDiv = document.getElementById('loading');
+        if (loadingDiv) {
+            loadingDiv.style.display = 'flex';
+        }
+    }
+
+    hideLoading() {
+        const loadingDiv = document.getElementById('loading');
+        if (loadingDiv) {
+            loadingDiv.style.display = 'none';
+        }
     }
 }
 

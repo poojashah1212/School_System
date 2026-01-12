@@ -75,7 +75,6 @@ exports.createSessionSlots = async (req, res) => {
       allowedStudentId
     });
 
-
     const availableSlots = await generateAvailableSlots({
       date: parsedDate,
       availability: dayAvailability,
@@ -337,6 +336,8 @@ exports.getTeacherSessions = async (req, res) => {
       .sort({ startTime: 1 })
       .skip(skip)
       .limit(limit)
+      .populate('bookedSlots.bookedBy', 'fullName email')
+      .lean();
     
     res.json({
       pagination: {
@@ -349,6 +350,95 @@ exports.getTeacherSessions = async (req, res) => {
       },
       sessions
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.deleteSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const teacherId = req.user.id;
+
+    const session = await SessionSlot.findOne({ _id: id, teacherId });
+    
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Check if session has any booked slots
+    if (session.bookedSlots && session.bookedSlots.length > 0) {
+      return res.status(400).json({ 
+        message: "Cannot delete session with existing bookings" 
+      });
+    }
+
+    // Delete the session
+    await SessionSlot.deleteOne({ _id: id, teacherId });
+
+    res.json({
+      message: "Session deleted successfully",
+      sessionId: id
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getSessionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const teacherId = req.user.id;
+
+    const session = await SessionSlot.findOne({ _id: id, teacherId })
+      .populate('bookedSlots.bookedBy', 'fullName email')
+      .lean();
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Get teacher availability and timezone to generate available slots
+    const teacher = await User.findById(teacherId);
+    const availability = await TeacherAvailability.findOne({ teacherId });
+    
+    if (availability && teacher) {
+      const day = moment(session.date).format("dddd").toLowerCase();
+      const dayAvailability = availability.weeklyAvailability.find(
+        d => d.day === day
+      );
+
+      if (dayAvailability) {
+        // Generate available slots for this session using teacher's timezone
+        const teacherTimezone = teacher.timezone || "Asia/Kolkata";
+        
+        const availableSlots = await generateAvailableSlots({
+          date: session.date,
+          availability: dayAvailability,
+          sessionDuration: session.sessionDuration,
+          breakDuration: session.breakDuration,
+          bookedSlots: session.bookedSlots || [],
+          sessionId: session._id,
+          teacherId,
+          teacherTimezone,
+          studentTimezone: teacherTimezone
+        });
+
+        // Filter out already booked slots by comparing start times
+        const filteredSlots = availableSlots.filter(slot => {
+          return !session.bookedSlots?.some(bookedSlot => {
+            const bookedStartTime = moment(bookedSlot.startTime).tz(teacherTimezone).format("HH:mm");
+            return bookedStartTime === slot.startTime;
+          });
+        });
+
+        session.availableSlots = filteredSlots;
+      
+      }
+    }
+
+    res.json(session);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

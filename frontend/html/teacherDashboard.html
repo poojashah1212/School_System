@@ -90,8 +90,11 @@
                         </div>
                     </div>
 
-                    <div class="students-grid" id="studentsGrid">
-                        <p class="empty">No students found</p>
+                    <div class="card">
+                        <h3>Student List</h3>
+                        <div id="studentsList">
+                            <p class="empty">Loading students...</p>
+                        </div>
                     </div>
                 </div>
 
@@ -114,12 +117,6 @@
                 <div class="page" id="availability-page">
                     <div class="page-header">
                         <h2>Manage Availability</h2>
-                        <div class="header-actions">
-                            <button class="btn-primary" id="setWeeklyAvailabilityBtn">
-                                <i class="fas fa-calendar-week"></i>
-                                Set Weekly Schedule
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Weekly Availability Section -->
@@ -127,6 +124,12 @@
                         <h3>Weekly Schedule</h3>
                         <div id="weeklyAvailabilityDisplay" class="weekly-availability-display">
                             <p class="empty">No weekly schedule set</p>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" id="editWeeklyAvailabilityBtn">
+                                <i class="fas fa-edit"></i>
+                                Edit
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -247,7 +250,7 @@
                     <div class="session-stats">
                         <div class="stat-card">
                             <div class="stat-icon blue">
-                                <i class="fas fa-calendar-alt"></i>
+                                <i class="fas fa-clock"></i>
                             </div>
                             <div class="stat-info">
                                 <h3>Total Sessions</h3>
@@ -256,7 +259,7 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon green">
-                                <i class="fas fa-clock"></i>
+                                <i class="fas fa-user-clock"></i>
                             </div>
                             <div class="stat-info">
                                 <h3>Available Slots</h3>
@@ -265,7 +268,7 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon orange">
-                                <i class="fas fa-user-check"></i>
+                                <i class="fas fa-calendar-check"></i>
                             </div>
                             <div class="stat-info">
                                 <h3>Booked Slots</h3>
@@ -276,14 +279,7 @@
 
                     <div class="card">
                         <h3>Session List</h3>
-                        <div class="session-filters">
-                            <select id="sessionFilter">
-                                <option value="all">All Sessions</option>
-                                <option value="today">Today</option>
-                                <option value="upcoming">Upcoming</option>
-                                <option value="past">Past</option>
-                            </select>
-                        </div>
+                        
                         <div id="sessionsList">
                             <p class="empty">No sessions created yet</p>
                         </div>
@@ -478,140 +474,115 @@
 
     <!-- Weekly Availability Modal -->
     <div class="modal" id="weeklyAvailabilityModal">
-        <div class="modal-content">
+        <div class="modal-content modal-minimal">
             <div class="modal-header">
-                <h3>Set Weekly Availability</h3>
+                <h3>Weekly Schedule</h3>
                 <button class="modal-close" id="closeWeeklyAvailabilityModal">&times;</button>
             </div>
             <form id="weeklyAvailabilityForm">
-                <div class="weekly-availability-grid">
-                    <div class="day-slot">
-                        <div class="day-header">
-                            <label>Monday</label>
-                            <button type="button" class="btn-clear-day" data-day="monday" title="Clear Monday">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="time-inputs">
-                            <div class="time-input-wrapper">
-                                <input type="time" name="mondayStartTime" placeholder="Start">
+                <div class="availability-grid">
+                    <div class="availability-day">
+                        <label>MON</label>
+                        <div class="time-range-wrapper">
+                            <div class="time-input-container">
+                                <input type="text" name="mondayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
-                            <span class="time-separator">to</span>
-                            <div class="time-input-wrapper">
-                                <input type="time" name="mondayEndTime" placeholder="End">
+                            <span class="separator">-</span>
+                            <div class="time-input-container">
+                                <input type="text" name="mondayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
                         </div>
                     </div>
-                    <div class="day-slot">
-                        <div class="day-header">
-                            <label>Tuesday</label>
-                            <button type="button" class="btn-clear-day" data-day="tuesday" title="Clear Tuesday">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="time-inputs">
-                            <div class="time-input-wrapper">
-                                <input type="time" name="tuesdayStartTime" placeholder="Start">
+                    <div class="availability-day">
+                        <label>TUE</label>
+                        <div class="time-range-wrapper">
+                            <div class="time-input-container">
+                                <input type="text" name="tuesdayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
-                            <span class="time-separator">to</span>
-                            <div class="time-input-wrapper">
-                                <input type="time" name="tuesdayEndTime" placeholder="End">
+                            <span class="separator">-</span>
+                            <div class="time-input-container">
+                                <input type="text" name="tuesdayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
                         </div>
                     </div>
-                    <div class="day-slot">
-                        <div class="day-header">
-                            <label>Wednesday</label>
-                            <button type="button" class="btn-clear-day" data-day="wednesday" title="Clear Wednesday">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="time-inputs">
-                            <div class="time-input-wrapper">
-                                <input type="time" name="wednesdayStartTime" placeholder="Start">
+                    <div class="availability-day">
+                        <label>WED</label>
+                        <div class="time-range-wrapper">
+                            <div class="time-input-container">
+                                <input type="text" name="wednesdayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
-                            <span class="time-separator">to</span>
-                            <div class="time-input-wrapper">
-                                <input type="time" name="wednesdayEndTime" placeholder="End">
+                            <span class="separator">-</span>
+                            <div class="time-input-container">
+                                <input type="text" name="wednesdayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
                         </div>
                     </div>
-                    <div class="day-slot">
-                        <div class="day-header">
-                            <label>Thursday</label>
-                            <button type="button" class="btn-clear-day" data-day="thursday" title="Clear Thursday">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="time-inputs">
-                            <div class="time-input-wrapper">
-                                <input type="time" name="thursdayStartTime" placeholder="Start">
+                    <div class="availability-day">
+                        <label>THU</label>
+                        <div class="time-range-wrapper">
+                            <div class="time-input-container">
+                                <input type="text" name="thursdayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
-                            <span class="time-separator">to</span>
-                            <div class="time-input-wrapper">
-                                <input type="time" name="thursdayEndTime" placeholder="End">
+                            <span class="separator">-</span>
+                            <div class="time-input-container">
+                                <input type="text" name="thursdayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
                         </div>
                     </div>
-                    <div class="day-slot">
-                        <div class="day-header">
-                            <label>Friday</label>
-                            <button type="button" class="btn-clear-day" data-day="friday" title="Clear Friday">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="time-inputs">
-                            <div class="time-input-wrapper">
-                                <input type="time" name="fridayStartTime" placeholder="Start">
+                    <div class="availability-day">
+                        <label>FRI</label>
+                        <div class="time-range-wrapper">
+                            <div class="time-input-container">
+                                <input type="text" name="fridayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
-                            <span class="time-separator">to</span>
-                            <div class="time-input-wrapper">
-                                <input type="time" name="fridayEndTime" placeholder="End">
+                            <span class="separator">-</span>
+                            <div class="time-input-container">
+                                <input type="text" name="fridayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
                         </div>
                     </div>
-                    <div class="day-slot">
-                        <div class="day-header">
-                            <label>Saturday</label>
-                            <button type="button" class="btn-clear-day" data-day="saturday" title="Clear Saturday">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="time-inputs">
-                            <div class="time-input-wrapper">
-                                <input type="time" name="saturdayStartTime" placeholder="Start">
+                    <div class="availability-day">
+                        <label>SAT</label>
+                        <div class="time-range-wrapper">
+                            <div class="time-input-container">
+                                <input type="text" name="saturdayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
-                            <span class="time-separator">to</span>
-                            <div class="time-input-wrapper">
-                                <input type="time" name="saturdayEndTime" placeholder="End">
+                            <span class="separator">-</span>
+                            <div class="time-input-container">
+                                <input type="text" name="saturdayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
                         </div>
                     </div>
-                    <div class="day-slot">
-                        <div class="day-header">
-                            <label>Sunday</label>
-                            <button type="button" class="btn-clear-day" data-day="sunday" title="Clear Sunday">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="time-inputs">
-                            <div class="time-input-wrapper">
-                                <input type="time" name="sundayStartTime" placeholder="Start">
+                    <div class="availability-day">
+                        <label>SUN</label>
+                        <div class="time-range-wrapper">
+                            <div class="time-input-container">
+                                <input type="text" name="sundayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
-                            <span class="time-separator">to</span>
-                            <div class="time-input-wrapper">
-                                <input type="time" name="sundayEndTime" placeholder="End">
+                            <span class="separator">-</span>
+                            <div class="time-input-container">
+                                <input type="text" name="sundayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
+                                <span class="time-icon">🕐</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="clearWeeklyAvailability">
-                        <i class="fas fa-trash-alt"></i> Clear All
-                    </button>
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-save"></i> Save Weekly Schedule
-                    </button>
+                    <button type="button" class="btn-secondary" id="clearWeeklyAvailability">Clear All</button>
+                    <button type="submit" class="btn-primary">Save Schedule</button>
                 </div>
             </form>
         </div>
@@ -645,17 +616,20 @@
                         <input type="number" name="breakDuration" id="breakDuration" min="0" max="30" value="5" required>
                     </div>
                     <div class="form-group">
-                        <label for="studentSelect">Student (Optional)</label>
-                        <select name="student_id" id="studentSelect">
-                            <option value="">All Students</option>
+                        <label for="studentType">Student (Optional)</label>
+                        <select name="studentType" id="studentType">
+                            <option value="all">All Students</option>
+                            <option value="particular">Particular Student</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="particularStudentGroup" style="display: none;">
+                        <label for="particularStudentSelect">Select Student</label>
+                        <select name="student_id" id="particularStudentSelect">
+                            <option value="">Select a student</option>
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="studentTimezone">Student Timezone</label>
-                    <input type="text" name="studentTimezone" id="studentTimezone" placeholder="e.g., Asia/Kolkata">
-                </div>
-                <div class="form-actions">
+                                <div class="form-actions">
                     <button type="button" class="btn-secondary" id="cancelSessionBtn">Cancel</button>
                     <button type="submit" class="btn-primary">Create Session Slots</button>
                 </div>

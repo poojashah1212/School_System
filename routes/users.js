@@ -15,8 +15,8 @@ router.use(auth);
 
 
 router.get("/", userController.getAll);
-router.get("/:id", userController.getOne);
 router.get("/profile", userController.myProfile);
+router.get("/:id", userController.getOne);
 
 router.put("/students/:userId", upload.single("image"), studentUpdate, runValidation, updateStudent);
 router.get("/quiz/:id", quizController.getQuizForStudent);
