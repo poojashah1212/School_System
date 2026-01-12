@@ -146,6 +146,8 @@ body {
     align-items: center;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 24px rgba(59, 130, 246, 0.06);
+    position: relative;
+    z-index: 100;
 }
 
 .header h1 {
@@ -526,7 +528,7 @@ body {
     border-radius: 16px;
     box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
     min-width: 200px;
-    z-index: 1000;
+    z-index: 99999;
     display: none;
     margin-top: 8px;
 }

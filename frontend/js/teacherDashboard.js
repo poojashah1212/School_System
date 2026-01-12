@@ -696,8 +696,8 @@ setupTimePickerListeners() {
                 
             }
             
-            // Update available slots (mock for now)
-            document.getElementById('availableSlots').textContent = '0';
+            // Load total sessions data
+            await this.loadTotalSessionsForDashboard();
 
             // Load holidays data
             await this.loadHolidaysData();
@@ -2995,6 +2995,46 @@ setupTimePickerListeners() {
         document.getElementById('commonSessions').textContent = commonSessions;
         document.getElementById('personalSessions').textContent = personalSessions;
         document.getElementById('bookedSlots').textContent = bookedSlots;
+    }
+
+    async loadTotalSessionsForDashboard() {
+        try {
+            // Load teacher sessions to get total count
+            const response = await fetch('/api/sessions/teacher?limit=1', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const totalSessions = data.pagination?.totalSessions || 0;
+                
+                // Update dashboard with total sessions count
+                const totalSessionsElement = document.getElementById('totalSessionsDashboard');
+                if (totalSessionsElement) {
+                    totalSessionsElement.textContent = totalSessions;
+                    // Add animation to show real-time update
+                    totalSessionsElement.style.animation = 'pulse 0.6s ease-out';
+                    setTimeout(() => {
+                        totalSessionsElement.style.animation = '';
+                    }, 600);
+                }
+            } else {
+                // Set to 0 if there's an error
+                const totalSessionsElement = document.getElementById('totalSessionsDashboard');
+                if (totalSessionsElement) {
+                    totalSessionsElement.textContent = '0';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading total sessions for dashboard:', error);
+            // Set to 0 if there's an error
+            const totalSessionsElement = document.getElementById('totalSessionsDashboard');
+            if (totalSessionsElement) {
+                totalSessionsElement.textContent = '0';
+            }
+        }
     }
 
     async filterSessions(filter) {
