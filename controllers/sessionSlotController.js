@@ -111,7 +111,7 @@ exports.getMySessionSlots = async (req, res) => {
     }
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 3;
     const skip = (page - 1) * limit;
 
     const sessions = await SessionSlot.find({
@@ -259,7 +259,7 @@ exports.getMyConfirmedSessions = async (req, res) => {
     const timezone = student.timezone || "Asia/Kolkata";
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 3;
     const skip = (page - 1) * limit;
 
     const sessions = await SessionSlot.find({
@@ -315,7 +315,7 @@ exports.getTeacherSessions = async (req, res) => {
     const name = req.user.name;
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
     const type = req.query.type;
@@ -337,7 +337,15 @@ exports.getTeacherSessions = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .populate('bookedSlots.bookedBy', 'fullName email')
+      .populate('allowedStudentId', 'fullName email')
       .lean();
+    
+    const formattedSessions = sessions.map(session => ({
+      ...session,
+      type: session.allowedStudentId ? "personal" : "common",
+      studentName: session.allowedStudentId ? session.allowedStudentId.fullName : null,
+      studentEmail: session.allowedStudentId ? session.allowedStudentId.email : null
+    }));
     
     res.json({
       pagination: {
@@ -348,7 +356,7 @@ exports.getTeacherSessions = async (req, res) => {
         totalPages: Math.ceil(totalSessions / limit),
         limit
       },
-      sessions
+      sessions: formattedSessions
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -393,6 +401,7 @@ exports.getSessionById = async (req, res) => {
 
     const session = await SessionSlot.findOne({ _id: id, teacherId })
       .populate('bookedSlots.bookedBy', 'fullName email')
+      .populate('allowedStudentId', 'fullName email')
       .lean();
 
     if (!session) {
@@ -438,7 +447,15 @@ exports.getSessionById = async (req, res) => {
       }
     }
 
-    res.json(session);
+    // Add session type and student info to the response
+    const formattedSession = {
+      ...session,
+      type: session.allowedStudentId ? "personal" : "common",
+      studentName: session.allowedStudentId ? session.allowedStudentId.fullName : null,
+      studentEmail: session.allowedStudentId ? session.allowedStudentId.email : null
+    };
+
+    res.json(formattedSession);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

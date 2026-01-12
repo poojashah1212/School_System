@@ -2911,7 +2911,7 @@ setupTimePickerListeners() {
     }
 
     // Session Management Functions
-    async loadSessionsData(page = 1, limit = 10) {
+    async loadSessionsData(page = 1, limit = 5) {
         try {
             this.showLoading();
             
@@ -2971,14 +2971,20 @@ setupTimePickerListeners() {
 
     updateSessionStats(data) {
         const totalSessions = data.pagination?.totalSessions || 0;
-        let totalSlots = 0;
+        let commonSessions = 0;
+        let personalSessions = 0;
         let bookedSlots = 0;
 
         if (data.sessions) {
             data.sessions.forEach(session => {
-                if (session.availableSlots) {
-                    totalSlots += session.availableSlots.length;
+                // Count session types
+                if (session.type === 'common') {
+                    commonSessions++;
+                } else if (session.type === 'personal') {
+                    personalSessions++;
                 }
+                
+                // Count booked slots
                 if (session.bookedSlots) {
                     bookedSlots += session.bookedSlots.length;
                 }
@@ -2986,7 +2992,8 @@ setupTimePickerListeners() {
         }
 
         document.getElementById('totalSessions').textContent = totalSessions;
-        document.getElementById('availableSlots').textContent = totalSlots - bookedSlots;
+        document.getElementById('commonSessions').textContent = commonSessions;
+        document.getElementById('personalSessions').textContent = personalSessions;
         document.getElementById('bookedSlots').textContent = bookedSlots;
     }
 
@@ -3053,6 +3060,17 @@ setupTimePickerListeners() {
                         <div>
                             <h3 style="margin: 0; color: #1976d2; font-size: 18px; font-weight: 500;">${session.title || 'Untitled Session'}</h3>
                             <p style="margin: 4px 0 0 0; color: #546e7a; font-size: 14px;">${this.formatSessionDate(session.date)}</p>
+                            ${session.type === 'personal' && session.studentName ? `
+                                <p style="margin: 4px 0 0 0; color: #1976d2; font-size: 13px; font-weight: 500;">
+                                    <span style="background: #e3f2fd; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Personal</span>
+                                    👤 ${session.studentName}
+                                </p>
+                            ` : session.type === 'common' ? `
+                                <p style="margin: 4px 0 0 0; color: #4caf50; font-size: 13px; font-weight: 500;">
+                                    <span style="background: #e8f5e8; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Common</span>
+                                    👥 All Students
+                                </p>
+                            ` : ''}
                         </div>
                         <div style="text-align: right;">
                             <span style="background: ${status === 'completed' ? '#2196f3' : '#1976d2'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500; text-transform: uppercase;">
@@ -3141,29 +3159,64 @@ setupTimePickerListeners() {
             return '';
         }
 
+        const { currentPage, totalPages, limit } = pagination;
+        const startRecord = ((currentPage - 1) * limit) + 1;
+        const endRecord = Math.min(currentPage * limit, pagination.totalSessions || 0);
+        
+        // Generate page numbers with ellipsis for large page counts
+        let pageNumbers = [];
+        const maxVisiblePages = 5;
+        
+        if (totalPages <= maxVisiblePages) {
+            // Show all pages if total is less than or equal to max visible
+            pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+        } else {
+            // Show first page, current page, current page neighbors, and last page with ellipsis
+            if (currentPage <= 3) {
+                pageNumbers = [1, 2, 3, 4, '...', totalPages];
+            } else if (currentPage >= totalPages - 2) {
+                pageNumbers = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+            } else {
+                pageNumbers = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+            }
+        }
+
         return `
             <div class="session-pagination">
-                <button 
-                    onclick="dashboard.loadSessionsData(${pagination.currentPage - 1}, ${pagination.limit})"
-                    class="pagination-btn"
-                    ${pagination.currentPage === 1 ? 'disabled' : ''}>
-                    Previous
-                </button>
+                <div class="pagination-info">
+                    <span>Showing ${startRecord}-${endRecord} of ${pagination.totalSessions || 0} sessions</span>
+                </div>
                 
-                ${Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => `
+                <div class="pagination-controls">
                     <button 
-                        onclick="dashboard.loadSessionsData(${page}, ${pagination.limit})"
-                        class="pagination-btn ${page === pagination.currentPage ? 'active' : ''}">
-                        ${page}
+                        onclick="dashboard.loadSessionsData(${currentPage - 1}, ${limit})"
+                        class="pagination-btn"
+                        ${currentPage === 1 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
                     </button>
-                `).join('')}
-                
-                <button 
-                    onclick="dashboard.loadSessionsData(${pagination.currentPage + 1}, ${pagination.limit})"
-                    class="pagination-btn"
-                    ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}>
-                    Next
-                </button>
+                    
+                    ${pageNumbers.map((pageNum, index) => {
+                        if (pageNum === '...') {
+                            return `<span class="pagination-ellipsis">...</span>`;
+                        }
+                        return `
+                            <button 
+                                onclick="dashboard.loadSessionsData(${pageNum}, ${limit})"
+                                class="pagination-btn ${pageNum === currentPage ? 'active' : ''}">
+                                ${pageNum}
+                            </button>
+                        `;
+                    }).join('')}
+                    
+                    <button 
+                        onclick="dashboard.loadSessionsData(${currentPage + 1}, ${limit})"
+                        class="pagination-btn"
+                        ${currentPage === totalPages ? 'disabled' : ''}>
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         `;
     }
