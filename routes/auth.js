@@ -5,6 +5,7 @@ const authController = require("../controllers/authController");
 const { runValidation } = require("../middleware/validate");
 const { getSignupValidation, getLoginValidation } = require("../services/validationCacheService");
 const upload = require("../middleware/upload");
+const auth = require("../middleware/auth");
 
 router.post(
   "/signup",
@@ -25,10 +26,16 @@ router.post(
   authController.login
 );
 
+router.get(
+  "/profile",
+  auth,
+  authController.getProfile
+);
+
 router.put(
   "/update-profile",
-  require("../middleware/auth"),
-  require("../middleware/upload").fields([
+  auth,
+  upload.fields([
     { name: "profileImage", maxCount: 1 },
     { name: "profile", maxCount: 1 },
     { name: "avatar", maxCount: 1 },

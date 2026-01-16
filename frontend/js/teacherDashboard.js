@@ -810,6 +810,7 @@ setupTimePickerListeners() {
     showAddHolidayModal() {
         const modal = document.createElement('div');
         modal.className = 'modal';
+        modal.id = 'addHolidayModal';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -3149,7 +3150,7 @@ setupTimePickerListeners() {
                     <div style="margin-bottom: 16px;">
                         ${availableSlots.length > 0 ? `
                             <div style="margin-bottom: 12px;">
-                                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">Available Slots (${availableSlots.length})</div>
+                                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">My Slots (${availableSlots.length})</div>
                                 <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                     ${availableSlots.map(slot => `
                                         <span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
@@ -3392,7 +3393,7 @@ setupTimePickerListeners() {
                         <!-- Available Slots Section -->
                         <div class="available-slots-section">
                             <h4 style="color: #28a745; margin-bottom: 15px;">
-                                <i class="fas fa-check-circle"></i> Available Slots (${availableSlots.length})
+                                <i class="fas fa-check-circle"></i> My Slots (${availableSlots.length})
                             </h4>
                             <div class="slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
                                 ${availableSlots.length > 0 ? 
@@ -3409,7 +3410,7 @@ setupTimePickerListeners() {
                                             </div>
                                         </div>
                                     `).join('') : 
-                                    '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #6c757d;">No available slots</div>'
+                                    '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #6c757d;">No slots available</div>'
                                 }
                             </div>
                         </div>
@@ -3512,9 +3513,16 @@ setupTimePickerListeners() {
         let date;
         // Handle different date formats
         if (typeof dateString === 'string') {
-            // If it's already formatted, return as is
+            // If it's already formatted with day names, return as is
             if (dateString.includes('/')) return dateString;
-            date = new Date(dateString);
+            
+            // Handle DD-MM-YYYY format from backend
+            if (dateString.match(/^\d{2}-\d{2}-\d{4}$/)) {
+                const [day, month, year] = dateString.split('-');
+                date = new Date(`${year}-${month}-${day}`); // Convert to YYYY-MM-DD for proper parsing
+            } else {
+                date = new Date(dateString);
+            }
         } else {
             date = new Date(dateString);
         }

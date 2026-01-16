@@ -32,15 +32,15 @@ const isHoliday = (availability, start, end) => {
 
 exports.createSession = async (req, res) => {
   try {
-    const { title, studentId } = req.body;
+    const { title, allowedStudentId } = req.body;
     const teacherId = req.user.id;
 
     const start = req.parsedStartTime;
     const end = req.parsedEndTime;
 
-    if (studentId) {
+    if (allowedStudentId) {
       const student = await User.findOne({
-        _id: studentId,
+        _id: allowedStudentId,
         teacherId: teacherId,
       });
 
@@ -86,14 +86,14 @@ exports.createSession = async (req, res) => {
 
     const session = await Session.create({
       teacherId,
-      studentId: studentId || null,
+      allowedStudentId: allowedStudentId || null,
       title,
       startTime: start,
       endTime: end
     });
 
     res.status(201).json({
-      message: studentId
+      message: allowedStudentId
         ? "Session created for particular student"
         : "Session created for all students",
       session,
@@ -121,7 +121,7 @@ exports.getStudentSessions = async (req, res) => {
 
       const query = {
       teacherId,
-      $or: [{ studentId: null }, { studentId }]
+      $or: [{ allowedStudentId: null }, { allowedStudentId: studentId }]
     };
 
     const totalSessions = await Session.countDocuments(query);
@@ -134,7 +134,7 @@ exports.getStudentSessions = async (req, res) => {
     const formattedSessions = sessions.map(s => ({
       _id: s._id,
       title: s.title,
-      type: s.studentId ? "personal" : "common",
+      type: s.allowedStudentId ? "personal" : "common",
       startTime: moment(s.startTime).tz(timezone).format("DD-MM-YYYY HH:mm"),
       endTime: moment(s.endTime).tz(timezone).format("DD-MM-YYYY HH:mm"),
     }));

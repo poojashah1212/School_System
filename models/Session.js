@@ -8,7 +8,7 @@ const SessionSchema = new mongoose.Schema(
       required: true,
       index: true
     },
-     studentId: {
+    allowedStudentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Student",
       default: null, 

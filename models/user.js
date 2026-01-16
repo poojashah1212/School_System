@@ -21,16 +21,16 @@ const userSchema = new mongoose.Schema(
       min: [1, "Age must be at least 1"]
     },
     teacherId: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "User",
-  required: function () {
-    return this.role === "student";
-  }
-},  
-  timezone: {
-    type: String,
-    default: "Asia/Kolkata" 
-  },
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: function () {
+        return this.role === "student";
+      }
+    },
+    timezone: {
+      type: String,
+      default: "Asia/Kolkata" 
+    },
     email: {
       type: String,
       required: [true, "Email is required"],

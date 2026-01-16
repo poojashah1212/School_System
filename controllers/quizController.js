@@ -277,14 +277,22 @@ exports.getAvailableQuizzesForStudent = async (req, res) => {
 
 exports.getStudentResults = async (req, res) => {
   try {
+    console.log('=== DEBUG: getStudentResults called for user:', req.user?.id);
+    
     const results = await Marks.find({ 
       studentId: req.user.id 
     })
     .populate('quizId', 'title subject')
     .sort({ createdAt: -1 });
-
+    
+    console.log('=== DEBUG: Found results:', results?.length || 0);
+    console.log('=== DEBUG: Results sample:', results?.[0]);
+    
     res.json({ results });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('=== DEBUG: Error in getStudentResults:', err);
+    res.status(500).json({ 
+      message: "Failed to fetch quiz results: " + err.message 
+    });
   }
 };

@@ -13,6 +13,9 @@ const generateAvailableSlots = async ({
   teacherTimezone,
   studentTimezone
 }) => {
+  console.log('generateAvailableSlots - studentTimezone:', studentTimezone);
+  console.log('generateAvailableSlots - teacherTimezone:', teacherTimezone);
+  
   const studentRedisKey = `slots:student:${studentId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${studentTimezone}`;
 
   const teacherRedisKey = `slots:teacher:${teacherId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${teacherTimezone}`;
@@ -31,17 +34,24 @@ const generateAvailableSlots = async ({
 
   const slots = [];
 
-  let current = moment.tz(
-    `${moment(date).format("DD-MM-YYYY")} ${availability.startTime}`,
-    "DD-MM-YYYY HH:mm",
+  // Create start and end times in teacher's timezone
+  const teacherStartDateTime = moment.tz(
+    `${moment(date).format("YYYY-MM-DD")} ${availability.startTime}`,
+    "YYYY-MM-DD HH:mm",
     teacherTimezone
   );
 
-  const end = moment.tz(
-    `${moment(date).format("DD-MM-YYYY")} ${availability.endTime}`,
-    "DD-MM-YYYY HH:mm",
+  const teacherEndDateTime = moment.tz(
+    `${moment(date).format("YYYY-MM-DD")} ${availability.endTime}`,
+    "YYYY-MM-DD HH:mm",
     teacherTimezone
   );
+
+  console.log('Teacher start time in teacher TZ:', teacherStartDateTime.format());
+  console.log('Teacher end time in teacher TZ:', teacherEndDateTime.format());
+
+  let current = teacherStartDateTime;
+  const end = teacherEndDateTime;
 
   while (
     current.clone().add(sessionDuration, "minutes").isSameOrBefore(end)
@@ -51,8 +61,19 @@ const generateAvailableSlots = async ({
       .clone()
       .add(sessionDuration, "minutes");
 
-    const slotStartUTC = slotStartTeacherTZ.clone().utc();
-    const slotEndUTC = slotEndTeacherTZ.clone().utc();
+    // Convert to UTC first, then to student timezone
+    const slotStartUTC = slotStartTeacherTZ.utc();
+    const slotEndUTC = slotEndTeacherTZ.utc();
+
+    console.log('Slot conversion:');
+    console.log('  Teacher time:', slotStartTeacherTZ.format(), '-', slotEndTeacherTZ.format());
+    console.log('  UTC time:', slotStartUTC.format(), '-', slotEndUTC.format());
+
+    // Convert UTC times to student timezone
+    const slotStartStudentTZ = slotStartUTC.tz(studentTimezone);
+    const slotEndStudentTZ = slotEndUTC.tz(studentTimezone);
+
+    console.log('  Student time:', slotStartStudentTZ.format(), '-', slotEndStudentTZ.format());
 
     const isOverlapping = bookedSlots.some(b => {
       return (
@@ -62,9 +83,15 @@ const generateAvailableSlots = async ({
     });
 
     if (!isOverlapping) {
+      // Return times in Asia/Kolkata (storage timezone) for frontend conversion
+      const startTimeFormatted = slotStartTeacherTZ.format("HH:mm");
+      const endTimeFormatted = slotEndTeacherTZ.format("HH:mm");
+      
+      console.log('  Final formatted slot (Asia/Kolkata):', startTimeFormatted, '-', endTimeFormatted);
+      
       slots.push({
-        startTime: slotStartUTC.clone().tz(studentTimezone).format("HH:mm"),
-        endTime: slotEndUTC.clone().tz(studentTimezone).format("HH:mm")
+        startTime: startTimeFormatted,
+        endTime: endTimeFormatted
       });
     }
 
