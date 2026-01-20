@@ -15,12 +15,12 @@ const generateAvailableSlots = async ({
 }) => {
   console.log('generateAvailableSlots - studentTimezone:', studentTimezone);
   console.log('generateAvailableSlots - teacherTimezone:', teacherTimezone);
-  
+
   const bookedSlotsSignature = `${bookedSlots.length}:${bookedSlots.reduce((max, b) => {
     const t = new Date((b && (b.bookedAt || b.startTime)) || 0).getTime();
     return Math.max(max, t);
   }, 0)}`;
-  
+
   const studentRedisKey = `slots:student:${studentId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${studentTimezone}:${bookedSlotsSignature}`;
 
   const teacherRedisKey = `slots:teacher:${teacherId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${teacherTimezone}:${bookedSlotsSignature}`;
@@ -92,16 +92,15 @@ const generateAvailableSlots = async ({
     });
 
     if (!isOverlapping) {
-      // Return times in teacher's timezone for consistent display
-      // This matches the requirement: "All slot times must be displayed in the teacher's timezone"
-      const slotStartInTeacherTZ = slotStartTeacherTZ.clone();
-      const slotEndInTeacherTZ = slotEndTeacherTZ.clone();
-      
-      const startTimeFormatted = slotStartInTeacherTZ.format("HH:mm");
-      const endTimeFormatted = slotEndInTeacherTZ.format("HH:mm");
-      
-      console.log('  Final formatted slot (teacher timezone):', startTimeFormatted, '-', endTimeFormatted);
-      
+      // Return times in student's timezone for proper display
+      const slotStartInStudentTZ = slotStartUTC.clone().tz(studentTimezone);
+      const slotEndInStudentTZ = slotEndUTC.clone().tz(studentTimezone);
+
+      const startTimeFormatted = slotStartInStudentTZ.format("HH:mm");
+      const endTimeFormatted = slotEndInStudentTZ.format("HH:mm");
+
+      console.log('  Final formatted slot (student timezone):', startTimeFormatted, '-', endTimeFormatted);
+
       slots.push({
         startTime: startTimeFormatted,
         endTime: endTimeFormatted
@@ -110,7 +109,7 @@ const generateAvailableSlots = async ({
 
     current = slotEndTeacherTZ.clone().add(breakDuration, "minutes");
   }
- await redisClient.setEx(
+  await redisClient.setEx(
     studentRedisKey,
     60 * 60 * 24,
     JSON.stringify(slots)
