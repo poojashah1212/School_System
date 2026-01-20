@@ -511,9 +511,9 @@
 }
 
 .slot-badge.booked {
-    background: #dcfce7;
-    border-color: #bbf7d0;
-    color: #16a34a;
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #dc2626;
 }
 
 .session-actions {
@@ -623,8 +623,8 @@
 }
 
 .slot-status.booked {
-    background: #dbeafe;
-    color: #2563eb;
+    background: #fee2e2;
+    color: #dc2626;
 }
 
 /* Enhanced Session Details Modal */
@@ -682,7 +682,7 @@
 }
 
 .stat-value.booked {
-    color: #2563eb;
+    color: #dc2626;
 }
 
 .slot-info {
@@ -814,7 +814,7 @@
 }
 
 .slot-card.booked {
-    border-left: 4px solid #2563eb;
+    border-left: 4px solid #dc2626;
 }
 
 .slot-header {

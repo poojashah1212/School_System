@@ -28,8 +28,6 @@ class StudentDashboard {
         const menu = document.querySelector('.dropdown-menu');
 
         if (toggle && menu) {
-            console.log('Setting up fallback dropdown handler');
-
             // Remove any existing listeners to prevent duplicates
             toggle.replaceWith(toggle.cloneNode(true));
             const newToggle = document.getElementById('studentDropdownMenuButton');
@@ -37,7 +35,6 @@ class StudentDashboard {
             newToggle.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Fallback dropdown clicked');
 
                 menu.classList.toggle('show');
             });
@@ -49,7 +46,7 @@ class StudentDashboard {
                 }
             });
         } else {
-            console.log('Fallback: Elements not found', { toggle, menu });
+            // Fallback: Elements not found
         }
     }
 
@@ -125,7 +122,6 @@ class StudentDashboard {
         if (profileDropdownToggle && profileDropdownMenu) {
             profileDropdownToggle.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                console.log('Dropdown toggle clicked'); // Debug log
 
                 // Load fresh profile data when dropdown opens
                 if (!profileDropdownMenu.classList.contains('show')) {
@@ -133,17 +129,13 @@ class StudentDashboard {
                 }
 
                 profileDropdownMenu.classList.toggle('show');
-                console.log('Dropdown menu classes:', profileDropdownMenu.classList); // Debug log
             });
 
             document.addEventListener('click', () => {
                 profileDropdownMenu.classList.remove('show');
             });
         } else {
-            console.log('Dropdown elements not found:', {
-                toggle: profileDropdownToggle,
-                menu: profileDropdownMenu
-            }); // Debug log
+            // Dropdown elements not found
         }
 
         // View Profile button
@@ -207,9 +199,6 @@ class StudentDashboard {
 
         // Set student timezone with fallback to browser timezone
         this.studentTimezone = TimezoneUtils.getStudentTimezone(this.currentUser);
-        console.log('Student timezone:', this.studentTimezone);
-        console.log('User profile timezone:', this.currentUser.timezone);
-        console.log('Browser timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
 
         // Update student name in header
         const studentNameElement = document.getElementById('student-name');
@@ -250,10 +239,7 @@ class StudentDashboard {
         }
     }
 
-    renderMySessions(data) {
-        console.log('Sessions data from backend:', data);
-        console.log('Current student timezone:', this.studentTimezone);
-        
+    async renderMySessions(data) {
         const mainContent = document.getElementById('main-content');
         const dashboardPage = document.getElementById('dashboard-page');
 
@@ -282,7 +268,7 @@ class StudentDashboard {
                             </div>` : ''}
                             <div class="timezone-info">
                                 <i class="fas fa-globe"></i>
-                                <span>Times shown in: ${TimezoneUtils.getDisplayTimezone(this.studentTimezone)}</span>
+                                <span>Times shown in: ${TimezoneUtils.getDisplayTimezone(data.teacher?.timezone || 'Asia/Kolkata')}</span>
                             </div>
                         </div>
                     </div>
@@ -296,9 +282,28 @@ class StudentDashboard {
             return;
         }
 
-        const sessionsHtml = data.sessions.map(session => {
-            console.log('Session:', session.title, 'Date:', session.date, 'Slots:', session.availableSlots);
+        // Fetch booked slots to show them in green
+        let bookedSlots = [];
+        try {
+            const token = localStorage.getItem('token');
+            const confirmedResponse = await fetch(`${this.apiBaseUrl}/sessions/my-confirmed-sessions`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             
+            if (confirmedResponse.ok) {
+                const confirmedData = await confirmedResponse.json();
+                bookedSlots = confirmedData.sessions || [];
+            }
+        } catch (error) {
+            console.error('Error fetching booked slots:', error);
+        }
+
+        console.log('Booked Slots:', bookedSlots); // Debug booked slots
+
+        const sessionsHtml = await Promise.all(data.sessions.map(async (session) => {
+            console.log('Current Session:', session); // Debug current session
             // Backend returns dates in Asia/Kolkata timezone, convert to student's timezone
             let displayDate = session.date || 'Date not specified';
             
@@ -309,12 +314,73 @@ class StudentDashboard {
                     const dateInKolkata = moment.tz(session.date.split('/')[0], 'DD-MM-YYYY', 'Asia/Kolkata');
                     // Convert to student's timezone and format
                     displayDate = dateInKolkata.clone().tz(this.studentTimezone).format('DD-MM-YYYY/dddd');
-                    console.log('Converted date from Asia/Kolkata to', this.studentTimezone, ':', session.date, '->', displayDate);
                 }
             } catch (error) {
                 console.error('Error converting session date:', error);
                 displayDate = session.date || 'Date not specified';
             }
+            
+            // Create a map of booked slots for this session for quick lookup
+            const sessionBookedSlots = bookedSlots.filter(slot => String(slot.sessionId) === String(session.sessionId || session._id));
+            const bookedSlotTimes = new Set();
+            const myBookedSlotsByTime = new Map();
+            
+            console.log('Session Booked Slots for session ID', session.sessionId || session._id, ':', sessionBookedSlots);
+            
+            sessionBookedSlots.forEach(bookedSlot => {
+                const startTimeString = this.formatSlotTime(bookedSlot.startTime);
+                if (startTimeString) {
+                    bookedSlotTimes.add(startTimeString);
+                    myBookedSlotsByTime.set(startTimeString, {
+                        startTime: startTimeString,
+                        endTime: this.formatSlotTime(bookedSlot.endTime)
+                    });
+                    console.log('Booked slot time:', startTimeString, '(raw startTime:', bookedSlot.startTime, ')');
+                }
+            });
+            
+            console.log('Final booked slot times set:', Array.from(bookedSlotTimes));
+
+            // Preserve order: start from backend-provided available slots (already filtered for common sessions)
+            // Then convert the *existing* slot to green if it's booked by the logged-in student.
+            const slotsToRender = (session.availableSlots || []).map(slot => {
+                const start = this.formatSlotTime(slot.startTime);
+                const end = this.formatSlotTime(slot.endTime);
+                return {
+                    startTime: start,
+                    endTime: end,
+                    isBookedByMe: bookedSlotTimes.has(start)
+                };
+            }).filter(s => s.startTime && s.startTime !== 'Time not specified');
+
+            // If the booked slot is no longer present in availableSlots (because it's booked), insert it back
+            // in the correct chronological position (still no duplicates).
+            const compareHHmm = (a, b) => {
+                const [ah, am] = String(a).split(':').map(Number);
+                const [bh, bm] = String(b).split(':').map(Number);
+                return (ah * 60 + am) - (bh * 60 + bm);
+            };
+
+            myBookedSlotsByTime.forEach((slot, start) => {
+                const exists = slotsToRender.some(s => s.startTime === start);
+                if (exists) return;
+
+                const toInsert = {
+                    startTime: start,
+                    endTime: slot.endTime,
+                    isBookedByMe: true
+                };
+
+                let insertIndex = slotsToRender.length;
+                for (let i = 0; i < slotsToRender.length; i++) {
+                    if (compareHHmm(start, slotsToRender[i].startTime) < 0) {
+                        insertIndex = i;
+                        break;
+                    }
+                }
+
+                slotsToRender.splice(insertIndex, 0, toInsert);
+            });
             
             return `
             <div class="session-card ${session.type === 'personal' ? 'personal-session' : 'common-session'}">
@@ -337,24 +403,36 @@ class StudentDashboard {
                     </div>
                 </div>
                 <div class="available-slots">
-                    <h4>Available Slots (${session.availableSlots ? session.availableSlots.length : 0})</h4>
+                    <h4>Available Slots (${slotsToRender.length})</h4>
                     <div class="slots-grid">
-                        ${session.availableSlots && session.availableSlots.length > 0 ? session.availableSlots.map(slot => {
-                            // Ensure slot times are properly formatted in student's timezone
-                            console.log('Slot before formatting:', slot.startTime, '-', slot.endTime);
-                            const startTime = this.formatSlotTime(slot.startTime);
-                            const endTime = this.formatSlotTime(slot.endTime);
-                            console.log('Slot after formatting:', startTime, '-', endTime);
-                            return `
-                            <button class="slot-btn" onclick="studentDashboard.bookSession('${session.sessionId || session._id}', '${slot.startTime}')">
-                                <div class="slot-time">${startTime} - ${endTime}</div>
-                            </button>
-                        `;}).join('') : '<p class="no-slots">No available slots</p>'}
+                        ${slotsToRender.length > 0 ? slotsToRender.map(slot => {
+                            const startTime = slot.startTime;
+                            const endTime = slot.endTime;
+
+                            // Only show green for the logged-in student's booked slot
+                            const isBookedByMe = slot.isBookedByMe === true;
+
+                            console.log('Checking slot:', startTime, '- isBookedByMe:', isBookedByMe);
+
+                            if (isBookedByMe) {
+                                return `
+                                <button class="slot-btn booked" disabled data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${session.date}">
+                                    <div class="slot-time">${startTime} - ${endTime}</div>
+                                </button>
+                            `;
+                            } else {
+                                return `
+                                <button class="slot-btn" onclick="studentDashboard.bookSession('${session.sessionId || session._id}', '${startTime}', '${session.date}')" data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${session.date}">
+                                    <div class="slot-time">${startTime} - ${endTime}</div>
+                                </button>
+                            `;
+                            }
+                        }).join('') : '<p class="no-slots">No available slots</p>'}
                     </div>
                 </div>
             </div>
         `;
-        }).join('');
+        }));
 
         mainContent.innerHTML = `
             <div class="sessions-container">
@@ -368,12 +446,12 @@ class StudentDashboard {
                         </div>` : ''}
                         <div class="timezone-info">
                             <i class="fas fa-globe"></i>
-                            <span>Times shown in: ${TimezoneUtils.getDisplayTimezone(this.studentTimezone)}</span>
+                            <span>Times shown in: ${TimezoneUtils.getDisplayTimezone(data.teacher?.timezone || 'Asia/Kolkata')}</span>
                         </div>
                     </div>
                 </div>
                 <div class="sessions-grid">
-                    ${sessionsHtml}
+                    ${sessionsHtml.join('')}
                 </div>
                 ${data.pagination ? `
                 <div class="pagination-info">
@@ -383,19 +461,40 @@ class StudentDashboard {
         `;
     }
 
-    async bookSession(sessionId, startTime) {
+    async bookSession(sessionId, startTime, sessionDate) {
+        const button = event.target.closest('.slot-btn');
+        const originalContent = button.innerHTML;
+        
+        // Show confirmation dialog
+        const confirmed = confirm(`Are you ready to book this session?\n\nDate: ${sessionDate}\nTime: ${startTime}\n\nClick OK to confirm booking.`);
+        
+        if (!confirmed) {
+            return;
+        }
+        
+        // Send the time in teacher's timezone (as displayed to student)
+        const startTimeForBackend = startTime;
+        const bookingDateForBackend = String(sessionDate || '').split('/')[0];
+        
         try {
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '<div class="slot-time"><i class="fas fa-spinner fa-spin"></i> Booking...</div>';
+            
             const token = localStorage.getItem('token');
+            const requestBody = {
+                sessionId: sessionId,
+                startTime: startTimeForBackend,
+                date: bookingDateForBackend
+            };
+            
             const response = await fetch(`${this.apiBaseUrl}/sessions/confirm`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    sessionId: sessionId,
-                    startTime: startTime
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
@@ -404,14 +503,35 @@ class StudentDashboard {
             }
 
             const data = await response.json();
-            this.showNotification('Session booked successfully!', 'success');
+            
+            // Convert the same existing slot button to green (no duplicates, no reorder)
+            button.disabled = true;
+            button.classList.add('booked');
+            button.removeAttribute('onclick');
 
-            // Reload sessions to update the view
-            setTimeout(() => this.loadMySessions(), 1000);
+            // Display times directly from booking record (already in teacher's timezone)
+            const bookedStart = data?.booking?.startTime;
+            const bookedEnd = data?.booking?.endTime;
+            if (bookedStart && bookedEnd) {
+                const timeEl = button.querySelector('.slot-time');
+                if (timeEl) {
+                    timeEl.textContent = `${bookedStart} - ${bookedEnd}`;
+                }
+            } else {
+                button.innerHTML = originalContent;
+            }
+
+            this.showNotification('Session slot booked successfully!', 'success');
 
         } catch (error) {
             console.error('Error booking session:', error);
-            this.showNotification(error.message, 'error');
+            this.showNotification(error.message || 'Failed to book session slot', 'error');
+
+            // Restore button state
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalContent;
+            }
         }
     }
 
@@ -500,7 +620,6 @@ class StudentDashboard {
     updateStatsWithRealData() {
         // This method is called after loading dashboard data
         // Stats are already updated by the specific update methods above
-        console.log('Dashboard stats updated with real data');
     }
 
     updateRecentActivity(activities) {
@@ -539,14 +658,12 @@ class StudentDashboard {
     }
 
     handleSearch(query) {
-        console.log('Searching for:', query);
         // Implement search functionality
         // This would typically filter courses, assignments, etc.
     }
 
     handleQuickAction(button) {
         const actionText = button.querySelector('span').textContent;
-        console.log('Quick action:', actionText);
 
         // Handle different quick actions
         switch (actionText) {
@@ -563,19 +680,16 @@ class StudentDashboard {
                 this.navigateToPage('messages');
                 break;
             default:
-                console.log(`Quick action: ${actionText}`);
-            // Silently handle or implement specific action logic
+                // Silently handle or implement specific action logic
         }
     }
 
     handleViewAll(button) {
         const buttonText = button.textContent;
-        console.log('View all:', buttonText);
         // Implement view all functionality or silently handle
     }
 
     navigateToPage(page) {
-        console.log('Navigating to:', page);
 
         // Update active navigation
         const navItems = document.querySelectorAll('.nav-item[data-page]');
@@ -624,7 +738,7 @@ class StudentDashboard {
                 this.showPageContent('Help & Support', 'help');
                 break;
             default:
-                console.log(`Unknown page: ${page}`);
+                // Unknown page
         }
     }
 
@@ -1041,31 +1155,30 @@ class StudentDashboard {
         if (!timeString) return 'Time not specified';
         
         try {
-            console.log('formatSlotTime input:', timeString, 'student timezone:', this.studentTimezone);
-            
-            // Backend returns times in Asia/Kolkata timezone, we need to convert to student's timezone
-            // Use moment-timezone for proper conversion
             const moment = window.moment;
-            if (!moment) {
-                console.error('Moment.js not loaded');
+            const rawTz = this.studentTimezone || 'Asia/Kolkata';
+            const cleanedTz = String(rawTz).replace(/\s*\([^)]*\)\s*/g, '').trim();
+            const tz = (moment && cleanedTz && moment.tz.zone(cleanedTz)) ? cleanedTz : 'Asia/Kolkata';
+            console.log('formatSlotTime input:', timeString, 'student timezone:', tz);
+
+            // If already in HH:mm, keep it
+            if (typeof timeString === 'string' && /^\d{2}:\d{2}$/.test(timeString)) {
                 return timeString;
             }
-            
-            // Parse the time in Asia/Kolkata timezone (backend storage timezone)
-            const today = moment().format('YYYY-MM-DD');
-            const dateTimeInKolkata = moment.tz(`${today} ${timeString}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
-            
-            // Convert to student's timezone
-            const dateTimeInStudentTZ = dateTimeInKolkata.clone().tz(this.studentTimezone);
-            
-            // Format in HH:mm (24-hour format)
-            const convertedTime = dateTimeInStudentTZ.format('HH:mm');
-            
-            console.log('Converted time from Asia/Kolkata to', this.studentTimezone, ':', timeString, '->', convertedTime);
-            
-            return convertedTime;
+
+            if (!moment) {
+                return String(timeString);
+            }
+
+            // Convert UTC/ISO/Date to student's timezone and format HH:mm
+            const m = moment.utc(timeString);
+            if (!m.isValid()) {
+                return String(timeString);
+            }
+
+            return m.tz(tz).format('HH:mm');
         } catch (error) {
-            console.error('Error converting slot time:', error);
+            console.error('Error in formatSlotTime:', error);
             return timeString;
         }
     }

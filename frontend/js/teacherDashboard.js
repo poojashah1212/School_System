@@ -18,7 +18,7 @@ class TeacherDashboard {
             window.location.href = '/html/index.html';
             return;
         }
-        
+
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
             this.currentUser = payload;
@@ -49,45 +49,45 @@ class TeacherDashboard {
         } else {
             console.log('Teacher name element not found');
         }
-        
+
         const profileName = document.getElementById('profileName');
         if (profileName) {
             profileName.textContent = this.currentUser.fullName || this.currentUser.userId || 'Teacher';
         }
-        
+
         const profileEmail = document.getElementById('profileEmail');
         if (profileEmail) {
             profileEmail.textContent = this.currentUser.email || 'teacher@example.com';
         }
-        
+
         const profileMobile = document.getElementById('profileMobile');
         if (profileMobile) {
             profileMobile.textContent = this.currentUser.mobileNo || '-';
         }
-        
+
         const profileCity = document.getElementById('profileCity');
         if (profileCity) {
             profileCity.textContent = this.currentUser.city || '-';
         }
-        
+
         const profileState = document.getElementById('profileState');
         if (profileState) {
             profileState.textContent = this.currentUser.state || '-';
         }
-        
+
         // Update profile image if available
         if (this.currentUser.profileImage) {
             let profileImageUrl = this.currentUser.profileImage;
-            
+
             // If the profile image path is relative (starts with /uploads/), add server URL
             if (profileImageUrl.startsWith('/uploads/')) {
                 profileImageUrl = `http://localhost:5001${profileImageUrl}`;
             }
-            
+
             const profileImg = document.querySelector('.profile-img');
             if (profileImg) {
                 profileImg.src = profileImageUrl;
-                profileImg.onerror = function() {
+                profileImg.onerror = function () {
                     // Fallback to placeholder if image fails to load
                     this.src = 'https://picsum.photos/seed/teacher/40/40.jpg';
                 };
@@ -95,7 +95,7 @@ class TeacherDashboard {
             const profileAvatar = document.getElementById('profileAvatar');
             if (profileAvatar) {
                 profileAvatar.src = profileImageUrl;
-                profileAvatar.onerror = function() {
+                profileAvatar.onerror = function () {
                     // Fallback to placeholder if image fails to load
                     this.src = 'https://picsum.photos/seed/teacher/100/100.jpg';
                 };
@@ -133,7 +133,7 @@ class TeacherDashboard {
         // Profile dropdown
         const dropdownToggle = document.querySelector('.dropdown-toggle');
         const dropdownMenu = document.querySelector('.dropdown-menu');
-        
+
         if (dropdownToggle && dropdownMenu) {
             dropdownToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -412,59 +412,59 @@ class TeacherDashboard {
             });
         });
 
-// Time picker emoji functionality
-this.setupTimePickerListeners();
-}
+        // Time picker emoji functionality
+        this.setupTimePickerListeners();
+    }
 
-setupTimePickerListeners() {
-    // Add time picker functionality to all text inputs in availability modal
-    document.querySelectorAll('#weeklyAvailabilityModal input[type="text"]').forEach(timeInput => {
-        // Validate time input format
-        timeInput.addEventListener('input', (e) => {
-            const value = e.target.value;
-            const timePattern = /^([0-2][0-9]):([0-5][0-9])$/;
-            if (value && !timePattern.test(value)) {
-                e.target.setCustomValidity('Please enter time in HH:MM format (24-hour)');
-            } else {
-                e.target.setCustomValidity('');
+    setupTimePickerListeners() {
+        // Add time picker functionality to all text inputs in availability modal
+        document.querySelectorAll('#weeklyAvailabilityModal input[type="text"]').forEach(timeInput => {
+            // Validate time input format
+            timeInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                const timePattern = /^([0-2][0-9]):([0-5][0-9])$/;
+                if (value && !timePattern.test(value)) {
+                    e.target.setCustomValidity('Please enter time in HH:MM format (24-hour)');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
+
+            // Add click event to show custom time picker when clicking on time icon
+            const timeIcon = timeInput.nextElementSibling;
+            if (timeIcon && timeIcon.classList.contains('time-icon')) {
+                timeIcon.style.pointerEvents = 'auto';
+                timeIcon.style.cursor = 'pointer';
+
+                timeIcon.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.showCustomTimePicker(timeInput);
+                });
+
+                timeIcon.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.showCustomTimePicker(timeInput);
+                    }
+                });
             }
-        });
-        
-        // Add click event to show custom time picker when clicking on time icon
-        const timeIcon = timeInput.nextElementSibling;
-        if (timeIcon && timeIcon.classList.contains('time-icon')) {
-            timeIcon.style.pointerEvents = 'auto';
-            timeIcon.style.cursor = 'pointer';
-            
-            timeIcon.addEventListener('click', (e) => {
+
+            // Also add click event to input itself
+            timeInput.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 this.showCustomTimePicker(timeInput);
             });
-            
-            timeIcon.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.showCustomTimePicker(timeInput);
-                }
+
+            // Prevent default time picker from opening (not needed for text inputs)
+            timeInput.addEventListener('focus', (e) => {
+                e.preventDefault();
+                this.showCustomTimePicker(timeInput);
             });
-        }
-        
-        // Also add click event to input itself
-        timeInput.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.showCustomTimePicker(timeInput);
         });
-        
-        // Prevent default time picker from opening (not needed for text inputs)
-        timeInput.addEventListener('focus', (e) => {
-            e.preventDefault();
-            this.showCustomTimePicker(timeInput);
-        });
-    });
-}
+    }
 
     showCustomTimePicker(timeInput) {
         // Remove any existing custom time picker
@@ -475,29 +475,29 @@ setupTimePickerListeners() {
 
         // Get current time value and ensure it's in 24-hour format
         let currentValue = timeInput.value || '00:00';
-        
+
         // Handle potential 12-hour to 24-hour conversion issues
         if (currentValue.includes('AM') || currentValue.includes('PM')) {
             // If it contains AM/PM, convert to 24-hour format
             const [timePart, period] = currentValue.split(' ');
             const [hours, minutes] = timePart.split(':');
             let hour24 = parseInt(hours);
-            
+
             if (period === 'PM' && hour24 !== 12) {
                 hour24 += 12;
             } else if (period === 'AM' && hour24 === 12) {
                 hour24 = 0;
             }
-            
+
             currentValue = `${hour24.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
         }
-        
+
         const [currentHour, currentMinute] = currentValue.split(':');
 
         // Create custom time picker dropdown
         const picker = document.createElement('div');
         picker.className = 'custom-time-picker';
-        
+
         picker.innerHTML = `
             <div class="time-picker-header">
                 <span>Select Time (24-hour)</span>
@@ -507,17 +507,17 @@ setupTimePickerListeners() {
                 <div class="time-select-group">
                     <label for="time_hour">Hour:</label>
                     <select id="time_hour" name="time_hour">
-                        ${Array.from({length: 24}, (_, i) => 
-                            `<option value="${i.toString().padStart(2, '0')}" ${currentHour === i.toString().padStart(2, '0') ? 'selected' : ''}>${i.toString().padStart(2, '0')}</option>`
-                        ).join('')}
+                        ${Array.from({ length: 24 }, (_, i) =>
+            `<option value="${i.toString().padStart(2, '0')}" ${currentHour === i.toString().padStart(2, '0') ? 'selected' : ''}>${i.toString().padStart(2, '0')}</option>`
+        ).join('')}
                     </select>
                 </div>
                 <div class="time-select-group">
                     <label for="time_minute">Minute:</label>
                     <select id="time_minute" name="time_minute">
-                        ${Array.from({length: 60}, (_, i) => 
-                            `<option value="${i.toString().padStart(2, '0')}" ${currentMinute === i.toString().padStart(2, '0') ? 'selected' : ''}>${i.toString().padStart(2, '0')}</option>`
-                        ).join('')}
+                        ${Array.from({ length: 60 }, (_, i) =>
+            `<option value="${i.toString().padStart(2, '0')}" ${currentMinute === i.toString().padStart(2, '0') ? 'selected' : ''}>${i.toString().padStart(2, '0')}</option>`
+        ).join('')}
                     </select>
                 </div>
             </div>
@@ -531,7 +531,7 @@ setupTimePickerListeners() {
         const viewportHeight = window.innerHeight;
         const pickerWidth = 280;
         const pickerHeight = 300;
-        
+
         // Center horizontally and position at bottom with margin
         const left = (viewportWidth - pickerWidth) / 2;
         const top = viewportHeight - pickerHeight - 20; // 20px margin from bottom
@@ -549,15 +549,15 @@ setupTimePickerListeners() {
             const hourSelect = picker.querySelector('#time_hour');
             const minuteSelect = picker.querySelector('#time_minute');
             const selectedTime = `${hourSelect.value}:${minuteSelect.value}`;
-            
+
             // Set the time value directly in 24-hour format
             timeInput.value = selectedTime;
-            
+
             // Force the input to recognize 24-hour format
             timeInput.setAttribute('value', selectedTime);
-            
+
             picker.remove();
-            
+
             // Trigger change event
             const changeEvent = new Event('change', { bubbles: true });
             timeInput.dispatchEvent(changeEvent);
@@ -575,7 +575,7 @@ setupTimePickerListeners() {
                 document.removeEventListener('click', handleClickOutside);
             }
         };
-        
+
         // Use setTimeout to avoid immediate trigger
         setTimeout(() => {
             document.addEventListener('click', handleClickOutside);
@@ -615,7 +615,7 @@ setupTimePickerListeners() {
     }
 
     async loadPageData(page) {
-        switch(page) {
+        switch (page) {
             case 'dashboard':
                 await this.loadDashboardData();
                 break;
@@ -643,18 +643,18 @@ setupTimePickerListeners() {
     async loadDashboardData() {
         try {
             this.showLoading();
-            
+
             // Load students count from database
             const studentsResponse = await fetch('/api/teachers/students', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             if (studentsResponse.ok) {
                 const students = await studentsResponse.json();
                 const totalStudents = students.length || 0;
-                
+
                 // Update dashboard with real database count
                 const totalStudentsElement = document.getElementById('totalStudents');
                 if (totalStudentsElement) {
@@ -665,15 +665,15 @@ setupTimePickerListeners() {
                         totalStudentsElement.style.animation = '';
                     }, 600);
                 }
-                
+
                 this.updateRecentStudents(students.slice(0, 5));
-                
+
                 // Update student count in students page header
                 const studentsHeader = document.querySelector('#students-page .page-header h2');
                 if (studentsHeader) {
                     studentsHeader.textContent = `Students Management (${totalStudents})`;
                 }
-                
+
             }
 
             // Load quiz data from database
@@ -682,20 +682,20 @@ setupTimePickerListeners() {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             if (quizzesResponse.ok) {
                 const result = await quizzesResponse.json();
                 const quizzes = result.quizzes || [];
                 const totalQuizzes = quizzes.length || 0;
-                
+
                 // Update dashboard with real quiz count
                 document.getElementById('totalQuizzes').textContent = totalQuizzes;
-                
+
                 // Update recent quizzes
                 this.updateRecentQuizzes(quizzes.slice(0, 3));
-                
+
             }
-            
+
             // Load total sessions data
             await this.loadTotalSessionsForDashboard();
 
@@ -800,10 +800,10 @@ setupTimePickerListeners() {
 
     formatDate(dateString) {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
         });
     }
 
@@ -886,7 +886,7 @@ setupTimePickerListeners() {
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         const todayString = `${year}-${month}-${day}`;
-        
+
         // Set min date for all date inputs
         const dateInputs = document.querySelectorAll('input[type="date"]');
         dateInputs.forEach(input => {
@@ -897,12 +897,12 @@ setupTimePickerListeners() {
     setupHolidayValidation() {
         // Date validation for HTML5 date inputs
         const dateInputs = document.querySelectorAll('input[name="startDate"], input[name="endDate"], input[name="singleDate"]');
-        
+
         dateInputs.forEach(input => {
             input.addEventListener('input', (e) => {
                 this.validateDateFormat(e.target);
             });
-            
+
             input.addEventListener('blur', (e) => {
                 this.validateDateFormat(e.target);
             });
@@ -921,13 +921,13 @@ setupTimePickerListeners() {
         const value = input.value.trim();
         const formGroup = input.closest('.form-group');
         let errorElement = formGroup.querySelector('.error-message');
-        
+
         // Remove existing error
         if (errorElement) {
             errorElement.remove();
         }
         input.classList.remove('error');
-        
+
         if (!value) {
             if (input.hasAttribute('required')) {
                 this.showFieldError(input, 'Date is required');
@@ -935,20 +935,20 @@ setupTimePickerListeners() {
             }
             return true;
         }
-        
+
         // HTML5 date inputs already validate format, but we need to check if it's a valid date
         const date = new Date(value);
         if (isNaN(date.getTime())) {
             this.showFieldError(input, 'Invalid date');
             return false;
         }
-        
+
         // Validate date is not in the past (HTML5 date inputs use YYYY-MM-DD format)
         if (this.isPastDateISO(value)) {
             this.showFieldError(input, 'Holiday cannot be created for past dates');
             return false;
         }
-        
+
         // Validate date range if both dates are present
         if (input.name === 'endDate' && document.getElementById('startDate').value) {
             const startDate = document.getElementById('startDate').value;
@@ -957,25 +957,25 @@ setupTimePickerListeners() {
                 return false;
             }
         }
-        
+
         return true;
     }
 
     validateReason(select) {
         const formGroup = select.closest('.form-group');
         let errorElement = formGroup.querySelector('.error-message');
-        
+
         // Remove existing error
         if (errorElement) {
             errorElement.remove();
         }
         select.classList.remove('error');
-        
+
         if (!select.value) {
             this.showFieldError(select, 'Please select a reason');
             return false;
         }
-        
+
         return true;
     }
 
@@ -983,11 +983,11 @@ setupTimePickerListeners() {
         const form = document.getElementById('addHolidayForm');
         const isSingleDay = document.getElementById('singleDayHoliday').checked;
         let isValid = true;
-        
+
         // Clear all previous errors
         form.querySelectorAll('.error-message').forEach(error => error.remove());
         form.querySelectorAll('.error').forEach(field => field.classList.remove('error'));
-        
+
         if (isSingleDay) {
             const singleDateInput = document.getElementById('singleDate');
             if (!this.validateDateFormat(singleDateInput)) {
@@ -996,15 +996,15 @@ setupTimePickerListeners() {
         } else {
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
-            
+
             if (!this.validateDateFormat(startDateInput)) {
                 isValid = false;
             }
-            
+
             if (!this.validateDateFormat(endDateInput)) {
                 isValid = false;
             }
-            
+
             // Validate date range
             if (startDateInput.value && endDateInput.value) {
                 if (startDateInput.value > endDateInput.value) {
@@ -1012,27 +1012,27 @@ setupTimePickerListeners() {
                     isValid = false;
                 }
             }
-            
+
             // Additional check: start date should not be in past
             if (startDateInput.value && this.isPastDateISO(startDateInput.value)) {
                 this.showFieldError(startDateInput, 'Holiday cannot be created for past dates');
                 isValid = false;
             }
         }
-        
+
         // Validate reason
         const reasonSelect = document.getElementById('reason');
         if (!this.validateReason(reasonSelect)) {
             isValid = false;
         }
-        
+
         // Validate note (optional but if present, must be string)
         const noteTextarea = document.getElementById('note');
         if (noteTextarea.value && typeof noteTextarea.value !== 'string') {
             this.showFieldError(noteTextarea, 'Note must be text');
             isValid = false;
         }
-        
+
         return isValid;
     }
 
@@ -1040,23 +1040,23 @@ setupTimePickerListeners() {
         field.classList.add('error');
         const formGroup = field.closest('.form-group');
         let errorElement = formGroup.querySelector('.error-message');
-        
+
         if (!errorElement) {
             errorElement = document.createElement('div');
             errorElement.className = 'error-message';
             formGroup.appendChild(errorElement);
         }
-        
+
         errorElement.textContent = message;
     }
 
     isValidDate(dateString) {
         const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
         if (!dateRegex.test(dateString)) return false;
-        
+
         const [day, month, year] = dateString.split('-').map(Number);
         const date = new Date(year, month - 1, day);
-        
+
         return (
             date.getFullYear() === year &&
             date.getMonth() === month - 1 &&
@@ -1068,45 +1068,45 @@ setupTimePickerListeners() {
     compareDates(date1, date2) {
         const [d1, m1, y1] = date1.split('-').map(Number);
         const [d2, m2, y2] = date2.split('-').map(Number);
-        
+
         const date1Obj = new Date(y1, m1 - 1, d1);
         const date2Obj = new Date(y2, m2 - 1, d2);
-        
+
         return date1Obj - date2Obj;
     }
 
     isPastDate(dateString) {
         const [day, month, year] = dateString.split('-').map(Number);
         const holidayDate = new Date(year, month - 1, day);
-        
+
         // Set current date to start of day for accurate comparison
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         // Set holiday date to start of day for accurate comparison
         holidayDate.setHours(0, 0, 0, 0);
-        
+
         return holidayDate < today;
     }
 
     isPastDateISO(dateString) {
         // dateString is in YYYY-MM-DD format from HTML5 date input
         const holidayDate = new Date(dateString);
-        
+
         // Set current date to start of day for accurate comparison
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         // Set holiday date to start of day for accurate comparison
         holidayDate.setHours(0, 0, 0, 0);
-        
+
         return holidayDate < today;
     }
 
     convertISOToDDMMYYYY(isoDateString) {
         // Convert YYYY-MM-DD to DD-MM-YYYY
         if (!isoDateString) return '';
-        
+
         const [year, month, day] = isoDateString.split('-');
         return `${day}-${month}-${year}`;
     }
@@ -1115,7 +1115,7 @@ setupTimePickerListeners() {
         const isSingleDay = document.getElementById('singleDayHoliday').checked;
         const dateRangeRow = document.getElementById('dateRangeRow');
         const singleDateRow = document.getElementById('singleDateRow');
-        
+
         if (isSingleDay) {
             dateRangeRow.style.display = 'none';
             singleDateRow.style.display = 'flex';
@@ -1138,9 +1138,9 @@ setupTimePickerListeners() {
     async addHoliday() {
         const formData = new FormData(document.getElementById('addHolidayForm'));
         const isSingleDay = document.getElementById('singleDayHoliday').checked;
-        
+
         let startDate, endDate;
-        
+
         if (isSingleDay) {
             // For single day holiday, use the same date for both start and end
             const singleDate = this.convertISOToDDMMYYYY(formData.get('singleDate'));
@@ -1151,7 +1151,7 @@ setupTimePickerListeners() {
             startDate = this.convertISOToDDMMYYYY(formData.get('startDate'));
             endDate = this.convertISOToDDMMYYYY(formData.get('endDate'));
         }
-        
+
         const holidayData = {
             startDate,
             endDate,
@@ -1161,7 +1161,7 @@ setupTimePickerListeners() {
 
         try {
             this.showLoading();
-            
+
             const response = await fetch('/api/teacher-availability/holidays', {
                 method: 'POST',
                 headers: {
@@ -1173,19 +1173,19 @@ setupTimePickerListeners() {
 
             if (response.ok) {
                 const result = await response.json();
-                
+
                 // Show success message
                 this.showMessage('Holiday created successfully', 'success');
-                
+
                 // Close modal
                 document.querySelector('.modal').remove();
-                
+
                 // Refresh holiday data to ensure it's added to the UI
                 await this.loadHolidaysData();
                 await this.loadHolidaysPageData();
-                
+
                 console.log('Holiday created and added to database:', result);
-                
+
             } else {
                 const error = await response.json();
                 this.showMessage(error.message || 'Failed to create holiday', 'error');
@@ -1202,7 +1202,7 @@ setupTimePickerListeners() {
     async loadHolidaysPageData() {
         try {
             this.showLoading();
-            
+
             // Get all holidays for teacher
             const response = await fetch('/api/teacher-availability/holidays', {
                 headers: {
@@ -1264,14 +1264,14 @@ setupTimePickerListeners() {
         const today = new Date();
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
-        
+
         // Total holidays
         document.getElementById('totalHolidays').textContent = holidays.length;
-        
+
         // Upcoming holidays
         const upcoming = holidays.filter(h => new Date(h.startDate) >= today);
         document.getElementById('upcomingHolidays').textContent = upcoming.length;
-        
+
         // This month holidays
         const thisMonth = holidays.filter(h => {
             const holidayDate = new Date(h.startDate);
@@ -1288,7 +1288,7 @@ setupTimePickerListeners() {
         let filteredHolidays = this.allHolidays;
         const today = new Date();
 
-        switch(filterType) {
+        switch (filterType) {
             case 'upcoming':
                 filteredHolidays = this.allHolidays.filter(h => new Date(h.startDate) >= today);
                 break;
@@ -1313,13 +1313,13 @@ setupTimePickerListeners() {
     async loadStudentsData() {
         try {
             this.showLoading();
-            
+
             const response = await fetch('/api/teachers/students', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             if (response.ok) {
                 const students = await response.json();
                 this.updateStudentsGrid(students);
@@ -1374,7 +1374,7 @@ setupTimePickerListeners() {
                 totalStudentsElement.style.animation = '';
             }, 600);
         }
-        
+
         // Update students page header
         const studentsHeader = document.querySelector('#students-page .page-header h2');
         if (studentsHeader) {
@@ -1382,13 +1382,13 @@ setupTimePickerListeners() {
         }
     }
 
-    
+
     async addStudent() {
         const formData = new FormData(document.getElementById('addStudentForm'));
-        
+
         try {
             this.showLoading();
-            
+
             const response = await fetch('/api/teachers/students', {
                 method: 'POST',
                 headers: {
@@ -1400,23 +1400,23 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('Student added successfully:', result);
-                
+
                 // Update total students count immediately
                 if (result.totalStudents !== undefined) {
                     this.updateStudentCount(result.totalStudents);
                 }
-                
+
                 // Close modal and reset form
                 const modal = document.getElementById('addStudentModal');
                 if (modal) modal.classList.remove('show');
                 document.getElementById('addStudentForm').reset();
-                
+
                 // Refresh both students list and dashboard
                 await Promise.all([
                     this.loadStudentsData(),
                     this.loadDashboardData()
                 ]);
-                
+
                 // Show success animation
                 this.showAddSuccessAnimation();
             } else {
@@ -1450,7 +1450,7 @@ setupTimePickerListeners() {
         `;
         successDiv.innerHTML = '<i class="fas fa-user-plus"></i> Student added successfully';
         document.body.appendChild(successDiv);
-        
+
         setTimeout(() => {
             successDiv.remove();
         }, 2000);
@@ -1458,7 +1458,7 @@ setupTimePickerListeners() {
 
     async uploadCsv() {
         const formData = new FormData(document.getElementById('uploadCsvForm'));
-        
+
         try {
             const response = await fetch('/api/teachers/students/upload-csv', {
                 method: 'POST',
@@ -1491,7 +1491,7 @@ setupTimePickerListeners() {
 
         try {
             this.showLoading();
-            
+
             const response = await fetch(`/api/teachers/students/${studentId}`, {
                 method: 'DELETE',
                 headers: {
@@ -1502,18 +1502,18 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('Student deleted successfully:', result);
-                
+
                 // Update total students count immediately
                 if (result.totalStudents !== undefined) {
                     this.updateStudentCount(result.totalStudents);
                 }
-                
+
                 // Refresh both students list and dashboard
                 await Promise.all([
                     this.loadStudentsData(),
                     this.loadDashboardData()
                 ]);
-                
+
                 // Show success animation
                 this.showDeleteSuccessAnimation();
             } else {
@@ -1532,10 +1532,10 @@ setupTimePickerListeners() {
     async updateStudent() {
         const formData = new FormData(document.getElementById('editStudentForm'));
         const studentId = formData.get('userId');
-        
+
         try {
             this.showLoading();
-            
+
             const response = await fetch(`/api/teachers/students/update/${studentId}`, {
                 method: 'PUT',
                 headers: {
@@ -1547,25 +1547,25 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('Student updated successfully:', result);
-                
+
                 // Update total students count immediately
                 if (result.totalStudents !== undefined) {
                     this.updateStudentCount(result.totalStudents);
                 }
-                
+
                 // Close modal
                 const modal = document.getElementById('editStudentModal');
                 if (modal) {
                     modal.classList.remove('show');
                     modal.remove(); // Remove modal from DOM
                 }
-                
+
                 // Refresh both students list and dashboard
                 await Promise.all([
                     this.loadStudentsData(),
                     this.loadDashboardData()
                 ]);
-                
+
                 // Show success animation (this includes the success message)
                 this.showUpdateSuccessAnimation();
             } else {
@@ -1599,7 +1599,7 @@ setupTimePickerListeners() {
         `;
         successDiv.innerHTML = '<i class="fas fa-check-circle"></i> Student removed successfully';
         document.body.appendChild(successDiv);
-        
+
         setTimeout(() => {
             successDiv.remove();
         }, 2000);
@@ -1715,7 +1715,7 @@ setupTimePickerListeners() {
     previewImage(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 const currentProfileImage = document.getElementById('currentProfileImage');
                 currentProfileImage.src = e.target.result;
                 document.getElementById('currentImagePreview').style.display = 'block';
@@ -1742,7 +1742,7 @@ setupTimePickerListeners() {
         `;
         successDiv.innerHTML = '<i class="fas fa-user-edit"></i> Student updated successfully';
         document.body.appendChild(successDiv);
-        
+
         setTimeout(() => {
             successDiv.remove();
         }, 2000);
@@ -1751,23 +1751,23 @@ setupTimePickerListeners() {
     async createQuiz() {
         const form = document.getElementById('createQuizForm');
         const formData = new FormData(form);
-        
+
         // Get basic quiz info
         const title = formData.get('title');
         const className = formData.get('class') || 'General';
         const subject = formData.get('subject') || 'General';
         const totalMarks = parseInt(formData.get('totalMarks')) || 1;
-        
+
         // Collect questions from the form
         const questions = [];
         const questionElements = form.querySelectorAll('.question-item');
-        
+
         for (let i = 0; i < questionElements.length; i++) {
             const questionEl = questionElements[i];
             const questionText = questionEl.querySelector('input[name^="question"]').value;
             const options = Array.from(questionEl.querySelectorAll('input[name^="options"]')).map(input => input.value);
             const correctOption = questionEl.querySelector('select').value;
-            
+
             if (questionText && options.length === 4) {
                 questions.push({
                     question: questionText,
@@ -1776,7 +1776,7 @@ setupTimePickerListeners() {
                 });
             }
         }
-        
+
         const quizData = {
             title,
             class: className,
@@ -1787,7 +1787,7 @@ setupTimePickerListeners() {
 
         try {
             this.showLoading();
-            
+
             const response = await fetch('/api/teachers/quiz', {
                 method: 'POST',
                 headers: {
@@ -1821,7 +1821,7 @@ setupTimePickerListeners() {
     addQuestionField() {
         const container = document.getElementById('questionsContainer');
         const questionCount = container.querySelectorAll('.question-item').length + 1;
-        
+
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
         questionDiv.innerHTML = `
@@ -1838,7 +1838,7 @@ setupTimePickerListeners() {
             </select>
             <button type="button" class="btn-remove" onclick="this.parentElement.remove()">Remove</button>
         `;
-        
+
         container.appendChild(questionDiv);
     }
 
@@ -1869,10 +1869,10 @@ setupTimePickerListeners() {
                 const result = await response.json();
                 const quizzes = result.quizzes || [];
                 console.log('Quizzes loaded:', quizzes);
-                
+
                 // Update quiz count
                 document.getElementById('totalQuizzes').textContent = quizzes.length;
-                
+
                 // Display quizzes
                 const quizList = document.getElementById('quizList');
                 if (quizzes.length === 0) {
@@ -1937,10 +1937,10 @@ setupTimePickerListeners() {
                             </div>
                             <div class="quiz-card-footer">
                                 <div class="quiz-status">
-                                    ${quiz.assignedClass ? 
-                                        `<span class="status-badge status-assigned">Assigned to ${quiz.assignedClass}</span>` : 
-                                        `<span class="status-badge status-active">Not Assigned</span>`
-                                    }
+                                    ${quiz.assignedClass ?
+                            `<span class="status-badge status-assigned">Assigned to ${quiz.assignedClass}</span>` :
+                            `<span class="status-badge status-active">Not Assigned</span>`
+                        }
                                 </div>
                                 <div class="quiz-footer-actions">
                                     <button class="btn-view" onclick="dashboard.viewQuiz('${quiz._id}')">
@@ -1951,7 +1951,7 @@ setupTimePickerListeners() {
                         </div>
                     `).join('');
                 }
-                
+
             } else {
                 const error = await response.json();
                 console.error('Load quizzes error:', error);
@@ -1997,7 +1997,7 @@ setupTimePickerListeners() {
             this.showMessage('Quiz not found', 'error');
             return;
         }
-        
+
         // Get quiz data (we'll need to fetch it from server for complete data)
         this.fetchQuizAndShowEditModal(quizId);
     }
@@ -2032,7 +2032,7 @@ setupTimePickerListeners() {
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.id = 'editQuizModal';
-        
+
         // Generate questions HTML
         const questionsHTML = quiz.questions.map((q, index) => `
             <div class="question-item" data-question-index="${index}">
@@ -2086,7 +2086,7 @@ setupTimePickerListeners() {
                 </form>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
         modal.classList.add('show');
 
@@ -2100,7 +2100,7 @@ setupTimePickerListeners() {
     addEditQuestionField() {
         const container = document.getElementById('editQuestionsContainer');
         const questionCount = container.querySelectorAll('.question-item').length + 1;
-        
+
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
         questionDiv.innerHTML = `
@@ -2117,7 +2117,7 @@ setupTimePickerListeners() {
             </select>
             <button type="button" class="btn-remove" onclick="this.parentElement.remove()">Remove</button>
         `;
-        
+
         container.appendChild(questionDiv);
     }
 
@@ -2125,23 +2125,23 @@ setupTimePickerListeners() {
         const form = document.getElementById('editQuizForm');
         const formData = new FormData(form);
         const quizId = formData.get('quizId');
-        
+
         // Get basic quiz info
         const title = formData.get('title');
         const className = formData.get('class') || 'General';
         const subject = formData.get('subject') || 'General';
         const totalMarks = parseInt(formData.get('totalMarks')) || 1;
-        
+
         // Collect questions from form
         const questions = [];
         const questionElements = form.querySelectorAll('.question-item');
-        
+
         for (let i = 0; i < questionElements.length; i++) {
             const questionEl = questionElements[i];
             const questionText = questionEl.querySelector('input[name^="questions"]').value;
             const options = Array.from(questionEl.querySelectorAll('input[name^="options"]')).map(input => input.value);
             const correctOption = questionEl.querySelector('select').value;
-            
+
             if (questionText && options.length === 4) {
                 questions.push({
                     question: questionText,
@@ -2150,7 +2150,7 @@ setupTimePickerListeners() {
                 });
             }
         }
-        
+
         const quizData = {
             title,
             class: className,
@@ -2161,7 +2161,7 @@ setupTimePickerListeners() {
 
         try {
             this.showLoading();
-            
+
             const response = await fetch(`/api/teachers/quiz/${quizId}`, {
                 method: 'PUT',
                 headers: {
@@ -2197,10 +2197,10 @@ setupTimePickerListeners() {
     async loadAvailabilityData() {
         try {
             this.showLoading();
-            
+
             // Load weekly availability from database
             await this.loadWeeklyAvailability();
-            
+
         } catch (error) {
             console.error('Error loading availability data:', error);
             this.showMessage('Error loading availability data', 'error');
@@ -2237,14 +2237,14 @@ setupTimePickerListeners() {
         }
 
         const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        const sortedAvailability = weeklyAvailability.sort((a, b) => 
+        const sortedAvailability = weeklyAvailability.sort((a, b) =>
             dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
         );
 
         container.innerHTML = sortedAvailability.map(slot => `
             <div class="weekly-slot">
                 <div class="day-name">${this.capitalizeFirst(slot.day)}</div>
-                <div class="time-range">${this.formatTime24Hour(slot.startTime)} - ${this.formatTime24Hour(slot.endTime)}</div>
+                <div class="time-range">${this.formatTimeInTeacherTimezone(slot.startTime)} - ${this.formatTimeInTeacherTimezone(slot.endTime)}</div>
             </div>
         `).join('');
     }
@@ -2253,36 +2253,36 @@ setupTimePickerListeners() {
         // Ensure the time is in 24-hour format (HH:MM)
         // If it's already in 24-hour format, return as-is
         if (!timeString) return '';
-        
+
         // Check if the time is in 12-hour format and convert if needed
         const hasAMPM = timeString.includes('AM') || timeString.includes('PM');
-        
+
         if (!hasAMPM) {
             // Already in 24-hour format, ensure it has leading zeros
             const [hours, minutes] = timeString.split(':');
             return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
         }
-        
+
         // Convert from 12-hour to 24-hour format
         const [time, period] = timeString.trim().split(' ');
         const [hours, minutes] = time.split(':');
         let hour24 = parseInt(hours);
-        
+
         if (period === 'PM' && hour24 !== 12) {
             hour24 += 12;
         } else if (period === 'AM' && hour24 === 12) {
             hour24 = 0;
         }
-        
+
         return `${hour24.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
     }
 
     showWeeklyAvailabilityModal() {
         // Load current availability first
         this.loadWeeklyAvailabilityForForm();
-        
+
         this.showModal('weeklyAvailabilityModal');
-        
+
         // Re-attach event listeners for clear buttons after modal is shown
         setTimeout(() => {
             this.setupTimePickerListeners();
@@ -2320,7 +2320,7 @@ setupTimePickerListeners() {
             const day = slot.day;
             const startInput = document.querySelector(`input[name="${day}StartTime"]`);
             const endInput = document.querySelector(`input[name="${day}EndTime"]`);
-            
+
             if (startInput) startInput.value = this.formatTime24Hour(slot.startTime);
             if (endInput) endInput.value = this.formatTime24Hour(slot.endTime);
         });
@@ -2330,17 +2330,17 @@ setupTimePickerListeners() {
         const formData = new FormData(document.getElementById('weeklyAvailabilityForm'));
         const weeklyAvailability = [];
         const validationErrors = [];
-        
+
         const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
         const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-        
+
         // Clear previous validation errors
         this.clearValidationErrors();
-        
+
         for (const day of days) {
             const startTime = formData.get(`${day}StartTime`);
             const endTime = formData.get(`${day}EndTime`);
-            
+
             if (startTime && endTime) {
                 // Validate time format
                 if (!timeRegex.test(startTime)) {
@@ -2348,20 +2348,20 @@ setupTimePickerListeners() {
                     this.highlightFieldError(`${day}StartTime`);
                     continue;
                 }
-                
+
                 if (!timeRegex.test(endTime)) {
                     validationErrors.push(`${this.capitalizeFirst(day)} end time format is invalid (HH:MM)`);
                     this.highlightFieldError(`${day}EndTime`);
                     continue;
                 }
-                
+
                 // Validate that end time is after start time
                 if (startTime >= endTime) {
                     validationErrors.push(`${this.capitalizeFirst(day)} end time must be after start time`);
                     this.highlightFieldError(`${day}EndTime`);
                     continue;
                 }
-                
+
                 weeklyAvailability.push({
                     day,
                     startTime,
@@ -2382,7 +2382,7 @@ setupTimePickerListeners() {
 
         try {
             this.showLoading();
-            
+
             const response = await fetch('/api/teacher-availability/availability', {
                 method: 'POST',
                 headers: {
@@ -2417,7 +2417,7 @@ setupTimePickerListeners() {
         document.querySelectorAll('.time-range-wrapper').forEach(wrapper => {
             wrapper.classList.remove('error');
         });
-        
+
         // Remove error messages
         document.querySelectorAll('.validation-error').forEach(error => {
             error.remove();
@@ -2446,13 +2446,13 @@ setupTimePickerListeners() {
                 ${errors.map(error => `<li>${error}</li>`).join('')}
             </ul>
         `;
-        
+
         const form = document.getElementById('weeklyAvailabilityForm');
         form.insertBefore(errorContainer, form.firstChild);
-        
+
         // Scroll to top of form to show errors
         errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        
+
         // Auto-remove after 10 seconds
         setTimeout(() => {
             if (errorContainer.parentNode) {
@@ -2469,10 +2469,10 @@ setupTimePickerListeners() {
             timeInputs.forEach(input => {
                 input.value = '';
             });
-            
+
             // Clear any validation errors
             this.clearValidationErrors();
-            
+
             // Show feedback to user
             this.showMessage('All availability cleared', 'info');
         }
@@ -2482,10 +2482,10 @@ setupTimePickerListeners() {
         // Clear the time inputs for the specific day
         const startInput = document.querySelector(`input[name="${day}StartTime"]`);
         const endInput = document.querySelector(`input[name="${day}EndTime"]`);
-        
+
         if (startInput) startInput.value = '';
         if (endInput) endInput.value = '';
-        
+
         // Show feedback
         this.showMessage(`${this.capitalizeFirst(day)} availability cleared`, 'info');
     }
@@ -2496,7 +2496,7 @@ setupTimePickerListeners() {
 
     convertToDDMMYYYY(dateString) {
         if (!dateString) return '';
-        
+
         // Convert from YYYY-MM-DD to DD-MM-YYYY
         const [year, month, day] = dateString.split('-');
         return `${day}-${month}-${year}`;
@@ -2518,7 +2518,7 @@ setupTimePickerListeners() {
     async showProfileModal() {
         try {
             this.showLoading();
-            
+
             const response = await fetch('/api/teachers/profile', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -2528,10 +2528,10 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const teacher = await response.json();
                 this.populateProfileView(teacher);
-                
+
                 const modal = document.getElementById('teacherProfileModal');
                 if (modal) modal.classList.add('show');
-                
+
                 this.showProfileView();
             } else {
                 const error = await response.json();
@@ -2546,6 +2546,12 @@ setupTimePickerListeners() {
     }
 
     populateProfileView(teacher) {
+        // Update currentUser object with teacher data including timezone
+        if (this.currentUser) {
+            this.currentUser.timezone = teacher.timezone || 'Asia/Kolkata';
+            console.log('Updated currentUser timezone:', this.currentUser.timezone);
+        }
+        
         // Update profile view
         document.getElementById('profileName').textContent = teacher.fullName || 'Teacher';
         document.getElementById('profileEmail').textContent = teacher.email || 'teacher@example.com';
@@ -2558,23 +2564,23 @@ setupTimePickerListeners() {
         // Update profile avatar
         const profileAvatar = document.getElementById('profileAvatar');
         const profileAvatarEdit = document.getElementById('profileAvatarEdit');
-        
+
         if (teacher.profileImage) {
             let profileImageUrl = teacher.profileImage;
             if (profileImageUrl.startsWith('/uploads/')) {
                 profileImageUrl = `http://localhost:5001${profileImageUrl}`;
             }
-            
+
             if (profileAvatar) {
                 profileAvatar.src = profileImageUrl;
-                profileAvatar.onerror = function() {
+                profileAvatar.onerror = function () {
                     this.src = 'https://picsum.photos/seed/teacher/100/100.jpg';
                 };
             }
-            
+
             if (profileAvatarEdit) {
                 profileAvatarEdit.src = profileImageUrl;
-                profileAvatarEdit.onerror = function() {
+                profileAvatarEdit.onerror = function () {
                     this.src = 'https://picsum.photos/seed/teacher/100/100.jpg';
                 };
             }
@@ -2619,7 +2625,7 @@ setupTimePickerListeners() {
 
         try {
             this.showLoading();
-            
+
             const response = await fetch('/api/teachers/profile', {
                 method: 'PUT',
                 headers: {
@@ -2631,15 +2637,15 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const result = await response.json();
                 this.showMessage(result.message || 'Profile updated successfully', 'success');
-                
+
                 // Update current user data
                 this.currentUser = result.teacher;
                 this.updateTeacherProfile();
-                
+
                 // Refresh profile view
                 this.populateProfileView(result.teacher);
                 this.showProfileView();
-                
+
                 // Close modal
                 const modal = document.getElementById('teacherProfileModal');
                 if (modal) modal.classList.remove('show');
@@ -2667,7 +2673,7 @@ setupTimePickerListeners() {
 
     showMessage(message, type = 'info') {
         let container = document.getElementById('messages');
-        
+
         // Create messages container if it doesn't exist
         if (!container) {
             container = document.createElement('div');
@@ -2675,13 +2681,13 @@ setupTimePickerListeners() {
             container.className = 'messages';
             document.body.appendChild(container);
         }
-        
+
         const messageEl = document.createElement('div');
         messageEl.className = `message ${type}`;
         messageEl.textContent = message;
-        
+
         container.appendChild(messageEl);
-        
+
         setTimeout(() => {
             messageEl.remove();
         }, 5000);
@@ -2691,9 +2697,9 @@ setupTimePickerListeners() {
     async loadStudentsData() {
         try {
             this.showLoading();
-            
+
             console.log('Loading students data...');
-            
+
             // Load teacher students
             const response = await fetch('/api/teachers/students', {
                 headers: {
@@ -2707,7 +2713,7 @@ setupTimePickerListeners() {
                 const data = await response.json();
                 console.log('Students API Response:', data);
                 console.log('Total students in DB:', Array.isArray(data) ? data.length : (data.students?.length || 0));
-                
+
                 // Handle different response formats
                 const students = Array.isArray(data) ? data : (data.students || []);
                 this.updateStudentsList(students);
@@ -2726,7 +2732,7 @@ setupTimePickerListeners() {
 
     updateStudentsList(students) {
         const container = document.getElementById('studentsList');
-        
+
         if (!students || students.length === 0) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 48px 20px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px;">
@@ -2877,7 +2883,7 @@ setupTimePickerListeners() {
             </div>
         `;
         document.body.appendChild(modal);
-        
+
         // Add form submit event listener
         modal.querySelector('#editStudentForm').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -2915,7 +2921,7 @@ setupTimePickerListeners() {
     async loadSessionsData(page = 1, limit = 5) {
         try {
             this.showLoading();
-            
+
             // Load teacher sessions with pagination
             const response = await fetch(`/api/sessions/teacher?page=${page}&limit=${limit}`, {
                 headers: {
@@ -2926,7 +2932,7 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Sessions API Response:', data);
-                
+
                 // Fetch available slots for each session
                 const sessionsWithSlots = await Promise.all(
                     (data.sessions || []).map(async (session) => {
@@ -2936,7 +2942,7 @@ setupTimePickerListeners() {
                                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                                 }
                             });
-                            
+
                             if (slotResponse.ok) {
                                 const sessionDetails = await slotResponse.json();
                                 return {
@@ -2951,12 +2957,12 @@ setupTimePickerListeners() {
                         }
                     })
                 );
-                
+
                 console.log('Sessions with slots:', sessionsWithSlots);
                 console.log('Pagination data:', data.pagination);
-                
+
                 this.updateSessionsList(sessionsWithSlots, data.pagination);
-                this.updateSessionStats({...data, sessions: sessionsWithSlots});
+                this.updateSessionStats({ ...data, sessions: sessionsWithSlots });
             } else {
                 const error = await response.json();
                 console.error('Sessions API Error:', error);
@@ -2984,7 +2990,7 @@ setupTimePickerListeners() {
                 } else if (session.type === 'personal') {
                     personalSessions++;
                 }
-                
+
                 // Count booked slots
                 if (session.bookedSlots) {
                     bookedSlots += session.bookedSlots.length;
@@ -3010,7 +3016,7 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const data = await response.json();
                 const totalSessions = data.pagination?.totalSessions || 0;
-                
+
                 // Update dashboard with total sessions count
                 const totalSessionsElement = document.getElementById('totalSessionsDashboard');
                 if (totalSessionsElement) {
@@ -3041,7 +3047,7 @@ setupTimePickerListeners() {
     async filterSessions(filter) {
         try {
             this.showLoading();
-            
+
             // Load teacher sessions with filter
             const response = await fetch(`/api/sessions/teacher?type=${filter}`, {
                 headers: {
@@ -3067,10 +3073,7 @@ setupTimePickerListeners() {
 
     updateSessionsList(sessions, pagination = null) {
         const container = document.getElementById('sessionsList');
-        
-        // Debug logging
-        console.log('updateSessionsList called with:', { sessions: sessions?.length, pagination });
-        
+
         if (!sessions || sessions.length === 0) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 60px 20px; background: white; border: 1px solid #e3f2fd; border-radius: 8px;">
@@ -3079,7 +3082,7 @@ setupTimePickerListeners() {
                     <p style="color: #546e7a; margin: 0; font-size: 14px;">Create your first session to start managing your schedule</p>
                 </div>
             `;
-            
+
             // Show pagination even with no sessions if pagination data exists
             if (pagination && pagination.totalPages > 0) {
                 container.innerHTML += this.generatePaginationHTML(pagination);
@@ -3090,10 +3093,11 @@ setupTimePickerListeners() {
         const sessionsHtml = sessions.map(session => {
             const availableSlots = session.availableSlots || [];
             const bookedSlots = session.bookedSlots || [];
-            const totalSlots = availableSlots.length + bookedSlots.length;
+            const totalSlots = availableSlots.length;
+            const availableCount = totalSlots - bookedSlots.length;
             const status = this.getSessionStatus(session);
             const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0;
-            
+
             return `
                 <div class="session-item" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; margin-bottom: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                     <!-- Session Header -->
@@ -3127,7 +3131,7 @@ setupTimePickerListeners() {
                             <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
                         </div>
                         <div style="background: white; padding: 12px; text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${availableSlots.length}</div>
+                            <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${availableCount}</div>
                             <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Available</div>
                         </div>
                         <div style="background: white; padding: 12px; text-align: center;">
@@ -3148,37 +3152,7 @@ setupTimePickerListeners() {
                     
                     <!-- Slots Preview -->
                     <div style="margin-bottom: 16px;">
-                        ${availableSlots.length > 0 ? `
-                            <div style="margin-bottom: 12px;">
-                                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">My Slots (${availableSlots.length})</div>
-                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                                    ${availableSlots.map(slot => `
-                                        <span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
-                                            ${slot.startTime} - ${slot.endTime}
-                                        </span>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        ${bookedSlots.length > 0 ? `
-                            <div>
-                                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">Booked Slots (${bookedSlots.length})</div>
-                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                                    ${bookedSlots.map(slot => `
-                                        <span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
-                                            👤 ${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}
-                                        </span>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        ${availableSlots.length === 0 && bookedSlots.length === 0 ? `
-                            <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 4px; color: #546e7a; font-size: 13px;">
-                                No slot information available
-                            </div>
-                        ` : ''}
+                        ${this.generateUnifiedSlotsView(availableSlots, bookedSlots, session.date)}
                     </div>
                     
                     <!-- Actions -->
@@ -3190,6 +3164,7 @@ setupTimePickerListeners() {
                 </div>
             `;
         }).join('');
+
 
         const paginationHtml = this.generatePaginationHTML(pagination);
         container.innerHTML = sessionsHtml + paginationHtml;
@@ -3203,11 +3178,11 @@ setupTimePickerListeners() {
         const { currentPage, totalPages, limit } = pagination;
         const startRecord = ((currentPage - 1) * limit) + 1;
         const endRecord = Math.min(currentPage * limit, pagination.totalSessions || 0);
-        
+
         // Generate page numbers with ellipsis for large page counts
         let pageNumbers = [];
         const maxVisiblePages = 5;
-        
+
         if (totalPages <= maxVisiblePages) {
             // Show all pages if total is less than or equal to max visible
             pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -3238,17 +3213,17 @@ setupTimePickerListeners() {
                     </button>
                     
                     ${pageNumbers.map((pageNum, index) => {
-                        if (pageNum === '...') {
-                            return `<span class="pagination-ellipsis">...</span>`;
-                        }
-                        return `
+            if (pageNum === '...') {
+                return `<span class="pagination-ellipsis">...</span>`;
+            }
+            return `
                             <button 
                                 onclick="dashboard.loadSessionsData(${pageNum}, ${limit})"
                                 class="pagination-btn ${pageNum === currentPage ? 'active' : ''}">
                                 ${pageNum}
                             </button>
                         `;
-                    }).join('')}
+        }).join('')}
                     
                     <button 
                         onclick="dashboard.loadSessionsData(${currentPage + 1}, ${limit})"
@@ -3266,7 +3241,7 @@ setupTimePickerListeners() {
         const sessionDate = new Date(session.date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         if (sessionDate < today) {
             return 'completed';
         } else if (sessionDate.getTime() === today.getTime()) {
@@ -3276,25 +3251,278 @@ setupTimePickerListeners() {
         }
     }
 
-    formatTime(timeString) {
-        // If it's already a time string (like "09:00"), return as is
-        if (typeof timeString === 'string' && timeString.includes(':')) {
+generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
+        // Create a map of all possible slots with their booking status
+        const allSlotsMap = new Map();
+        
+        // First, add all available slots to map
+        availableSlots.forEach(slot => {
+            const startTime = this.formatTimeInTeacherTimezone(slot.startTime);
+            const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
+            const key = `${startTime}-${endTime}`;
+            
+            allSlotsMap.set(key, {
+                startTime: startTime,
+                endTime: endTime,
+                type: 'available',
+                studentName: null
+            });
+        });
+        
+        // Then, mark slots as booked (this will overwrite available slots with same time)
+        bookedSlots.forEach(slot => {
+            const startTime = this.formatUtcTimeToTeacherTimezone(slot.startTime, sessionDate);
+            const endTime = this.formatUtcTimeToTeacherTimezone(slot.endTime, sessionDate);
+            const key = `${startTime}-${endTime}`;
+            
+            allSlotsMap.set(key, {
+                startTime: startTime,
+                endTime: endTime,
+                type: 'booked',
+                studentName: slot.bookedBy ? slot.bookedBy.fullName : 'Booked'
+            });
+        });
+        
+        // Convert map to array and sort by start time
+        const allSlots = Array.from(allSlotsMap.values()).sort((a, b) => {
+            return a.startTime.localeCompare(b.startTime);
+        });
+        
+        if (allSlots.length === 0) {
+            return `
+                <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 4px; color: #546e7a; font-size: 13px;">
+                    No slots available
+                </div>
+            `;
+        }
+        
+        return `
+            <div>
+                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">My Slots (${allSlots.length})</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    ${allSlots.map(slot => {
+                        if (slot.type === 'available') {
+                            return `
+                                <span style="background: #1976d2; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+                                    ${slot.startTime} - ${slot.endTime}
+                                </span>
+                            `;
+                        } else {
+                            return `
+                                <span style="background: #d32f2f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+                                    ${slot.studentName} [${slot.startTime} – ${slot.endTime}]
+                                </span>
+                            `;
+                        }
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    generateUnifiedSlotsModalView(availableSlots, bookedSlots, sessionDate) {
+        // Create a map of all possible slots with their booking status
+        const allSlotsMap = new Map();
+        
+        // First, add all available slots to map
+        availableSlots.forEach(slot => {
+            const key = `${this.formatTimeInTeacherTimezone(slot.startTime)}-${this.formatTimeInTeacherTimezone(slot.endTime)}`;
+            allSlotsMap.set(key, {
+                startTime: this.formatTimeInTeacherTimezone(slot.startTime),
+                endTime: this.formatTimeInTeacherTimezone(slot.endTime),
+                type: 'available',
+                studentName: null,
+                studentEmail: null
+            });
+        });
+        
+        // Then, mark slots as booked (this will overwrite available slots with same time)
+        bookedSlots.forEach(slot => {
+            const startTime = this.formatUtcTimeToTeacherTimezone(slot.startTime, sessionDate);
+            const endTime = this.formatUtcTimeToTeacherTimezone(slot.endTime, sessionDate);
+            const key = `${startTime}-${endTime}`;
+            
+            allSlotsMap.set(key, {
+                startTime: startTime,
+                endTime: endTime,
+                type: 'booked',
+                studentName: slot.bookedBy ? slot.bookedBy.fullName : 'Booked',
+                studentEmail: slot.bookedBy ? slot.bookedBy.email : ''
+            });
+        });
+        
+        // Convert map to array and sort by start time
+        const allSlots = Array.from(allSlotsMap.values()).sort((a, b) => {
+            return a.startTime.localeCompare(b.startTime);
+        });
+        
+        if (allSlots.length === 0) {
+            return '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #6c757d;">No slots available</div>';
+        }
+        
+        return allSlots.map((slot, index) => `
+            <div class="slot-card ${slot.type}" style="background: ${slot.type === 'available' ? 'white' : '#fee2e2'}; border: 2px solid ${slot.type === 'available' ? '#28a745' : '#dc2626'}; border-radius: 8px; padding: 15px;">
+                <div style="font-weight: bold; color: ${slot.type === 'available' ? '#28a745' : 'white'}; margin-bottom: 8px;">
+                    Slot #${index + 1}
+                </div>
+                <div style="font-size: 16px; color: ${slot.type === 'available' ? '#495057' : 'white'}; margin-bottom: 10px; background: ${slot.type === 'booked' ? '#d32f2f' : 'transparent'}; padding: ${slot.type === 'booked' ? '8px' : '0'}; border-radius: 4px;">
+                    <i class="fas fa-clock"></i> ${slot.startTime} - ${slot.endTime}
+                </div>
+                ${slot.type === 'available' ? `
+                    <div style="margin-top: 8px; background: #d4edda; color: #155724; padding: 5px; border-radius: 15px; font-size: 12px;">
+                        Available
+                    </div>
+                ` : ''}
+                ${slot.type === 'booked' ? `
+                    <div style="background: white; padding: 10px; border-radius: 8px; border-left: 3px solid #d32f2f;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 30px; height: 30px; background: #d32f2f; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user" style="color: white;"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight: bold; color: #d32f2f;">${slot.studentName}</div>
+                                ${slot.studentEmail ? `<div style="font-size: 12px; color: #666;">${slot.studentEmail}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+
+    formatTimeInTeacherTimezone(timeString) {
+        if (!timeString) return '';
+        
+        // Get teacher's timezone from current user or default to Asia/Kolkata
+        const teacherTimezone = this.currentUser?.timezone || 'Asia/Kolkata';
+        
+        // If it's already in HH:MM format, return as-is (already converted by backend)
+        if (typeof timeString === 'string' && /^\d{2}:\d{2}$/.test(timeString)) {
             return timeString;
         }
         
-        // If it's a Date object, format it
-        const date = new Date(timeString);
-        return date.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false 
+        // Handle time strings with seconds (HH:MM:SS), remove seconds
+        if (typeof timeString === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+            return timeString.substring(0, 5);
+        }
+        
+        // Handle Date objects or UTC time strings - convert to teacher timezone
+        try {
+            let momentDate;
+            
+            // Handle different input formats
+            if (timeString instanceof Date) {
+                // It's a Date object
+                momentDate = moment(timeString);
+            } else if (typeof timeString === 'string') {
+                // It's a string - try parsing as UTC first
+                if (timeString.includes('T') || timeString.includes('Z') || timeString.includes('+')) {
+                    // ISO string or UTC format
+                    momentDate = moment.utc(timeString);
+                } else {
+                    // Regular string, try parsing as local first
+                    momentDate = moment(timeString);
+                }
+            } else {
+                // Any other type
+                momentDate = moment(timeString);
+            }
+            
+            if (momentDate.isValid()) {
+                // Convert to teacher timezone and format as HH:mm
+                return momentDate.tz(teacherTimezone).format('HH:mm');
+            }
+        } catch (error) {
+            console.warn('Error converting time to teacher timezone:', error, 'Input:', timeString);
+        }
+        
+        // Fallback: try to parse as string and format to HH:MM
+        try {
+            const fallbackDate = moment.tz(timeString, teacherTimezone);
+            if (fallbackDate.isValid()) {
+                return fallbackDate.format('HH:mm');
+            }
+        } catch (error) {
+            console.warn('Error with fallback time conversion:', error);
+        }
+        
+        // Final fallback - return as string if possible
+        return typeof timeString === 'string' ? timeString : '';
+    }
+
+    formatUtcTimeToTeacherTimezone(timeString, referenceDate) {
+        if (!timeString) return '';
+
+        // Use teacher's timezone or default to Asia/Kolkata
+        const teacherTimezone = this.currentUser?.timezone || 'Asia/Kolkata';
+
+        try {
+            let utcMoment;
+            
+            // Handle Date objects (assumed to be UTC)
+            if (timeString instanceof Date) {
+                utcMoment = moment.utc(timeString);
+            }
+            // Handle ISO strings or strings with timezone info
+            else if (typeof timeString === 'string') {
+                // If it's already in HH:mm format, treat it as UTC time-of-day
+                if (/^\d{2}:\d{2}(:\d{2})?$/.test(timeString)) {
+                    const hhmm = timeString.substring(0, 5);
+                    
+                    // Use the session date to create a proper UTC datetime
+                    const baseDate = moment(referenceDate, ["DD-MM-YYYY", "YYYY-MM-DD", moment.ISO_8601], true);
+                    const ymd = baseDate.isValid() ? baseDate.format('YYYY-MM-DD') : moment().format('YYYY-MM-DD');
+                    
+                    utcMoment = moment.utc(`${ymd} ${hhmm}`, 'YYYY-MM-DD HH:mm');
+                }
+                // Handle ISO strings or other date formats
+                else {
+                    utcMoment = moment.utc(timeString);
+                }
+            }
+            else {
+                // For any other type, try to convert to UTC moment
+                utcMoment = moment.utc(timeString);
+            }
+
+            if (utcMoment.isValid()) {
+                // Convert from UTC to teacher's timezone and format as HH:mm only
+                return utcMoment.tz(teacherTimezone).format('HH:mm');
+            }
+        } catch (error) {
+            console.warn('Error converting UTC time to teacher timezone:', error, 'Input:', timeString);
+        }
+
+        // Fallback: return original time string if conversion fails
+        return typeof timeString === 'string' ? timeString : '';
+    }
+
+    // Test function to verify timezone conversion
+    testTimezoneConversion() {
+        console.log('Testing timezone conversion for booked slots...');
+        
+        // Test cases with different UTC times
+        const testCases = [
+            { time: '10:30', date: '20-01-2026', expected: 'Should convert from UTC to teacher timezone' },
+            { time: '14:45', date: '20-01-2026', expected: 'Should convert from UTC to teacher timezone' },
+            { time: new Date(), date: '20-01-2026', expected: 'Should handle Date objects' }
+        ];
+        
+        testCases.forEach((testCase, index) => {
+            const result = this.formatUtcTimeToTeacherTimezone(testCase.time, testCase.date);
+            console.log(`Test ${index + 1}:`, {
+                input: testCase.time,
+                date: testCase.date,
+                output: result,
+                teacherTimezone: this.currentUser?.timezone || 'Asia/Kolkata'
+            });
         });
     }
 
     async viewSessionDetails(sessionId) {
         try {
             this.showLoading();
-            
+
             const response = await fetch(`/api/sessions/${sessionId}/details`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -3321,7 +3549,7 @@ setupTimePickerListeners() {
         const availableSlots = session.availableSlots || [];
         const bookedSlots = session.bookedSlots || [];
         const totalSlots = availableSlots.length + bookedSlots.length;
-        
+
         const modal = document.createElement('div');
         modal.className = 'modal show';
         modal.innerHTML = `
@@ -3390,72 +3618,22 @@ setupTimePickerListeners() {
                             </div>
                         </div>
                         
-                        <!-- Available Slots Section -->
+                        <!-- My Slots Section -->
                         <div class="available-slots-section">
-                            <h4 style="color: #28a745; margin-bottom: 15px;">
-                                <i class="fas fa-check-circle"></i> My Slots (${availableSlots.length})
-                            </h4>
-                            <div class="slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
-                                ${availableSlots.length > 0 ? 
-                                    availableSlots.map((slot, index) => `
-                                        <div class="slot-card available" style="background: white; border: 2px solid #28a745; border-radius: 8px; padding: 15px; text-align: center; transition: transform 0.2s;">
-                                            <div style="font-weight: bold; color: #28a745; margin-bottom: 8px;">
-                                                Slot #${index + 1}
-                                            </div>
-                                            <div style="font-size: 18px; color: #495057;">
-                                                <i class="fas fa-clock"></i> ${slot.startTime} - ${slot.endTime}
-                                            </div>
-                                            <div style="margin-top: 8px; background: #d4edda; color: #155724; padding: 5px; border-radius: 15px; font-size: 12px;">
-                                                Available
-                                            </div>
-                                        </div>
-                                    `).join('') : 
-                                    '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #6c757d;">No slots available</div>'
-                                }
-                            </div>
-                        </div>
-                        
-                        <!-- Booked Slots Section -->
-                        <div class="booked-slots-section" style="margin-top: 20px;">
-                            <h4 style="color: #ffc107; margin-bottom: 15px;">
-                                <i class="fas fa-user-check"></i> Booked Slots (${bookedSlots.length})
+                            <h4 style="color: #1976d2; margin-bottom: 15px;">
+                                <i class="fas fa-clock"></i> My Slots
                             </h4>
                             <div class="slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
-                                ${bookedSlots.length > 0 ? 
-                                    bookedSlots.map((slot, index) => `
-                                        <div class="slot-card booked" style="background: white; border: 2px solid #ffc107; border-radius: 8px; padding: 15px;">
-                                            <div style="font-weight: bold; color: #ffc107; margin-bottom: 8px;">
-                                                Slot #${index + 1}
-                                            </div>
-                                            <div style="font-size: 16px; color: #495057; margin-bottom: 10px;">
-                                                <i class="fas fa-clock"></i> ${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}
-                                            </div>
-                                            ${slot.bookedBy ? `
-                                                <div style="background: #fff3cd; padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107;">
-                                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                                        <div style="width: 30px; height: 30px; background: #ffc107; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                            <i class="fas fa-user" style="color: white;"></i>
-                                                        </div>
-                                                        <div>
-                                                            <div style="font-weight: bold; color: #856404;">${slot.bookedBy.fullName}</div>
-                                                            <div style="font-size: 12px; color: #856404;">${slot.bookedBy.email}</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ` : ''}
-                                        </div>
-                                    `).join('') : 
-                                    '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #6c757d;">No booked slots</div>'
-                                }
+                                ${this.generateUnifiedSlotsModalView(availableSlots, bookedSlots, session.date)}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Close modal when clicking outside
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -3467,9 +3645,9 @@ setupTimePickerListeners() {
     formatDate(dateString) {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
             year: 'numeric'
         });
     }
@@ -3481,7 +3659,7 @@ setupTimePickerListeners() {
 
         try {
             this.showLoading();
-            
+
             const response = await fetch(`/api/sessions/${sessionId}`, {
                 method: 'DELETE',
                 headers: {
@@ -3492,7 +3670,7 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const result = await response.json();
                 this.showMessage(result.message || 'Session deleted successfully', 'success');
-                
+
                 // Reload sessions list
                 await this.loadSessionsData();
             } else {
@@ -3509,13 +3687,13 @@ setupTimePickerListeners() {
 
     formatSessionDate(dateString) {
         if (!dateString) return 'No date set';
-        
+
         let date;
         // Handle different date formats
         if (typeof dateString === 'string') {
             // If it's already formatted with day names, return as is
             if (dateString.includes('/')) return dateString;
-            
+
             // Handle DD-MM-YYYY format from backend
             if (dateString.match(/^\d{2}-\d{2}-\d{4}$/)) {
                 const [day, month, year] = dateString.split('-');
@@ -3526,30 +3704,30 @@ setupTimePickerListeners() {
         } else {
             date = new Date(dateString);
         }
-        
+
         // Check if date is valid
         if (isNaN(date.getTime())) {
             return 'Invalid Date';
         }
-        
-        return date.toLocaleDateString('en-US', { 
+
+        return date.toLocaleDateString('en-US', {
             weekday: 'short',
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
         });
     }
 
     showCreateSessionModal() {
         // Load students for the dropdown
         this.loadStudentsForSession();
-        
+
         const modal = document.getElementById('createSessionModal');
         if (modal) {
             // Set minimum date to today
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('sessionDate').min = today;
-            
+
             // Clear any existing date validation errors
             const dateInput = document.getElementById('sessionDate');
             const formGroup = dateInput.closest('.form-group');
@@ -3558,10 +3736,10 @@ setupTimePickerListeners() {
                 existingError.remove();
             }
             dateInput.classList.remove('error');
-            
+
             // Set default timezone based on user's browser timezone
             this.setDefaultTimezone();
-            
+
             modal.classList.add('show');
         }
     }
@@ -3569,22 +3747,22 @@ setupTimePickerListeners() {
     setDefaultTimezone() {
         const timezoneSelect = document.getElementById('studentTimezone');
         if (!timezoneSelect) return;
-        
+
         // Get user's browser timezone
         const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        
+
         // Try to find matching option in the dropdown
         const matchingOption = Array.from(timezoneSelect.options).find(option => option.value === browserTimezone);
-        
+
         if (matchingOption) {
             timezoneSelect.value = browserTimezone;
         } else {
             // If exact match not found, try to find a timezone in the same region
             const region = browserTimezone.split('/')[0];
-            const regionalOption = Array.from(timezoneSelect.options).find(option => 
+            const regionalOption = Array.from(timezoneSelect.options).find(option =>
                 option.value.startsWith(region + '/')
             );
-            
+
             if (regionalOption) {
                 timezoneSelect.value = regionalOption.value;
             }
@@ -3593,7 +3771,7 @@ setupTimePickerListeners() {
 
     handleStudentTypeChange(studentType) {
         const particularStudentGroup = document.getElementById('particularStudentGroup');
-        
+
         if (studentType === 'particular') {
             particularStudentGroup.style.display = 'block';
         } else {
@@ -3617,7 +3795,7 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const students = await response.json();
                 const particularStudentSelect = document.getElementById('particularStudentSelect');
-                
+
                 // Populate the particular student dropdown
                 particularStudentSelect.innerHTML = '<option value="">Select a student</option>';
                 students.forEach(student => {
@@ -3640,18 +3818,18 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const result = await response.json();
                 const holidays = result.holidays || [];
-                
+
                 // Parse the input date (assuming it's in YYYY-MM-DD format from the date input)
                 const checkDate = new Date(dateString);
                 const checkDateStr = checkDate.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
-                
+
                 // Check if the date falls within any holiday range
                 for (const holiday of holidays) {
                     const startDate = new Date(holiday.startDate);
                     const endDate = new Date(holiday.endDate);
                     const startDateStr = startDate.toISOString().split('T')[0];
                     const endDateStr = endDate.toISOString().split('T')[0];
-                    
+
                     // Check if the selected date is within the holiday range
                     if (checkDateStr >= startDateStr && checkDateStr <= endDateStr) {
                         return {
@@ -3661,7 +3839,7 @@ setupTimePickerListeners() {
                     }
                 }
             }
-            
+
             return { isHoliday: false };
         } catch (error) {
             console.error('Error checking holiday:', error);
@@ -3671,24 +3849,24 @@ setupTimePickerListeners() {
 
     async validateSessionDate(dateString) {
         if (!dateString) return;
-        
+
         const holidayCheck = await this.checkDateIsHoliday(dateString);
         const dateInput = document.getElementById('sessionDate');
         const formGroup = dateInput.closest('.form-group');
-        
+
         // Remove existing error message
         const existingError = formGroup.querySelector('.error-message');
         if (existingError) {
             existingError.remove();
         }
-        
+
         // Remove error styling
         dateInput.classList.remove('error');
-        
+
         if (holidayCheck.isHoliday) {
             // Add error styling
             dateInput.classList.add('error');
-            
+
             // Create and show error message
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error-message';
@@ -3696,7 +3874,7 @@ setupTimePickerListeners() {
             errorDiv.style.fontSize = '12px';
             errorDiv.style.marginTop = '4px';
             errorDiv.textContent = `Holiday: ${holidayCheck.holiday.reason}${holidayCheck.holiday.startDate !== holidayCheck.holiday.endDate ? ' (' + this.formatDate(holidayCheck.holiday.startDate) + ' to ' + this.formatDate(holidayCheck.holiday.endDate) + ')' : ''}`;
-            
+
             formGroup.appendChild(errorDiv);
         }
     }
@@ -3704,10 +3882,10 @@ setupTimePickerListeners() {
     async createSessionSlots() {
         try {
             this.showLoading();
-            
+
             const formData = new FormData(document.getElementById('createSessionForm'));
             const data = Object.fromEntries(formData.entries());
-            
+
             // Check if the selected date is a holiday
             const holidayCheck = await this.checkDateIsHoliday(data.date);
             if (holidayCheck.isHoliday) {
@@ -3715,12 +3893,12 @@ setupTimePickerListeners() {
                 this.showMessage(`Session date cannot be a holiday. ${holidayCheck.holiday.reason} holiday from ${this.formatDate(holidayCheck.holiday.startDate)}${holidayCheck.holiday.startDate !== holidayCheck.holiday.endDate ? ' to ' + this.formatDate(holidayCheck.holiday.endDate) : ''}.`, 'error');
                 return;
             }
-            
+
             // Convert date format to DD-MM-YYYY
             const date = new Date(data.date);
             const formattedDate = `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
             data.date = formattedDate;
-            
+
             // Handle student selection based on studentType
             if (data.studentType === 'particular' && data.student_id) {
                 // Keep student_id for particular student
@@ -3743,17 +3921,17 @@ setupTimePickerListeners() {
             if (response.ok) {
                 const result = await response.json();
                 this.showMessage('Session slots created successfully!', 'success');
-                
+
                 // Close modal
                 const modal = document.getElementById('createSessionModal');
                 if (modal) modal.classList.remove('show');
-                
+
                 // Reset form
                 document.getElementById('createSessionForm').reset();
-                
+
                 // Reload sessions data
                 await this.loadSessionsData();
-                
+
                 // Show created slots info
                 if (result.availableSlots && result.availableSlots.length > 0) {
                     this.showSessionSlotsResult(result);
@@ -3784,11 +3962,11 @@ setupTimePickerListeners() {
                     <p><strong>Date:</strong> ${result.date}</p>
                     <p><strong>Total Slots Created:</strong> ${result.availableSlots.length}</p>
                     <div class="slots-preview">
-                        <h4>Available Time Slots:</h4>
+                        <h4>Available My Slots:</h4>
                         <div class="slots-list">
-                            ${result.availableSlots.slice(0, 5).map(slot => 
-                                `<span class="slot-time">${slot.startTime} - ${slot.endTime}</span>`
-                            ).join('')}
+                            ${result.availableSlots.slice(0, 5).map(slot =>
+            `<span class="slot-time">${this.formatTimeInTeacherTimezone(slot.startTime)} - ${this.formatTimeInTeacherTimezone(slot.endTime)}</span>`
+        ).join('')}
                             ${result.availableSlots.length > 5 ? `<span class="slot-more">+${result.availableSlots.length - 5} more</span>` : ''}
                         </div>
                     </div>
@@ -3805,7 +3983,7 @@ setupTimePickerListeners() {
     async viewSessionDetails(sessionId) {
         try {
             this.showLoading();
-            
+
             const response = await fetch(`/api/sessions/teacher?id=${sessionId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -3882,6 +4060,27 @@ setupTimePickerListeners() {
     }
 
     async loadTeacherData() {
+        // Load teacher profile to get timezone information
+        try {
+            const response = await fetch('/api/teachers/profile', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const teacher = await response.json();
+                // Update currentUser object with timezone
+                if (this.currentUser) {
+                    this.currentUser.timezone = teacher.timezone || 'Asia/Kolkata';
+                    console.log('Loaded teacher timezone:', this.currentUser.timezone);
+                }
+            }
+        } catch (error) {
+            console.warn('Could not load teacher profile for timezone:', error);
+            // Continue with default timezone
+        }
+
         // Load initial data for current page
         await this.loadPageData(this.currentPage);
     }
@@ -3892,65 +4091,19 @@ setupTimePickerListeners() {
         existingMessages.forEach(msg => msg.remove());
 
         // Create message element
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${type}`;
-        messageDiv.textContent = message;
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${type}`;
+        messageElement.textContent = message;
 
-        // Style based on type
-        const styles = {
-            success: {
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                icon: '✓'
-            },
-            error: {
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                color: 'white',
-                icon: '✕'
-            },
-            info: {
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                color: 'white',
-                icon: 'ℹ'
-            }
-        };
+        // Add to page
+        document.body.appendChild(messageElement);
 
-        const style = styles[type] || styles.info;
-        messageDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            background: ${style.background};
-            color: ${style.color};
-            font-weight: 500;
-            font-size: 14px;
-            z-index: 10000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            animation: slideIn 0.3s ease-out;
-            max-width: 400px;
-        `;
-
-        messageDiv.innerHTML = `<span style="font-weight: 600;">${style.icon}</span> ${message}`;
-
-        // Add to document
-        document.body.appendChild(messageDiv);
-
-        // Auto remove after 4 seconds
+        // Auto remove after 3 seconds
         setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.style.animation = 'slideOut 0.3s ease-in';
-                setTimeout(() => {
-                    if (messageDiv.parentNode) {
-                        messageDiv.remove();
-                    }
-                }, 300);
+            if (messageElement.parentNode) {
+                messageElement.parentNode.removeChild(messageElement);
             }
-        }, 4000);
+        }, 3000);
     }
 
     showLoading() {
@@ -3966,6 +4119,32 @@ setupTimePickerListeners() {
             loadingDiv.style.display = 'none';
         }
     }
+
+    // Test function to verify timezone conversion
+    testTimezoneConversion() {
+        console.log('Testing timezone conversion...');
+        
+        // Set up test data
+        this.currentUser = this.currentUser || {};
+        this.currentUser.timezone = 'Asia/Kolkata';
+        
+        // Test case: 04:30 UTC should show 10:00 in Asia/Kolkata (UTC+5:30)
+        const testUtcTime = '04:30';
+        const testDate = '20-01-2026';
+        
+        const result = this.formatUtcTimeToTeacherTimezone(testUtcTime, testDate);
+        
+        console.log('Timezone conversion test:', {
+            input: `${testUtcTime} UTC`,
+            date: testDate,
+            timezone: this.currentUser.timezone,
+            expected: '10:00',
+            actual: result,
+            success: result === '10:00'
+        });
+        
+        return result === '10:00';
+    }
 }
 
 // Initialize dashboard when DOM is loaded
@@ -3973,7 +4152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load components first
     const componentLoader = new ComponentLoader();
     await componentLoader.loadAllComponents('teacher');
-    
+
     // Then initialize dashboard
     window.dashboard = new TeacherDashboard();
 });

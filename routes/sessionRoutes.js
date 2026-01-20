@@ -1,12 +1,9 @@
 const express = require("express");
 const jwtAuth = require("../middleware/auth");
 const roleAuth = require("../middleware/roleAuth");
-const {
-  createSession,
-  getStudentSessions
-} = require("../controllers/sessionController");
+const {createSession,getStudentSessions} = require("../controllers/sessionController");
 const { createSessionValidation, validateSession } = require("../middleware/validation/sessionValidation");
-const { createSessionSlots,getMySessionSlots,confirmSessionSlot,getMyConfirmedSessions,getTeacherSessions,getSessionById,deleteSession} = require("../controllers/sessionSlotController");
+const { createSessionSlots,getMySessionSlots,confirmSessionSlot,getMyConfirmedSessions,getTeacherSessions,getSessionById,deleteSession,getAllSlotsForSession} = require("../controllers/sessionSlotController");
 const { createSessionSlotsValidation, confirmSessionSlotValidation, validateSessionSlot} = require("../middleware/validation/sessionSlotValidation");
 
 
@@ -34,12 +31,14 @@ router.get(
 router.get(
   "/mysessions",
   jwtAuth,
+  roleAuth("student"),
   getMySessionSlots
 );
 
 router.get(
   "/my-confirmed-sessions",
   jwtAuth,
+  roleAuth("student"),
   getMyConfirmedSessions
 );
 
@@ -47,6 +46,7 @@ router.post("/slots", jwtAuth, roleAuth("teacher"), createSessionSlotsValidation
 router.get("/teacher",jwtAuth,roleAuth("teacher"),getTeacherSessions);
 router.get("/:id/details", jwtAuth, roleAuth("teacher"), getSessionById);
 router.get("/:id", jwtAuth, roleAuth("teacher"), getSessionById);
+router.get("/:id/all-slots", jwtAuth, roleAuth("teacher"), getAllSlotsForSession);
 router.delete("/:id", jwtAuth, roleAuth("teacher"), deleteSession);
 router.post("/confirm", jwtAuth, roleAuth("student"), confirmSessionSlotValidation, validateSessionSlot,runValidation,confirmSessionSlot);
 

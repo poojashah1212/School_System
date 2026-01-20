@@ -16,9 +16,14 @@ const generateAvailableSlots = async ({
   console.log('generateAvailableSlots - studentTimezone:', studentTimezone);
   console.log('generateAvailableSlots - teacherTimezone:', teacherTimezone);
   
-  const studentRedisKey = `slots:student:${studentId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${studentTimezone}`;
+  const bookedSlotsSignature = `${bookedSlots.length}:${bookedSlots.reduce((max, b) => {
+    const t = new Date((b && (b.bookedAt || b.startTime)) || 0).getTime();
+    return Math.max(max, t);
+  }, 0)}`;
+  
+  const studentRedisKey = `slots:student:${studentId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${studentTimezone}:${bookedSlotsSignature}`;
 
-  const teacherRedisKey = `slots:teacher:${teacherId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${teacherTimezone}`;
+  const teacherRedisKey = `slots:teacher:${teacherId}:${sessionId}:${moment(date).format("YYYY-MM-DD")}:${availability.startTime}-${availability.endTime}:${teacherTimezone}:${bookedSlotsSignature}`;
 
   const studentCached = await redisClient.get(studentRedisKey);
   if (studentCached) {
@@ -26,10 +31,14 @@ const generateAvailableSlots = async ({
     return JSON.parse(studentCached);
   }
 
-  const teacherCached = await redisClient.get(teacherRedisKey);
-  if (teacherCached) {
-    console.log("Teacher Cache HIT:", teacherRedisKey);
-    return JSON.parse(teacherCached);
+  // Don't check teacher cache for student requests to avoid timezone conflicts
+  // Only check teacher cache when studentId is not provided (teacher requests)
+  if (!studentId) {
+    const teacherCached = await redisClient.get(teacherRedisKey);
+    if (teacherCached) {
+      console.log("Teacher Cache HIT:", teacherRedisKey);
+      return JSON.parse(teacherCached);
+    }
   }
 
   const slots = [];
@@ -83,11 +92,15 @@ const generateAvailableSlots = async ({
     });
 
     if (!isOverlapping) {
-      // Return times in Asia/Kolkata (storage timezone) for frontend conversion
-      const startTimeFormatted = slotStartTeacherTZ.format("HH:mm");
-      const endTimeFormatted = slotEndTeacherTZ.format("HH:mm");
+      // Return times in teacher's timezone for consistent display
+      // This matches the requirement: "All slot times must be displayed in the teacher's timezone"
+      const slotStartInTeacherTZ = slotStartTeacherTZ.clone();
+      const slotEndInTeacherTZ = slotEndTeacherTZ.clone();
       
-      console.log('  Final formatted slot (Asia/Kolkata):', startTimeFormatted, '-', endTimeFormatted);
+      const startTimeFormatted = slotStartInTeacherTZ.format("HH:mm");
+      const endTimeFormatted = slotEndInTeacherTZ.format("HH:mm");
+      
+      console.log('  Final formatted slot (teacher timezone):', startTimeFormatted, '-', endTimeFormatted);
       
       slots.push({
         startTime: startTimeFormatted,
@@ -103,11 +116,14 @@ const generateAvailableSlots = async ({
     JSON.stringify(slots)
   );
 
-  await redisClient.setEx(
-    teacherRedisKey,
-    60 * 60 * 24,
-    JSON.stringify(slots)
-  );
+  // Only save to teacher cache when it's a teacher request
+  if (!studentId) {
+    await redisClient.setEx(
+      teacherRedisKey,
+      60 * 60 * 24,
+      JSON.stringify(slots)
+    );
+  }
 
   return slots;
 };

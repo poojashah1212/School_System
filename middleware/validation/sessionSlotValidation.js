@@ -20,7 +20,17 @@ exports.createSessionSlotsValidation = [
 
 exports.confirmSessionSlotValidation = [
   body("sessionId").notEmpty().withMessage("sessionId is required").isMongoId().withMessage("sessionId must be a valid"),
-  body("startTime").notEmpty().withMessage("startTime isrequired").matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage("startTime must be in HH: mm format")
+  body("startTime").notEmpty().withMessage("startTime isrequired").matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage("startTime must be in HH: mm format"),
+  body("date")
+    .notEmpty()
+    .withMessage("date is required")
+    .custom(value => {
+      const parsed = moment(value, "DD-MM-YYYY", true);
+      if (!parsed.isValid()) {
+        throw new Error("date must be in DD-MM-YYYY format");
+      }
+      return true;
+    })
 ];
 
 exports.validateSessionSlot = (req, res, next) => {

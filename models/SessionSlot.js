@@ -12,8 +12,15 @@ const BookedSlotSchema = new mongoose.Schema({
   bookedBy: {
     type: mongoose.Schema.Types.ObjectId, ref: "User",
     required: true
+  },
+  bookedAt: {
+    type: Date,
+    default: Date.now
   }
 });
+
+// Create a compound index to prevent duplicate bookings for the same session and time slot
+BookedSlotSchema.index({ sessionId: 1, startTime: 1, endTime: 1 }, { unique: true });
 
 const SessionSlotSchema = new mongoose.Schema(
   {

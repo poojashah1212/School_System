@@ -811,6 +811,55 @@
     opacity: 1;
 }
 
+/* Booked slot button state */
+.slot-btn.booked {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    cursor: not-allowed;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.slot-btn.booked .slot-time {
+    color: white;
+}
+
+.slot-btn.booked .booked-indicator {
+    color: white;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 2px;
+    opacity: 0.9;
+}
+
+.slot-btn.booked:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Loading state for slot button */
+.slot-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.slot-btn:disabled:not(.booked) {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    color: #64748b;
+}
+
+.slot-btn:disabled:not(.booked) .slot-time {
+    color: #64748b;
+}
+
+.fa-spinner.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .no-slots {
     color: #94a3b8;
     font-size: 14px;
