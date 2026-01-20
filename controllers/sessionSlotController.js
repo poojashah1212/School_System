@@ -25,6 +25,10 @@ exports.createSessionSlots = async (req, res) => {
 
     const teacherId = req.user.id;
     const teacherTimezone = req.user.timezone || "Asia/Kolkata";
+    
+    // Default to 120 minutes (2 hours) if not specified, for better slot display
+    const finalSessionDuration = sessionDuration || 120;
+    const finalBreakDuration = breakDuration || 10;
 
     const parsedDate = moment(date, "DD-MM-YYYY").startOf("day").toDate();
 
@@ -77,22 +81,27 @@ exports.createSessionSlots = async (req, res) => {
       teacherId,
       title,
       date: parsedDate,
-      sessionDuration,
-      breakDuration,
+      sessionDuration: finalSessionDuration,
+      breakDuration: finalBreakDuration,
       allowedStudentId
     });
 
+    console.log('createSessionSlots - teacherTimezone:', teacherTimezone);
+    console.log('createSessionSlots - studentTimezone (using teacher):', teacherTimezone);
+    
     const availableSlots = await generateAvailableSlots({
       date: parsedDate,
       availability: dayAvailability,
-      sessionDuration,
-      breakDuration,
+      sessionDuration: finalSessionDuration,
+      breakDuration: finalBreakDuration,
       bookedSlots: [],
       sessionId: session._id,
       teacherId,
       teacherTimezone,
-      studentTimezone: studentTimezone || teacherTimezone
+      studentTimezone: teacherTimezone // For teacher session creation, use teacher timezone
     });
+    
+    console.log('createSessionSlots - generated slots:', availableSlots.slice(0, 3));
 
     return res.status(201).json({
       message: "Session slots created successfully",
@@ -310,82 +319,47 @@ exports.confirmSessionSlot = async (req, res) => {
       return res.status(400).json({ message: "No availability found for this day" });
     }
 
-    // Generate available slots inline using the same logic as frontend
-    const teacherStartDateTime = moment.tz(
-      `${moment(session.date).format("DD-MM-YYYY")} ${dayAvailability.startTime}`,
-      "DD-MM-YYYY HH:mm",
-      teacherTimezone
-    );
-
-    const teacherEndDateTime = moment.tz(
-      `${moment(session.date).format("DD-MM-YYYY")} ${dayAvailability.endTime}`,
-      "DD-MM-YYYY HH:mm",
-      teacherTimezone
-    );
-
-    const availableSlots = [];
-    let current = teacherStartDateTime;
-    const end = teacherEndDateTime;
-
-    while (current.clone().add(session.sessionDuration, "minutes").isSameOrBefore(end)) {
-      const slotStartTeacherTZ = current.clone();
-      const slotEndTeacherTZ = slotStartTeacherTZ.clone().add(session.sessionDuration, "minutes");
-
-      const slotStartUTC = slotStartTeacherTZ.utc();
-      const slotEndUTC = slotEndTeacherTZ.utc();
-
-      const isOverlapping = session.bookedSlots.some(b => {
-        return slotStartUTC.toDate() < b.endTime && slotEndUTC.toDate() > b.startTime;
-      });
-
-      if (!isOverlapping) {
-        // Return times in teacher's timezone for display consistency
-        // This matches what frontend displays to the student
-        const slotStartInTeacherTZ = slotStartTeacherTZ.clone();
-        const slotEndInTeacherTZ = slotEndTeacherTZ.clone();
-        const startTimeFormatted = slotStartInTeacherTZ.format("HH:mm");
-        const endTimeFormatted = slotEndInTeacherTZ.format("HH:mm");
-        const localDateFormatted = slotStartInTeacherTZ.format("DD-MM-YYYY");
-
-        // Keep the exact UTC timestamps for booking. This avoids date-shift bugs for timezones
-        // like America/Chicago and for slots spanning midnight.
-        availableSlots.push({
-          startTime: startTimeFormatted, // Teacher timezone time
-          endTime: endTimeFormatted,
-          localDate: localDateFormatted,
-          utcStart: slotStartUTC.toDate(),
-          utcEnd: slotEndUTC.toDate()
-        });
-      }
-
-      current = slotEndTeacherTZ.clone().add(session.breakDuration, "minutes");
-    }
+    // Use the same generateAvailableSlots function for consistency
+    const availableSlots = await generateAvailableSlots({
+      date: session.date,
+      availability: dayAvailability,
+      sessionDuration: session.sessionDuration,
+      breakDuration: session.breakDuration,
+      bookedSlots: session.bookedSlots || [],
+      teacherId: session.teacherId,
+      sessionId: session._id,
+      studentId: studentId,
+      teacherTimezone,
+      studentTimezone: normalizeTimezone(student.timezone)
+    });
 
     // Get the session date in Asia/Kolkata for comparison
     const sessionDateInKolkata = moment(session.date).format("DD-MM-YYYY");
 
-    // Check if the selected slot matches any available slot (student timezone date+time)
-    const isValidSlot = availableSlots?.some(slot => {
-      return slot.localDate === date && slot.startTime === startTime;
+    // Check if the selected slot matches any available slot using Date objects
+    console.log('Backend debug - received date:', date);
+    console.log('Backend debug - received startTime:', startTime);
+    console.log('Backend debug - teacherTimezone:', teacherTimezone);
+    console.log('Backend debug - session.date (raw):', session.date);
+    console.log('Backend debug - session.date (formatted):', moment(session.date).format("DD-MM-YYYY"));
+    console.log('Backend debug - availableSlots:', availableSlots.map(s => ({startTime: s.startTime, utcStart: s.utcStart})));
+    
+    // Find matching slot by startTime (the frontend sends times in student timezone)
+    const matchingSlot = availableSlots?.find(slot => {
+      return slot.startTime === startTime;
     });
 
-    if (!isValidSlot) {
-      return res.status(400).json({
-        message: "Invalid slot. Please select from available slots only"
-      });
-    }
+    console.log('Backend debug - matchingSlot:', matchingSlot);
 
-    // Find the matching slot and use its exact UTC timestamps
-    const matchingSlot = availableSlots.find(slot => slot.localDate === date && slot.startTime === startTime);
     if (!matchingSlot) {
       return res.status(400).json({
         message: "Invalid slot. Please select from available slots only"
       });
     }
-    // We store the time the student actually selected, converted to UTC.
-    // This is authoritative and avoids server-local parsing bugs.
-    const bookingStartUTC = slotStartUTC;
-    const bookingEndUTC = slotEndUTC;
+
+    // Use the UTC timestamps from the available slot
+    const bookingStartUTC = moment.utc(matchingSlot.utcStart);
+    const bookingEndUTC = moment.utc(matchingSlot.utcEnd);
 
     // Check if this slot is already booked (double-click / double API call protection)
     const alreadyBooked = session.bookedSlots.some(b => {
@@ -598,6 +572,9 @@ exports.getTeacherSessions = async (req, res) => {
     const teacherId = req.user.id;
     const name = req.user.name;
     const teacherTimezone = req.user.timezone || "Asia/Kolkata";
+    
+    console.log('Teacher sessions - teacherTimezone:', teacherTimezone);
+    console.log('Teacher sessions - req.user.timezone:', req.user.timezone);
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;

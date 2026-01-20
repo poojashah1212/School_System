@@ -11,6 +11,7 @@ const createToken = (user) => {
       mobileNo: user.mobileNo,
       city: user.city,
       state: user.state,
+      timezone: user.timezone,
       profileImage: user.profileImage
     },
     process.env.JWT_SECRET || 'dev_secret',

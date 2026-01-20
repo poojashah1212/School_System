@@ -199,6 +199,13 @@ class StudentDashboard {
 
         // Set student timezone with fallback to browser timezone
         this.studentTimezone = TimezoneUtils.getStudentTimezone(this.currentUser);
+        
+        console.log('Student timezone set to:', this.studentTimezone);
+        console.log('User object timezone:', this.currentUser.timezone);
+        console.log('Browser timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+        
+        // Auto-update timezone if user has default timezone and browser timezone is different
+        this.autoUpdateTimezone();
 
         // Update student name in header
         const studentNameElement = document.getElementById('student-name');
@@ -268,7 +275,10 @@ class StudentDashboard {
                             </div>` : ''}
                             <div class="timezone-info">
                                 <i class="fas fa-globe"></i>
-                                <span>Times shown in: ${TimezoneUtils.getDisplayTimezone(data.teacher?.timezone || 'Asia/Kolkata')}</span>
+                                <span>Times shown in: ${TimezoneUtils.getDisplayTimezone(this.studentTimezone || 'Asia/Kolkata')}</span>
+                                <button class="btn btn-sm btn-outline timezone-refresh-btn" onclick="window.studentDashboard.forceTimezoneUpdate()" title="Refresh timezone">
+                                    <i class="fas fa-sync"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -306,6 +316,12 @@ class StudentDashboard {
             console.log('Current Session:', session); // Debug current session
             // Backend returns dates in Asia/Kolkata timezone, convert to student's timezone
             let displayDate = session.date || 'Date not specified';
+            
+            // Store original date for booking (without timezone conversion)
+            const originalSessionDate = session.date ? session.date.split('/')[0] : session.date;
+            
+            // Ensure the date is in DD-MM-YYYY format (backend expects this exact format)
+            const normalizedDate = originalSessionDate && moment ? moment(originalSessionDate, 'DD-MM-YYYY').format('DD-MM-YYYY') : originalSessionDate;
             
             try {
                 const moment = window.moment;
@@ -416,13 +432,13 @@ class StudentDashboard {
 
                             if (isBookedByMe) {
                                 return `
-                                <button class="slot-btn booked" disabled data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${session.date}">
+                                <button class="slot-btn booked" disabled data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}">
                                     <div class="slot-time">${startTime} - ${endTime}</div>
                                 </button>
                             `;
                             } else {
                                 return `
-                                <button class="slot-btn" onclick="studentDashboard.bookSession('${session.sessionId || session._id}', '${startTime}', '${session.date}')" data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${session.date}">
+                                <button class="slot-btn" onclick="studentDashboard.bookSession('${session.sessionId || session._id}', '${startTime}', '${normalizedDate}')" data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}">
                                     <div class="slot-time">${startTime} - ${endTime}</div>
                                 </button>
                             `;
@@ -446,7 +462,7 @@ class StudentDashboard {
                         </div>` : ''}
                         <div class="timezone-info">
                             <i class="fas fa-globe"></i>
-                            <span>Times shown in: ${TimezoneUtils.getDisplayTimezone(data.teacher?.timezone || 'Asia/Kolkata')}</span>
+                            <span>Times shown in: ${TimezoneUtils.getDisplayTimezone(this.studentTimezone || 'Asia/Kolkata')}</span>
                         </div>
                     </div>
                 </div>
@@ -474,7 +490,12 @@ class StudentDashboard {
         
         // Send the time in teacher's timezone (as displayed to student)
         const startTimeForBackend = startTime;
-        const bookingDateForBackend = String(sessionDate || '').split('/')[0];
+        // Use the date directly since it's now in correct DD-MM-YYYY format
+        const bookingDateForBackend = sessionDate;
+        
+        console.log('Booking debug - sessionDate:', sessionDate);
+        console.log('Booking debug - bookingDateForBackend:', bookingDateForBackend);
+        console.log('Booking debug - startTimeForBackend:', startTimeForBackend);
         
         try {
             // Show loading state
@@ -882,6 +903,13 @@ class StudentDashboard {
                                 <label>Location</label>
                                 <p>${this.currentUser.city || 'N/A'}, ${this.currentUser.state || 'N/A'}</p>
                             </div>
+                            <div class="info-item">
+                                <label>Timezone</label>
+                                <p>${TimezoneUtils.getDisplayTimezone(this.studentTimezone || 'Asia/Kolkata')}</p>
+                                <button class="btn btn-sm btn-outline" id="update-timezone-btn" style="margin-top: 5px;">
+                                    <i class="fas fa-sync"></i> Update Timezone
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="profile-modal-actions">
@@ -1124,6 +1152,7 @@ class StudentDashboard {
         const closeBtn = document.getElementById('close-profile-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const editProfileBtn = document.getElementById('edit-profile-btn');
+        const updateTimezoneBtn = document.getElementById('update-timezone-btn');
 
         // Close modal handlers
         const closeModal = () => {
@@ -1144,6 +1173,33 @@ class StudentDashboard {
             editProfileBtn.addEventListener('click', () => {
                 console.log('Edit profile clicked');
                 // Implement edit profile functionality
+            });
+        }
+
+        // Update timezone handler
+        if (updateTimezoneBtn) {
+            updateTimezoneBtn.addEventListener('click', async () => {
+                updateTimezoneBtn.disabled = true;
+                updateTimezoneBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                
+                try {
+                    const updated = await this.autoUpdateTimezone(true); // Force update
+                    if (updated) {
+                        this.showNotification('Timezone updated successfully', 'success');
+                        // Close and reopen modal to show updated timezone
+                        closeModal();
+                        setTimeout(() => this.showProfileModal(), 400);
+                    } else {
+                        this.showNotification('Timezone is already up to date', 'info');
+                        updateTimezoneBtn.disabled = false;
+                        updateTimezoneBtn.innerHTML = '<i class="fas fa-sync"></i> Update Timezone';
+                    }
+                } catch (error) {
+                    console.error('Error updating timezone:', error);
+                    this.showNotification('Failed to update timezone', 'error');
+                    updateTimezoneBtn.disabled = false;
+                    updateTimezoneBtn.innerHTML = '<i class="fas fa-sync"></i> Update Timezone';
+                }
             });
         }
 
@@ -1284,6 +1340,64 @@ class StudentDashboard {
 
     redirectToTeacherDashboard() {
         window.location.href = '/html/teacherDashboard.html';
+    }
+
+    async autoUpdateTimezone(forceUpdate = false) {
+        try {
+            // Get browser timezone
+            const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            // Check if user has default timezone and it's different from browser, or if force update is requested
+            if (forceUpdate || (this.currentUser.timezone === 'Asia/Kolkata' && browserTimezone !== 'Asia/Kolkata')) {
+                console.log('Auto-updating timezone from', this.currentUser.timezone, 'to', browserTimezone);
+                
+                // Update timezone on server
+                const response = await fetch(`${this.apiBaseUrl}/auth/update-profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ timezone: browserTimezone })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    // Update local user data
+                    this.currentUser.timezone = browserTimezone;
+                    this.studentTimezone = browserTimezone;
+                    console.log('Timezone updated successfully to:', browserTimezone);
+                    
+                    // Refresh the page to show updated timezone
+                    this.loadSessions();
+                    
+                    return true;
+                } else {
+                    console.error('Failed to update timezone');
+                    return false;
+                }
+            } else {
+                console.log('Timezone update not needed. Current:', this.currentUser.timezone, 'Browser:', browserTimezone);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error auto-updating timezone:', error);
+            return false;
+        }
+    }
+
+    async forceTimezoneUpdate() {
+        console.log('Force updating timezone...');
+        const updated = await this.autoUpdateTimezone(true);
+        if (updated) {
+            this.showNotification('Timezone updated successfully', 'success');
+        } else {
+            // Even if not updated in database, refresh the display with browser timezone
+            const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            this.studentTimezone = browserTimezone;
+            this.loadSessions();
+            this.showNotification('Display refreshed with browser timezone', 'info');
+        }
     }
 }
 

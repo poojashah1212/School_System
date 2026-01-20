@@ -132,7 +132,7 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, email, mobileNo, city, state } = req.body;
+    const { fullName, email, mobileNo, city, state, timezone } = req.body;
 
     const updateData = {
       fullName,
@@ -141,6 +141,11 @@ exports.updateProfile = async (req, res) => {
       city,
       state
     };
+
+    // Update timezone if provided
+    if (timezone) {
+      updateData.timezone = timezone;
+    }
 
     // Handle profile image upload
     const file =

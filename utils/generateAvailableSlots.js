@@ -58,6 +58,7 @@ const generateAvailableSlots = async ({
 
   console.log('Teacher start time in teacher TZ:', teacherStartDateTime.format());
   console.log('Teacher end time in teacher TZ:', teacherEndDateTime.format());
+  console.log('Teacher availability from DB - startTime:', availability.startTime, 'endTime:', availability.endTime);
 
   let current = teacherStartDateTime;
   const end = teacherEndDateTime;
@@ -70,45 +71,51 @@ const generateAvailableSlots = async ({
       .clone()
       .add(sessionDuration, "minutes");
 
-    // Convert to UTC first, then to student timezone
-    const slotStartUTC = slotStartTeacherTZ.utc();
-    const slotEndUTC = slotEndTeacherTZ.utc();
+    console.log('Slot generation - Teacher time:', slotStartTeacherTZ.format(), '-', slotEndTeacherTZ.format());
 
-    console.log('Slot conversion:');
-    console.log('  Teacher time:', slotStartTeacherTZ.format(), '-', slotEndTeacherTZ.format());
-    console.log('  UTC time:', slotStartUTC.format(), '-', slotEndUTC.format());
-
-    // Convert UTC times to student timezone
-    const slotStartStudentTZ = slotStartUTC.tz(studentTimezone);
-    const slotEndStudentTZ = slotEndUTC.tz(studentTimezone);
-
-    console.log('  Student time:', slotStartStudentTZ.format(), '-', slotEndStudentTZ.format());
-
+    // Check for overlaps using teacher timezone times
     const isOverlapping = bookedSlots.some(b => {
+      const bookedStartTeacherTZ = moment.tz(b.startTime, teacherTimezone);
+      const bookedEndTeacherTZ = moment.tz(b.endTime, teacherTimezone);
       return (
-        slotStartUTC.toDate() < b.endTime &&
-        slotEndUTC.toDate() > b.startTime
+        slotStartTeacherTZ.isBefore(bookedEndTeacherTZ) && slotEndTeacherTZ.isAfter(bookedStartTeacherTZ)
       );
     });
 
     if (!isOverlapping) {
-      // Return times in student's timezone for proper display
-      const slotStartInStudentTZ = slotStartUTC.clone().tz(studentTimezone);
-      const slotEndInStudentTZ = slotEndUTC.clone().tz(studentTimezone);
-
-      const startTimeFormatted = slotStartInStudentTZ.format("HH:mm");
-      const endTimeFormatted = slotEndInStudentTZ.format("HH:mm");
-
-      console.log('  Final formatted slot (student timezone):', startTimeFormatted, '-', endTimeFormatted);
+      // Generate and display slots strictly in teacher's timezone
+      // No UTC conversions for teacher requests - use teacher availability directly
+      let displayStartTime, displayEndTime;
+      
+      if (studentId) {
+        // Student request - convert to student timezone
+        const slotStartStudentTZ = slotStartTeacherTZ.tz(studentTimezone);
+        const slotEndStudentTZ = slotEndTeacherTZ.tz(studentTimezone);
+        
+        displayStartTime = slotStartStudentTZ.format("HH:mm");
+        displayEndTime = slotEndStudentTZ.format("HH:mm");
+        
+        console.log('  Student display time:', displayStartTime, '-', displayEndTime);
+      } else {
+        // Teacher request - display exactly as per teacher availability, no UTC conversion
+        displayStartTime = slotStartTeacherTZ.format("HH:mm");
+        displayEndTime = slotEndTeacherTZ.format("HH:mm");
+        
+        console.log('  Teacher display time (direct from availability):', displayStartTime, '-', displayEndTime);
+      }
 
       slots.push({
-        startTime: startTimeFormatted,
-        endTime: endTimeFormatted
+        startTime: displayStartTime,
+        endTime: displayEndTime,
+        // Store teacher timezone times directly for consistency
+        teacherStart: slotStartTeacherTZ.toDate(),
+        teacherEnd: slotEndTeacherTZ.toDate()
       });
     }
 
     current = slotEndTeacherTZ.clone().add(breakDuration, "minutes");
   }
+  
   await redisClient.setEx(
     studentRedisKey,
     60 * 60 * 24,

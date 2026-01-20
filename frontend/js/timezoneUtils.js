@@ -10,8 +10,10 @@ class TimezoneUtils {
      * @returns {string} Timezone string (e.g., 'America/Chicago', 'Asia/Kolkata')
      */
     static getStudentTimezone(user) {
+        console.log('getStudentTimezone called with user:', user);
+        
         // First try to get timezone from user profile
-        if (user && user.timezone && user.timezone !== 'Asia/Kolkata' && user.timezone.trim() !== '') {
+        if (user && user.timezone && user.timezone.trim() !== '') {
             console.log('Using user timezone:', user.timezone);
             return user.timezone;
         }

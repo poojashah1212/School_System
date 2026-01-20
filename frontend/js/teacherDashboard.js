@@ -3298,7 +3298,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
         
         return `
             <div>
-                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">My Slots (${allSlots.length})</div>
+                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">Time Slots (${allSlots.length})</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                     ${allSlots.map(slot => {
                         if (slot.type === 'available') {
@@ -3365,7 +3365,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                 <div style="font-weight: bold; color: ${slot.type === 'available' ? '#28a745' : 'white'}; margin-bottom: 8px;">
                     Slot #${index + 1}
                 </div>
-                <div style="font-size: 16px; color: ${slot.type === 'available' ? '#495057' : 'white'}; margin-bottom: 10px; background: ${slot.type === 'booked' ? '#d32f2f' : 'transparent'}; padding: ${slot.type === 'booked' ? '8px' : '0'}; border-radius: 4px;">
+                <div style="font-size: 16px; color: ${slot.type === 'available' ? '#495057' : 'white'}; margin-bottom: 10px;">
                     <i class="fas fa-clock"></i> ${slot.startTime} - ${slot.endTime}
                 </div>
                 ${slot.type === 'available' ? `
@@ -3374,14 +3374,14 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                     </div>
                 ` : ''}
                 ${slot.type === 'booked' ? `
-                    <div style="background: white; padding: 10px; border-radius: 8px; border-left: 3px solid #d32f2f;">
+                    <div style="background: white; padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="width: 30px; height: 30px; background: #d32f2f; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 30px; height: 30px; background: #ffc107; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                 <i class="fas fa-user" style="color: white;"></i>
                             </div>
                             <div>
-                                <div style="font-weight: bold; color: #d32f2f;">${slot.studentName}</div>
-                                ${slot.studentEmail ? `<div style="font-size: 12px; color: #666;">${slot.studentEmail}</div>` : ''}
+                                <div style="font-weight: bold; color: #856404;">${slot.studentName}</div>
+                                ${slot.studentEmail ? `<div style="font-size: 12px; color: #856404;">${slot.studentEmail}</div>` : ''}
                             </div>
                         </div>
                     </div>
@@ -3453,70 +3453,30 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
     formatUtcTimeToTeacherTimezone(timeString, referenceDate) {
         if (!timeString) return '';
 
-        // Use teacher's timezone or default to Asia/Kolkata
         const teacherTimezone = this.currentUser?.timezone || 'Asia/Kolkata';
 
         try {
-            let utcMoment;
-            
-            // Handle Date objects (assumed to be UTC)
-            if (timeString instanceof Date) {
-                utcMoment = moment.utc(timeString);
-            }
-            // Handle ISO strings or strings with timezone info
-            else if (typeof timeString === 'string') {
-                // If it's already in HH:mm format, treat it as UTC time-of-day
-                if (/^\d{2}:\d{2}(:\d{2})?$/.test(timeString)) {
-                    const hhmm = timeString.substring(0, 5);
-                    
-                    // Use the session date to create a proper UTC datetime
-                    const baseDate = moment(referenceDate, ["DD-MM-YYYY", "YYYY-MM-DD", moment.ISO_8601], true);
-                    const ymd = baseDate.isValid() ? baseDate.format('YYYY-MM-DD') : moment().format('YYYY-MM-DD');
-                    
-                    utcMoment = moment.utc(`${ymd} ${hhmm}`, 'YYYY-MM-DD HH:mm');
-                }
-                // Handle ISO strings or other date formats
-                else {
-                    utcMoment = moment.utc(timeString);
-                }
-            }
-            else {
-                // For any other type, try to convert to UTC moment
-                utcMoment = moment.utc(timeString);
+            // If it's already in HH:mm or HH:mm:ss, treat it as a UTC time-of-day and convert using the session date
+            if (typeof timeString === 'string' && /^\d{2}:\d{2}(:\d{2})?$/.test(timeString)) {
+                const hhmm = timeString.substring(0, 5);
+
+                const baseDate = moment(referenceDate, ["DD-MM-YYYY", "YYYY-MM-DD", moment.ISO_8601], true);
+                const ymd = baseDate.isValid() ? baseDate.format('YYYY-MM-DD') : moment().format('YYYY-MM-DD');
+
+                const utcMoment = moment.utc(`${ymd} ${hhmm}`, 'YYYY-MM-DD HH:mm');
+                return utcMoment.tz(teacherTimezone).format('HH:mm');
             }
 
+            // Date object or ISO string assumed to be UTC
+            const utcMoment = moment.utc(timeString);
             if (utcMoment.isValid()) {
-                // Convert from UTC to teacher's timezone and format as HH:mm only
                 return utcMoment.tz(teacherTimezone).format('HH:mm');
             }
         } catch (error) {
             console.warn('Error converting UTC time to teacher timezone:', error, 'Input:', timeString);
         }
 
-        // Fallback: return original time string if conversion fails
-        return typeof timeString === 'string' ? timeString : '';
-    }
-
-    // Test function to verify timezone conversion
-    testTimezoneConversion() {
-        console.log('Testing timezone conversion for booked slots...');
-        
-        // Test cases with different UTC times
-        const testCases = [
-            { time: '10:30', date: '20-01-2026', expected: 'Should convert from UTC to teacher timezone' },
-            { time: '14:45', date: '20-01-2026', expected: 'Should convert from UTC to teacher timezone' },
-            { time: new Date(), date: '20-01-2026', expected: 'Should handle Date objects' }
-        ];
-        
-        testCases.forEach((testCase, index) => {
-            const result = this.formatUtcTimeToTeacherTimezone(testCase.time, testCase.date);
-            console.log(`Test ${index + 1}:`, {
-                input: testCase.time,
-                date: testCase.date,
-                output: result,
-                teacherTimezone: this.currentUser?.timezone || 'Asia/Kolkata'
-            });
-        });
+        return '';
     }
 
     async viewSessionDetails(sessionId) {
@@ -3621,7 +3581,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                         <!-- My Slots Section -->
                         <div class="available-slots-section">
                             <h4 style="color: #1976d2; margin-bottom: 15px;">
-                                <i class="fas fa-clock"></i> My Slots
+                                <i class="fas fa-clock"></i> Time Slots
                             </h4>
                             <div class="slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
                                 ${this.generateUnifiedSlotsModalView(availableSlots, bookedSlots, session.date)}
@@ -3962,7 +3922,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                     <p><strong>Date:</strong> ${result.date}</p>
                     <p><strong>Total Slots Created:</strong> ${result.availableSlots.length}</p>
                     <div class="slots-preview">
-                        <h4>Available My Slots:</h4>
+                        <h4>Available Time Slots:</h4>
                         <div class="slots-list">
                             ${result.availableSlots.slice(0, 5).map(slot =>
             `<span class="slot-time">${this.formatTimeInTeacherTimezone(slot.startTime)} - ${this.formatTimeInTeacherTimezone(slot.endTime)}</span>`
