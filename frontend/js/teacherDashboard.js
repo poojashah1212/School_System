@@ -3093,7 +3093,7 @@ class TeacherDashboard {
         const sessionsHtml = sessions.map(session => {
             const availableSlots = session.availableSlots || [];
             const bookedSlots = session.bookedSlots || [];
-            const totalSlots = availableSlots.length;
+            const totalSlots = availableSlots.length + bookedSlots.length;
             const availableCount = totalSlots - bookedSlots.length;
             const status = this.getSessionStatus(session);
             const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0;
@@ -3271,8 +3271,8 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
         
         // Then, mark slots as booked (this will overwrite available slots with same time)
         bookedSlots.forEach(slot => {
-            const startTime = this.formatUtcTimeToTeacherTimezone(slot.startTime, sessionDate);
-            const endTime = this.formatUtcTimeToTeacherTimezone(slot.endTime, sessionDate);
+            const startTime = this.formatTimeInTeacherTimezone(slot.startTime);
+            const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
             const key = `${startTime}-${endTime}`;
             
             allSlotsMap.set(key, {
@@ -3298,7 +3298,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
         
         return `
             <div>
-                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">Time Slots (${allSlots.length})</div>
+                <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">My Slots (${allSlots.length})</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                     ${allSlots.map(slot => {
                         if (slot.type === 'available') {
@@ -3338,8 +3338,8 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
         
         // Then, mark slots as booked (this will overwrite available slots with same time)
         bookedSlots.forEach(slot => {
-            const startTime = this.formatUtcTimeToTeacherTimezone(slot.startTime, sessionDate);
-            const endTime = this.formatUtcTimeToTeacherTimezone(slot.endTime, sessionDate);
+            const startTime = this.formatTimeInTeacherTimezone(slot.startTime);
+            const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
             const key = `${startTime}-${endTime}`;
             
             allSlotsMap.set(key, {
@@ -3508,7 +3508,23 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
     showSessionDetailsModal(session) {
         const availableSlots = session.availableSlots || [];
         const bookedSlots = session.bookedSlots || [];
-        const totalSlots = availableSlots.length + bookedSlots.length;
+        
+        // Create a map of all unique slots to avoid double-counting
+        const allSlotsMap = new Map();
+        
+        // Add all available slots
+        availableSlots.forEach(slot => {
+            const key = `${slot.startTime}-${slot.endTime}`;
+            allSlotsMap.set(key, { type: 'available', slot });
+        });
+        
+        // Add or update booked slots (this will overwrite available slots with same time)
+        bookedSlots.forEach(slot => {
+            const key = `${slot.startTime}-${slot.endTime}`;
+            allSlotsMap.set(key, { type: 'booked', slot });
+        });
+        
+        const totalSlots = allSlotsMap.size;
 
         const modal = document.createElement('div');
         modal.className = 'modal show';

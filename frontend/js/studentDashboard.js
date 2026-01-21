@@ -344,12 +344,12 @@ class StudentDashboard {
             console.log('Session Booked Slots for session ID', session.sessionId || session._id, ':', sessionBookedSlots);
             
             sessionBookedSlots.forEach(bookedSlot => {
-                const startTimeString = this.formatSlotTime(bookedSlot.startTime);
+                const startTimeString = this.formatSlotTime(bookedSlot.startTime, session);
                 if (startTimeString) {
                     bookedSlotTimes.add(startTimeString);
                     myBookedSlotsByTime.set(startTimeString, {
                         startTime: startTimeString,
-                        endTime: this.formatSlotTime(bookedSlot.endTime)
+                        endTime: this.formatSlotTime(bookedSlot.endTime, session)
                     });
                     console.log('Booked slot time:', startTimeString, '(raw startTime:', bookedSlot.startTime, ')');
                 }
@@ -360,8 +360,8 @@ class StudentDashboard {
             // Preserve order: start from backend-provided available slots (already filtered for common sessions)
             // Then convert the *existing* slot to green if it's booked by the logged-in student.
             const slotsToRender = (session.availableSlots || []).map(slot => {
-                const start = this.formatSlotTime(slot.startTime);
-                const end = this.formatSlotTime(slot.endTime);
+                const start = this.formatSlotTime(slot.startTime, session);
+                const end = this.formatSlotTime(slot.endTime, session);
                 return {
                     startTime: start,
                     endTime: end,
@@ -488,7 +488,7 @@ class StudentDashboard {
             return;
         }
         
-        // Send the time in teacher's timezone (as displayed to student)
+        // Send the time in student's timezone (as displayed to student)
         const startTimeForBackend = startTime;
         // Use the date directly since it's now in correct DD-MM-YYYY format
         const bookingDateForBackend = sessionDate;
@@ -530,7 +530,7 @@ class StudentDashboard {
             button.classList.add('booked');
             button.removeAttribute('onclick');
 
-            // Display times directly from booking record (already in teacher's timezone)
+            // Display times directly from booking response (already in student's timezone)
             const bookedStart = data?.booking?.startTime;
             const bookedEnd = data?.booking?.endTime;
             if (bookedStart && bookedEnd) {
@@ -859,65 +859,54 @@ class StudentDashboard {
         // Create modal HTML
         const modalHtml = `
             <div class="profile-modal-overlay" id="profile-modal">
-                <div class="profile-modal">
-                    <div class="profile-modal-header">
-                        <h2>Profile</h2>
-                        <button class="modal-close" id="close-profile-modal">
-                            <i class="fas fa-times"></i>
-                        </button>
+                <div class="profile-modal modal-profile">
+                    <div class="modal-header">
+                        <h3>Profile</h3>
+                        <button class="modal-close" id="close-profile-modal">&times;</button>
                     </div>
                     
-                    <div class="profile-modal-content">
-                        <div class="profile-basic-info">
-                            <div class="profile-avatar">
-                                <img src="${this.currentUser.profileImage || 'https://picsum.photos/seed/student/80/80.jpg'}" 
-                                     alt="Profile" id="modal-profile-img">
-                            </div>
-                            <div class="profile-details">
-                                <h3>${this.currentUser.fullName || 'Student Name'}</h3>
-                                <p class="profile-email">${this.currentUser.email || 'N/A'}</p>
-                                <span class="profile-role">${this.currentUser.role || 'Student'}</span>
+                    <div class="profile-view">
+                        <div class="profile-header">
+                            <img src="${this.currentUser.profileImage || 'https://picsum.photos/seed/student/80/80.jpg'}" 
+                                 alt="Profile" class="profile-avatar" id="modal-profile-img">
+                            <div class="profile-info">
+                                <h4>${this.currentUser.fullName || 'Student Name'}</h4>
+                                <p>${this.currentUser.email || 'N/A'}</p>
                             </div>
                         </div>
                         
-                        <div class="profile-info-grid">
-                            <div class="info-item">
-                                <label>User ID</label>
-                                <p>${this.currentUser.userId || 'N/A'}</p>
+                        <div class="profile-details">
+                            <div class="detail-row">
+                                <span class="label">User ID</span>
+                                <span class="value">${this.currentUser.userId || 'N/A'}</span>
                             </div>
-                            <div class="info-item">
-                                <label>Mobile</label>
-                                <p>${this.currentUser.mobileNo || 'N/A'}</p>
+                            <div class="detail-row">
+                                <span class="label">Mobile</span>
+                                <span class="value">${this.currentUser.mobileNo || 'N/A'}</span>
                             </div>
-                            <div class="info-item">
-                                <label>Age</label>
-                                <p>${this.currentUser.age || 'N/A'}</p>
+                            <div class="detail-row">
+                                <span class="label">Age</span>
+                                <span class="value">${this.currentUser.age || 'N/A'}</span>
                             </div>
                             ${this.currentUser.class ? `
-                            <div class="info-item">
-                                <label>Class</label>
-                                <p>${this.currentUser.class}</p>
+                            <div class="detail-row">
+                                <span class="label">Class</span>
+                                <span class="value">${this.currentUser.class}</span>
                             </div>
                             ` : ''}
-                            <div class="info-item">
-                                <label>Location</label>
-                                <p>${this.currentUser.city || 'N/A'}, ${this.currentUser.state || 'N/A'}</p>
+                            <div class="detail-row">
+                                <span class="label">Location</span>
+                                <span class="value">${this.currentUser.city || 'N/A'}, ${this.currentUser.state || 'N/A'}</span>
                             </div>
-                            <div class="info-item">
-                                <label>Timezone</label>
-                                <p>${TimezoneUtils.getDisplayTimezone(this.studentTimezone || 'Asia/Kolkata')}</p>
-                                <button class="btn btn-sm btn-outline" id="update-timezone-btn" style="margin-top: 5px;">
-                                    <i class="fas fa-sync"></i> Update Timezone
-                                </button>
+                            <div class="detail-row">
+                                <span class="label">Timezone</span>
+                                <span class="value">${TimezoneUtils.getDisplayTimezone(this.studentTimezone || 'Asia/Kolkata')}</span>
                             </div>
                         </div>
                         
-                        <div class="profile-modal-actions">
+                        <div class="profile-actions">
                             <button class="btn btn-primary" id="edit-profile-btn">
                                 Edit Profile
-                            </button>
-                            <button class="btn btn-secondary" id="close-modal-btn">
-                                Close
                             </button>
                         </div>
                     </div>
@@ -962,195 +951,199 @@ class StudentDashboard {
                 visibility: visible;
             }
             
-            .profile-modal {
+            .profile-modal.modal-profile {
+                max-width: 480px;
+                padding: 0;
                 background: white;
-                border-radius: 0.75rem;
-                max-width: 500px;
-                width: 90%;
-                max-height: 90vh;
-                overflow-y: auto;
+                border-radius: 12px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
                 transform: scale(0.95);
                 transition: transform 0.3s ease;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
             }
             
             .profile-modal-overlay.show .profile-modal {
                 transform: scale(1);
             }
             
-            .profile-modal-header {
+            .modal-header {
+                padding: 20px 24px;
+                border-bottom: 1px solid #e2e8f0;
                 display: flex;
-                align-items: center;
                 justify-content: space-between;
-                padding: 1.5rem;
-                border-bottom: 1px solid #f0f0f0;
+                align-items: center;
+                margin: 0;
             }
             
-            .profile-modal-header h2 {
-                margin: 0;
-                color: #2c3e50;
-                font-size: 1.25rem;
+            .modal-header h3 {
+                font-size: 18px;
                 font-weight: 600;
+                color: #1e293b;
+                margin: 0;
             }
             
             .modal-close {
-                background: none;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 border: none;
-                font-size: 1.25rem;
-                color: #95a5a6;
+                background: none;
+                color: #64748b;
                 cursor: pointer;
-                padding: 0.5rem;
-                border-radius: 0.5rem;
-                transition: all 0.3s ease;
+                border-radius: 6px;
+                font-size: 18px;
+                transition: all 0.2s ease;
             }
             
             .modal-close:hover {
-                background: #f8f9fa;
-                color: #2c3e50;
+                background: #f1f5f9;
+                color: #374151;
             }
             
-            .profile-modal-content {
-                padding: 1.5rem;
+            .profile-view {
+                padding: 24px;
             }
             
-            .profile-basic-info {
+            .profile-header {
                 display: flex;
                 align-items: center;
-                gap: 1.5rem;
-                margin-bottom: 2rem;
-                padding-bottom: 1.5rem;
-                border-bottom: 1px solid #f0f0f0;
+                gap: 16px;
+                margin-bottom: 24px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #e2e8f0;
             }
             
-            .profile-avatar img {
+            .profile-avatar {
                 width: 80px;
                 height: 80px;
                 border-radius: 50%;
                 object-fit: cover;
-                border: 2px solid #ecf0f1;
+                border: 3px solid #f1f5f9;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            .profile-info h4 {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1e293b;
+                margin: 0 0 4px 0;
+            }
+            
+            .profile-info p {
+                font-size: 14px;
+                color: #64748b;
+                margin: 0;
             }
             
             .profile-details {
-                flex: 1;
+                margin-bottom: 24px;
             }
             
-            .profile-details h3 {
-                margin: 0 0 0.5rem 0;
-                color: #2c3e50;
-                font-size: 1.25rem;
-                font-weight: 600;
-            }
-            
-            .profile-email {
-                margin: 0 0 0.5rem 0;
-                color: #7f8c8d;
-                font-size: 0.875rem;
-            }
-            
-            .profile-role {
-                background: #e3f2fd;
-                color: #3498db;
-                padding: 0.25rem 0.75rem;
-                border-radius: 1rem;
-                font-size: 0.75rem;
-                font-weight: 500;
-            }
-            
-            .profile-info-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 1rem;
-            }
-            
-            .info-item {
-                padding: 1rem;
-                border-radius: 0.5rem;
-                background: #f8f9fa;
-            }
-            
-            .info-item label {
-                display: block;
-                font-size: 0.75rem;
-                font-weight: 600;
-                color: #7f8c8d;
-                margin-bottom: 0.25rem;
-                text-transform: uppercase;
-            }
-            
-            .info-item p {
-                margin: 0;
-                color: #2c3e50;
-                font-weight: 500;
-            }
-            
-            .profile-modal-actions {
+            .detail-row {
                 display: flex;
-                gap: 1rem;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 0;
+                border-bottom: 1px solid #f8fafc;
+            }
+            
+            .detail-row:last-child {
+                border-bottom: none;
+            }
+            
+            .detail-row .label {
+                font-size: 14px;
+                color: #64748b;
+                font-weight: 500;
+            }
+            
+            .detail-row .value {
+                font-size: 14px;
+                color: #1e293b;
+                font-weight: 500;
+            }
+            
+            .profile-actions {
+                display: flex;
                 justify-content: flex-end;
-                margin-top: 1.5rem;
-                padding-top: 1.5rem;
-                border-top: 1px solid #f0f0f0;
+                gap: 12px;
+                padding-top: 16px;
+                border-top: 1px solid #e2e8f0;
             }
             
             .btn {
-                padding: 0.75rem 1.5rem;
-                border: none;
-                border-radius: 0.5rem;
-                font-size: 0.875rem;
+                padding: 8px 20px;
+                font-size: 14px;
                 font-weight: 500;
+                border-radius: 6px;
                 cursor: pointer;
-                transition: all 0.3s ease;
+                transition: all 0.2s ease;
+                border: none;
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
             
             .btn-primary {
-                background: #3498db;
+                background: #3b82f6;
                 color: white;
             }
             
             .btn-primary:hover {
-                background: #2980b9;
+                background: #2563eb;
             }
             
             .btn-secondary {
-                background: #95a5a6;
-                color: white;
+                background: #f8fafc;
+                color: #64748b;
+                border: 1px solid #e2e8f0;
             }
             
             .btn-secondary:hover {
-                background: #7f8c8d;
+                background: #f1f5f9;
+                color: #374151;
             }
             
-            @media (max-width: 768px) {
-                .profile-modal {
-                    width: 95%;
-                    margin: 1rem;
+            @media (max-width: 640px) {
+                .profile-modal.modal-profile {
+                    margin: 16px;
+                    max-width: none;
                 }
                 
-                .profile-basic-info {
+                .modal-header {
+                    padding: 16px 20px;
+                }
+                
+                .profile-view {
+                    padding: 20px;
+                }
+                
+                .profile-header {
                     flex-direction: column;
                     text-align: center;
+                    gap: 12px;
                 }
                 
-                .profile-info-grid {
-                    grid-template-columns: 1fr;
-                }
-                
-                .profile-modal-actions {
+                .profile-actions {
                     flex-direction: column;
+                    gap: 8px;
                 }
                 
-                .btn {
+                .profile-actions .btn {
                     width: 100%;
+                    padding: 10px;
+                    justify-content: center;
                 }
             }
         `;
+        
         document.head.appendChild(styles);
     }
 
     setupProfileModalListeners() {
         const modal = document.getElementById('profile-modal');
         const closeBtn = document.getElementById('close-profile-modal');
-        const closeModalBtn = document.getElementById('close-modal-btn');
         const editProfileBtn = document.getElementById('edit-profile-btn');
         const updateTimezoneBtn = document.getElementById('update-timezone-btn');
 
@@ -1161,7 +1154,6 @@ class StudentDashboard {
         };
 
         if (closeBtn) closeBtn.addEventListener('click', closeModal);
-        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
 
         // Close on overlay click
         modal.addEventListener('click', (e) => {
@@ -1207,7 +1199,7 @@ class StudentDashboard {
         setTimeout(() => modal.classList.add('show'), 100);
     }
 
-    formatSlotTime(timeString) {
+    formatSlotTime(timeString, session = null) {
         if (!timeString) return 'Time not specified';
         
         try {
@@ -1215,10 +1207,18 @@ class StudentDashboard {
             const rawTz = this.studentTimezone || 'Asia/Kolkata';
             const cleanedTz = String(rawTz).replace(/\s*\([^)]*\)\s*/g, '').trim();
             const tz = (moment && cleanedTz && moment.tz.zone(cleanedTz)) ? cleanedTz : 'Asia/Kolkata';
-            console.log('formatSlotTime input:', timeString, 'student timezone:', tz);
+            
+            // Get teacher timezone from session data or fallback
+            const teacherTimezone = session?.teacher?.timezone || 
+                                  this.currentUser?.teacherId?.timezone || 
+                                  'Asia/Kolkata';
+            
+            console.log('formatSlotTime input:', timeString, 'student timezone:', tz, 'teacher timezone:', teacherTimezone);
 
-            // If already in HH:mm, keep it
+            // If already in HH:mm format, these times are already converted to student timezone by the backend
+            // No need to convert again - just return as is
             if (typeof timeString === 'string' && /^\d{2}:\d{2}$/.test(timeString)) {
+                console.log('Time is already in student timezone (from backend), returning as is:', timeString);
                 return timeString;
             }
 

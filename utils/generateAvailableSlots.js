@@ -15,6 +15,8 @@ const generateAvailableSlots = async ({
 }) => {
   console.log('generateAvailableSlots - studentTimezone:', studentTimezone);
   console.log('generateAvailableSlots - teacherTimezone:', teacherTimezone);
+  console.log('generateAvailableSlots - studentId:', studentId);
+  console.log('generateAvailableSlots - condition check:', studentId && studentTimezone && studentTimezone !== teacherTimezone);
 
   const bookedSlotsSignature = `${bookedSlots.length}:${bookedSlots.reduce((max, b) => {
     const t = new Date((b && (b.bookedAt || b.startTime)) || 0).getTime();
@@ -89,6 +91,9 @@ const generateAvailableSlots = async ({
       
       if (studentId) {
         // Student request - convert to student timezone
+        console.log('  STUDENT REQUEST - Converting to student timezone:', studentTimezone);
+        console.log('  Teacher time before conversion:', slotStartTeacherTZ.format(), '-', slotEndTeacherTZ.format());
+        
         const slotStartStudentTZ = slotStartTeacherTZ.tz(studentTimezone);
         const slotEndStudentTZ = slotEndTeacherTZ.tz(studentTimezone);
         
@@ -96,6 +101,7 @@ const generateAvailableSlots = async ({
         displayEndTime = slotEndStudentTZ.format("HH:mm");
         
         console.log('  Student display time:', displayStartTime, '-', displayEndTime);
+        console.log('  Converted student times:', slotStartStudentTZ.format(), '-', slotEndStudentTZ.format());
       } else {
         // Teacher request - display exactly as per teacher availability, no UTC conversion
         displayStartTime = slotStartTeacherTZ.format("HH:mm");

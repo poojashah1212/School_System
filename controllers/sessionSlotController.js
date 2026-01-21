@@ -139,6 +139,10 @@ exports.getMySessionSlots = async (req, res) => {
     const teacher = student.teacherId;
     const studentTimezone = normalizeTimezone(student.timezone);
     const teacherTimezone = teacher.timezone || "Asia/Kolkata";
+    
+    console.log('getMySessionSlots - studentTimezone:', studentTimezone);
+    console.log('getMySessionSlots - teacherTimezone:', teacherTimezone);
+    console.log('getMySessionSlots - student.timezone:', student.timezone);
 
     // Pagination
     const page = parseInt(req.query.page) || 1;
@@ -205,9 +209,9 @@ exports.getMySessionSlots = async (req, res) => {
       // Filter out already booked slots
       const availableSlotsFiltered = availableSlots.filter(slot => {
         return !session.bookedSlots.some(bookedSlot => {
-          // Both slot times are now in teacher's timezone, so direct comparison works
-          const bookedStartInTeacherTZ = moment.utc(bookedSlot.startTime).tz(teacherTimezone).format("HH:mm");
-          return bookedStartInTeacherTZ === slot.startTime;
+          // Convert booked slot time to student timezone for comparison
+          const bookedStartInStudentTZ = moment.utc(bookedSlot.startTime).tz(studentTimezone).format("HH:mm");
+          return bookedStartInStudentTZ === slot.startTime;
         });
       });
 
@@ -282,28 +286,6 @@ exports.confirmSessionSlot = async (req, res) => {
       }
     }
 
-    // NOTE: Frontend now sends times in teacher's timezone (not student's)
-    // because that's what we display: "All slot times must be displayed in the teacher's timezone"
-    // So the date and startTime parameters are in teacher's timezone
-    
-    // Convert the frontend input (teacher's timezone) to UTC
-    const requestedStartInTeacherTZ = moment.tz(
-      `${date} ${startTime}`,
-      "DD-MM-YYYY HH:mm",
-      teacherTimezone
-    );
-
-    if (!requestedStartInTeacherTZ.isValid()) {
-      return res.status(400).json({ message: "Invalid date/time" });
-    }
-
-    const requestedEndInTeacherTZ = requestedStartInTeacherTZ
-      .clone()
-      .add(session.sessionDuration, "minutes");
-
-    const slotStartUTC = requestedStartInTeacherTZ.clone().utc();
-    const slotEndUTC = requestedEndInTeacherTZ.clone().utc();
-
     // Generate available slots dynamically for validation
     const availability = await TeacherAvailability.findOne({ teacherId: session.teacherId });
     if (!availability) {
@@ -333,16 +315,12 @@ exports.confirmSessionSlot = async (req, res) => {
       studentTimezone: normalizeTimezone(student.timezone)
     });
 
-    // Get the session date in Asia/Kolkata for comparison
-    const sessionDateInKolkata = moment(session.date).format("DD-MM-YYYY");
-
-    // Check if the selected slot matches any available slot using Date objects
     console.log('Backend debug - received date:', date);
     console.log('Backend debug - received startTime:', startTime);
     console.log('Backend debug - teacherTimezone:', teacherTimezone);
+    console.log('Backend debug - studentTimezone:', normalizeTimezone(student.timezone));
     console.log('Backend debug - session.date (raw):', session.date);
     console.log('Backend debug - session.date (formatted):', moment(session.date).format("DD-MM-YYYY"));
-    console.log('Backend debug - availableSlots:', availableSlots.map(s => ({startTime: s.startTime, utcStart: s.utcStart})));
     
     // Find matching slot by startTime (the frontend sends times in student timezone)
     const matchingSlot = availableSlots?.find(slot => {
@@ -350,6 +328,8 @@ exports.confirmSessionSlot = async (req, res) => {
     });
 
     console.log('Backend debug - matchingSlot:', matchingSlot);
+    console.log('Backend debug - matchingSlot.startTime:', matchingSlot.startTime);
+    console.log('Backend debug - matchingSlot.endTime:', matchingSlot.endTime);
 
     if (!matchingSlot) {
       return res.status(400).json({
@@ -357,9 +337,10 @@ exports.confirmSessionSlot = async (req, res) => {
       });
     }
 
-    // Use the UTC timestamps from the available slot
-    const bookingStartUTC = moment.utc(matchingSlot.utcStart);
-    const bookingEndUTC = moment.utc(matchingSlot.utcEnd);
+    // Use teacher timezone timestamps from available slot
+    // These are stored as teacherStart and teacherEnd in the slot object
+    const bookingStartUTC = moment.utc(matchingSlot.teacherStart);
+    const bookingEndUTC = moment.utc(matchingSlot.teacherEnd);
 
     // Check if this slot is already booked (double-click / double API call protection)
     const alreadyBooked = session.bookedSlots.some(b => {
@@ -451,18 +432,29 @@ exports.confirmSessionSlot = async (req, res) => {
       });
     }
 
-    // Return times directly from the stored UTC booking timestamps, converted to student's timezone
-    const studentTimezone = normalizeTimezone(student.timezone);
-    const startTimeForResponse = moment.utc(bookingDoc.startTime).tz(studentTimezone).format("HH:mm");
-    const endTimeForResponse = moment.utc(bookingDoc.endTime).tz(studentTimezone).format("HH:mm");
-
+    // Return the exact same startTime and endTime that the student selected
+    // No timezone conversion - these are already in student's timezone
+    console.log('Backend debug - response startTime:', startTime);
+    console.log('Backend debug - response endTime:', matchingSlot.endTime);
+    
+    // Fallback: if endTime is not available or invalid, calculate it based on session duration
+    let endTime = matchingSlot.endTime;
+    if (!endTime || endTime === startTime) {
+        // Calculate endTime by adding session duration to startTime in student timezone
+        const studentTimezone = normalizeTimezone(student.timezone);
+        const startMoment = moment.tz(`${date} ${startTime}`, "DD-MM-YYYY HH:mm", studentTimezone);
+        const endMoment = startMoment.clone().add(session.sessionDuration, "minutes");
+        endTime = endMoment.format("HH:mm");
+        console.log('Backend debug - calculated endTime:', endTime);
+    }
+    
     return res.json({
       message: "Slot booked successfully",
       booking: {
         sessionId: session._id,
         date: moment(session.date).format("DD-MM-YYYY"),
-        startTime: startTimeForResponse,
-        endTime: endTimeForResponse
+        startTime: startTime,  // Exact same time student selected
+        endTime: endTime  // End time from available slot or calculated
       }
     });
 
@@ -519,10 +511,10 @@ exports.getMyConfirmedSessions = async (req, res) => {
       for (const slot of session.bookedSlots) {
         // Only process slots booked by this student
         if (String(slot.bookedBy._id) === String(studentId)) {
-          // Convert times from UTC to teacher's timezone
-          // The booked slot times must be displayed in the teacher's timezone
-          const startTimeInTeacherTZ = moment.utc(slot.startTime).tz(teacherTimezone);
-          const endTimeInTeacherTZ = moment.utc(slot.endTime).tz(teacherTimezone);
+          // Convert times from UTC to student's timezone
+          // The booked slot times must be displayed in student's timezone
+          const startTimeInStudentTZ = moment.utc(slot.startTime).tz(studentTimezone);
+          const endTimeInStudentTZ = moment.utc(slot.endTime).tz(studentTimezone);
           
           confirmedBookings.push({
             sessionId: session._id,
@@ -530,11 +522,11 @@ exports.getMyConfirmedSessions = async (req, res) => {
             subject: session.title || 'Session',
             // Teacher name
             teacherName: session.teacherId ? session.teacherId.fullName : 'Unknown',
-            // Session date in teacher's timezone
-            date: startTimeInTeacherTZ.format("DD-MM-YYYY"),
-            // Start time & end time in teacher's timezone (HH:mm format only)
-            startTime: startTimeInTeacherTZ.format("HH:mm"),
-            endTime: endTimeInTeacherTZ.format("HH:mm"),
+            // Session date in student's timezone
+            date: startTimeInStudentTZ.format("DD-MM-YYYY"),
+            // Start time & end time in student's timezone (HH:mm format only)
+            startTime: startTimeInStudentTZ.format("HH:mm"),
+            endTime: endTimeInStudentTZ.format("HH:mm"),
             // Additional info
             teacherEmail: session.teacherId ? session.teacherId.email : '',
             bookingDate: moment.utc(slot.bookedAt).tz(studentTimezone).format("DD-MM-YYYY HH:mm")
