@@ -148,10 +148,52 @@
         </main>
     </div>
 
+    <!-- Session Booking Confirmation Modal -->
+    <div id="bookingModal" class="booking-modal-overlay" style="display: none;">
+        <div class="booking-modal">
+            <div class="booking-modal-header">
+                <h2>Confirm Session Booking</h2>
+                <button class="modal-close" onclick="studentDashboard.hideBookingModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="booking-modal-content">
+                <div class="booking-details">
+                    <div class="booking-detail-item">
+                        <i class="fas fa-calendar"></i>
+                        <div class="detail-text">
+                            <label>Date:</label>
+                            <span id="modalDate"></span>
+                        </div>
+                    </div>
+                    <div class="booking-detail-item">
+                        <i class="fas fa-clock"></i>
+                        <div class="detail-text">
+                            <label>Time:</label>
+                            <span id="modalTime"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="booking-confirmation">
+                    <p>Are you sure you want to book this session?</p>
+                </div>
+            </div>
+            <div class="booking-modal-actions">
+                <button class="btn btn-secondary" onclick="studentDashboard.hideBookingModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-primary" id="confirmBookingBtn">
+                    <i class="fas fa-check"></i> Confirm Booking
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.43/moment-timezone-with-data.min.js"></script>
     <script src="../js/componentLoader.js"></script>
     <script src="../js/timezoneUtils.js"></script>
+    <script src="../js/apiService.js"></script>
     <script src="../js/studentDashboard.js"></script>
 </body>
 

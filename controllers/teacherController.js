@@ -48,6 +48,13 @@ exports.getMyStudents = async (req, res) => {
       teacherId: req.user.id
     }).select("-password");
 
+    console.log('Students fetched from DB:', students.map(s => ({ 
+      name: s.fullName, 
+      profileImage: s.profileImage,
+      userId: s.userId,
+      _id: s._id 
+    })));
+
     res.json(students);
   } catch (err) {
     console.error(err);
@@ -99,7 +106,7 @@ exports.createStudent = async (req, res) => {
       class: className,
       teacherId: req.user.id,
       timezone: req.body.timezone || "Asia/Kolkata",
-      profileImage: req.file ? `/uploads/${req.file.filename}` : ""
+      profileImage: req.file ? `/uploads/profiles/${req.file.filename}` : ""
     });
 
     // Get updated student count

@@ -19,8 +19,8 @@ const BookedSlotSchema = new mongoose.Schema({
   }
 });
 
-// Create a compound index to prevent duplicate bookings for the same session and time slot
-BookedSlotSchema.index({ sessionId: 1, startTime: 1, endTime: 1 }, { unique: true });
+// Note: Uniqueness constraint for bookings is handled at application level
+// to prevent duplicate bookings for the same session and time slot
 
 const SessionSlotSchema = new mongoose.Schema(
   {

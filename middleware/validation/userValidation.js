@@ -33,8 +33,15 @@ const studentCreate = [
     .notEmpty()
     .withMessage("Class is required"),
 
-  body("city").optional().trim(),
-  body("state").optional().trim()
+  body("city")
+    .trim()
+    .notEmpty()
+    .withMessage("City is required"),
+
+  body("state")
+    .trim()
+    .notEmpty()
+    .withMessage("State is required")
 ];
 
 

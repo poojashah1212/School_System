@@ -649,6 +649,7 @@ exports.deleteSession = async (req, res) => {
       });
     }
 
+    
     // Delete the session
     await SessionSlot.deleteOne({ _id: id, teacherId });
 
@@ -794,5 +795,101 @@ exports.getAllSlotsForSession = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.assignSlotToStudent = async (req, res) => {
+  try {
+    const { sessionId, startTime, studentId } = req.body;
+    const teacherId = req.user.id;
+
+    // Validate required fields
+    if (!sessionId || !startTime || !studentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Session ID, start time, and student ID are required"
+      });
+    }
+
+    // Verify session and student ownership
+    const [session, student] = await Promise.all([
+      SessionSlot.findOne({ _id: sessionId, teacherId }),
+      User.findOne({ _id: studentId, teacherId, role: "student" })
+    ]);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found or does not belong to you"
+      });
+    }
+
+    if (!student) {
+      return res.status(403).json({
+        success: false,
+        message: "Student not found or does not belong to you"
+      });
+    }
+
+    // Check if slot is already booked
+    const slotDate = moment(session.date).format("YYYY-MM-DD");
+    const slotKey = `slot:${sessionId}:${slotDate}:${startTime}`;
+    
+    const existingBooking = await redisClient.get(slotKey);
+    if (existingBooking) {
+      return res.status(400).json({
+        success: false,
+        message: "This slot is already booked"
+      });
+    }
+
+    // Create booking
+    const bookingDoc = {
+      startTime: moment.utc(`${slotDate} ${startTime}`, "YYYY-MM-DD HH:mm").toDate(),
+      endTime: moment.utc(`${slotDate} ${startTime}`, "YYYY-MM-DD HH:mm").add(session.sessionDuration, "minutes").toDate(),
+      bookedBy: studentId,
+      bookedAt: new Date()
+    };
+
+    // Update database and Redis atomically
+    const updatedSession = await SessionSlot.findOneAndUpdate(
+      { _id: sessionId, "bookedSlots.startTime": { $ne: bookingDoc.startTime } },
+      { $push: { bookedSlots: bookingDoc } },
+      { new: true }
+    );
+
+    if (!updatedSession) {
+      return res.status(400).json({
+        success: false,
+        message: "This slot was just booked. Please try a different time."
+      });
+    }
+
+    // Cache in Redis for 24 hours
+    await redisClient.setex(slotKey, 86400, JSON.stringify({
+      studentId,
+      studentName: student.fullName,
+      bookedAt: bookingDoc.bookedAt
+    }));
+
+    res.json({
+      success: true,
+      message: "Slot assigned successfully",
+      booking: {
+        sessionId: session._id,
+        studentId: studentId,
+        studentName: student.fullName,
+        date: moment(session.date).format("DD-MM-YYYY"),
+        startTime: startTime,
+        endTime: moment(bookingDoc.endTime).format("HH:mm")
+      }
+    });
+
+  } catch (err) {
+    console.error("Error in assignSlotToStudent:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to assign slot: " + err.message
+    });
   }
 };

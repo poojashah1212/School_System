@@ -24,10 +24,11 @@ exports.setWeeklyAvailability = async (req, res) => {
     const teacherId = req.user.id;
     const { weeklyAvailability } = req.body;
 
-    if (!Array.isArray(weeklyAvailability) || weeklyAvailability.length === 0) {
-      return res.status(400).json({ message: "Weekly availability is required" });
+    if (!Array.isArray(weeklyAvailability)) {
+      return res.status(400).json({ message: "Weekly availability must be an array" });
     }
 
+    // Allow empty array (when all days are "Not set")
     const availability = await TeacherAvailability.findOneAndUpdate(
       { teacherId },
       { $set: { weeklyAvailability } },

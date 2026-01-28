@@ -1,8 +1,14 @@
 class StudentDashboard {
     constructor() {
-        this.apiBaseUrl = 'http://localhost:5001/api';
+        this.apiBaseUrl = '/api';
+        this.studentTimezone = 'Asia/Kolkata';
         this.currentUser = null;
-        this.studentTimezone = null;
+        this.pendingBookingData = null;
+        
+        // Initialize API service
+        if (window.apiService) {
+            window.apiService.setBaseUrl(this.apiBaseUrl);
+        }
         this.init();
     }
 
@@ -88,17 +94,7 @@ class StudentDashboard {
         }
 
         try {
-            const response = await fetch(`${this.apiBaseUrl}/auth/profile`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Authentication failed');
-            }
-
-            const data = await response.json();
+            const data = await window.apiService.get('/auth/profile');
             this.currentUser = data.user;
 
             // Verify user is a student
@@ -227,18 +223,7 @@ class StudentDashboard {
 
     async loadMySessions() {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${this.apiBaseUrl}/sessions/mysessions`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load sessions');
-            }
-
-            const data = await response.json();
+            const data = await window.apiService.get('/sessions/mysessions');
             this.renderMySessions(data);
         } catch (error) {
             console.error('Error loading sessions:', error);
@@ -356,6 +341,7 @@ class StudentDashboard {
             });
             
             console.log('Final booked slot times set:', Array.from(bookedSlotTimes));
+            console.log('Available slots from backend:', session.availableSlots);
 
             // Preserve order: start from backend-provided available slots (already filtered for common sessions)
             // Then convert the *existing* slot to green if it's booked by the logged-in student.
@@ -369,6 +355,8 @@ class StudentDashboard {
                 };
             }).filter(s => s.startTime && s.startTime !== 'Time not specified');
 
+            console.log('Slots to render after initial mapping:', slotsToRender);
+
             // If the booked slot is no longer present in availableSlots (because it's booked), insert it back
             // in the correct chronological position (still no duplicates).
             const compareHHmm = (a, b) => {
@@ -379,8 +367,11 @@ class StudentDashboard {
 
             myBookedSlotsByTime.forEach((slot, start) => {
                 const exists = slotsToRender.some(s => s.startTime === start);
+                console.log('Checking booked slot:', start, 'exists in available slots:', exists);
+                
                 if (exists) return;
 
+                console.log('Inserting booked slot back:', start);
                 const toInsert = {
                     startTime: start,
                     endTime: slot.endTime,
@@ -396,7 +387,11 @@ class StudentDashboard {
                 }
 
                 slotsToRender.splice(insertIndex, 0, toInsert);
+                console.log('Slot inserted. Total slots now:', slotsToRender.length);
             });
+            
+            console.log('My booked slots by time map:', Array.from(myBookedSlotsByTime.entries()));
+            console.log('Final slots to render:', slotsToRender);
             
             return `
             <div class="session-card ${session.type === 'personal' ? 'personal-session' : 'common-session'}">
@@ -419,7 +414,7 @@ class StudentDashboard {
                     </div>
                 </div>
                 <div class="available-slots">
-                    <h4>Available Slots (${slotsToRender.length})</h4>
+                    <h4>Available Slots (${slotsToRender.filter(s => !s.isBookedByMe).length})</h4>
                     <div class="slots-grid">
                         ${slotsToRender.length > 0 ? slotsToRender.map(slot => {
                             const startTime = slot.startTime;
@@ -434,6 +429,7 @@ class StudentDashboard {
                                 return `
                                 <button class="slot-btn booked" disabled data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}">
                                     <div class="slot-time">${startTime} - ${endTime}</div>
+                                    <div class="booked-indicator">Your Booking</div>
                                 </button>
                             `;
                             } else {
@@ -481,79 +477,17 @@ class StudentDashboard {
         const button = event.target.closest('.slot-btn');
         const originalContent = button.innerHTML;
         
-        // Show confirmation dialog
-        const confirmed = confirm(`Are you ready to book this session?\n\nDate: ${sessionDate}\nTime: ${startTime}\n\nClick OK to confirm booking.`);
+        // Store booking data for modal confirmation
+        this.pendingBookingData = {
+            sessionId: sessionId,
+            startTime: startTime,
+            sessionDate: sessionDate,
+            button: button,
+            originalContent: originalContent
+        };
         
-        if (!confirmed) {
-            return;
-        }
-        
-        // Send the time in student's timezone (as displayed to student)
-        const startTimeForBackend = startTime;
-        // Use the date directly since it's now in correct DD-MM-YYYY format
-        const bookingDateForBackend = sessionDate;
-        
-        console.log('Booking debug - sessionDate:', sessionDate);
-        console.log('Booking debug - bookingDateForBackend:', bookingDateForBackend);
-        console.log('Booking debug - startTimeForBackend:', startTimeForBackend);
-        
-        try {
-            // Show loading state
-            button.disabled = true;
-            button.innerHTML = '<div class="slot-time"><i class="fas fa-spinner fa-spin"></i> Booking...</div>';
-            
-            const token = localStorage.getItem('token');
-            const requestBody = {
-                sessionId: sessionId,
-                startTime: startTimeForBackend,
-                date: bookingDateForBackend
-            };
-            
-            const response = await fetch(`${this.apiBaseUrl}/sessions/confirm`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to book session');
-            }
-
-            const data = await response.json();
-            
-            // Convert the same existing slot button to green (no duplicates, no reorder)
-            button.disabled = true;
-            button.classList.add('booked');
-            button.removeAttribute('onclick');
-
-            // Display times directly from booking response (already in student's timezone)
-            const bookedStart = data?.booking?.startTime;
-            const bookedEnd = data?.booking?.endTime;
-            if (bookedStart && bookedEnd) {
-                const timeEl = button.querySelector('.slot-time');
-                if (timeEl) {
-                    timeEl.textContent = `${bookedStart} - ${bookedEnd}`;
-                }
-            } else {
-                button.innerHTML = originalContent;
-            }
-
-            this.showNotification('Session slot booked successfully!', 'success');
-
-        } catch (error) {
-            console.error('Error booking session:', error);
-            this.showNotification(error.message || 'Failed to book session slot', 'error');
-
-            // Restore button state
-            if (button) {
-                button.disabled = false;
-                button.innerHTML = originalContent;
-            }
-        }
+        // Show custom confirmation modal
+        this.showBookingModal(sessionDate, startTime);
     }
 
     async loadDashboardData() {
@@ -805,18 +739,7 @@ class StudentDashboard {
 
     async loadProfileData() {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${this.apiBaseUrl}/auth/profile`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load profile data');
-            }
-
-            const data = await response.json();
+            const data = await window.apiService.get('/auth/profile');
             this.currentUser = data.user;
 
             // Update UI with fresh data
@@ -1397,6 +1320,125 @@ class StudentDashboard {
             this.studentTimezone = browserTimezone;
             this.loadSessions();
             this.showNotification('Display refreshed with browser timezone', 'info');
+        }
+    }
+
+    // Booking Modal Methods
+    showBookingModal(sessionDate, startTime) {
+        const modal = document.getElementById('bookingModal');
+        const modalDateElement = document.getElementById('modalDate');
+        const modalTimeElement = document.getElementById('modalTime');
+        const confirmBtn = document.getElementById('confirmBookingBtn');
+        
+        // Set modal content
+        modalDateElement.textContent = sessionDate;
+        modalTimeElement.textContent = startTime;
+        
+        // Show modal
+        modal.style.display = 'flex';
+        
+        // Add event listener to confirm button
+        confirmBtn.onclick = () => this.confirmBooking();
+        
+        // Close modal on overlay click
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                this.hideBookingModal();
+            }
+        };
+        
+        // Close modal on Escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                this.hideBookingModal();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+    }
+
+    hideBookingModal() {
+        const modal = document.getElementById('bookingModal');
+        modal.style.display = 'none';
+        this.pendingBookingData = null;
+    }
+
+    async confirmBooking() {
+        if (!this.pendingBookingData) {
+            console.error('No pending booking data');
+            return;
+        }
+
+        const { sessionId, startTime, sessionDate, button, originalContent } = this.pendingBookingData;
+        
+        // Send the time in student's timezone (as displayed to student)
+        const startTimeForBackend = startTime;
+        // Use the date directly since it's now in correct DD-MM-YYYY format
+        const bookingDateForBackend = sessionDate;
+        
+        console.log('Booking debug - sessionDate:', sessionDate);
+        console.log('Booking debug - bookingDateForBackend:', bookingDateForBackend);
+        console.log('Booking debug - startTimeForBackend:', startTimeForBackend);
+        
+        try {
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '<div class="slot-time"><i class="fas fa-spinner fa-spin"></i> Booking...</div>';
+            
+            // Hide modal while processing
+            this.hideBookingModal();
+            
+            const token = localStorage.getItem('token');
+            const requestBody = {
+                sessionId: sessionId,
+                startTime: startTimeForBackend,
+                date: bookingDateForBackend
+            };
+            
+            const response = await fetch(`${this.apiBaseUrl}/sessions/confirm`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to book session');
+            }
+
+            const data = await response.json();
+            
+            // Convert the same existing slot button to green (no duplicates, no reorder)
+            button.disabled = true;
+            button.classList.add('booked');
+            button.removeAttribute('onclick');
+
+            // Display times directly from booking response (already in student's timezone)
+            const bookedStart = data?.booking?.startTime;
+            const bookedEnd = data?.booking?.endTime;
+            if (bookedStart && bookedEnd) {
+                const timeEl = button.querySelector('.slot-time');
+                if (timeEl) {
+                    timeEl.textContent = `${bookedStart} - ${bookedEnd}`;
+                }
+            } else {
+                button.innerHTML = originalContent;
+            }
+
+            this.showNotification('Session slot booked successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error booking session:', error);
+            this.showNotification(error.message || 'Failed to book session slot', 'error');
+
+            // Restore button state
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalContent;
+            }
         }
     }
 }

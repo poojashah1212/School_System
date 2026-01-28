@@ -49,8 +49,8 @@ class AuthSystem {
             input.addEventListener('input', () => this.clearError(input));
         });
 
-        // Required fields
-        document.querySelectorAll('[required]').forEach(input => {
+        // Text inputs and other required fields
+        document.querySelectorAll('input[type="text"], input[type="number"], select').forEach(input => {
             input.addEventListener('blur', () => this.validateField(input, 'required'));
             input.addEventListener('input', () => this.clearError(input));
         });
@@ -109,7 +109,11 @@ class AuthSystem {
                 else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) errorMsg = 'Need uppercase, lowercase, and number';
                 break;
             case 'required':
-                if (!value) errorMsg = `${input.previousElementSibling.textContent} is required`;
+                if (!value) {
+                    const label = input.previousElementSibling;
+                    const fieldName = label ? label.textContent.replace(':', '').trim() : input.name;
+                    errorMsg = `${fieldName} is required`;
+                }
                 break;
         }
 
@@ -137,23 +141,34 @@ class AuthSystem {
     }
 
     showError(input, msg) {
-        input.classList.add('error');
-        input.classList.remove('success');
+        input.style.borderColor = '#dc3545';
+        input.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
         const errorEl = input.parentElement.querySelector('.error-message');
-        if (errorEl) errorEl.textContent = msg;
+        if (errorEl) {
+            errorEl.textContent = msg;
+            errorEl.style.color = '#dc3545';
+            errorEl.style.display = 'block';
+        }
     }
 
     showSuccess(input) {
-        input.classList.add('success');
-        input.classList.remove('error');
+        input.style.borderColor = '#28a745';
+        input.style.boxShadow = '0 0 0 3px rgba(40, 167, 69, 0.1)';
         const errorEl = input.parentElement.querySelector('.error-message');
-        if (errorEl) errorEl.textContent = '';
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+        }
     }
 
     clearError(input) {
-        input.classList.remove('error', 'success');
+        input.style.borderColor = '#e9ecef';
+        input.style.boxShadow = 'none';
         const errorEl = input.parentElement.querySelector('.error-message');
-        if (errorEl) errorEl.textContent = '';
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+        }
     }
 
     async handleLogin(e) {
@@ -268,8 +283,10 @@ class AuthSystem {
 
     clearAllErrors() {
         document.querySelectorAll('input, select').forEach(input => this.clearError(input));
-        document.querySelector('.file-label .upload-text').textContent = 'Choose Profile Image';
-        document.getElementById('signup-profileImage').value = '';
+        const uploadText = document.querySelector('.file-label .upload-text');
+        if (uploadText) uploadText.textContent = 'Choose Profile Image';
+        const fileInput = document.getElementById('signup-profileImage');
+        if (fileInput) fileInput.value = '';
     }
 
     showLoading() {

@@ -3,6 +3,12 @@ class TeacherDashboard {
     constructor() {
         this.currentUser = null;
         this.currentPage = 'dashboard';
+
+        // Initialize API service
+        if (window.apiService) {
+            window.apiService.setBaseUrl('/api');
+        }
+
         this.init();
     }
 
@@ -26,7 +32,7 @@ class TeacherDashboard {
                 this.showMessage('Access denied. Teacher account required.', 'error');
                 setTimeout(() => {
                     window.location.href = '/html/index.html';
-                }, 2000);
+                }, 5000);
                 return;
             }
             this.updateTeacherProfile();
@@ -208,7 +214,11 @@ class TeacherDashboard {
         if (addStudentBtn) {
             addStudentBtn.addEventListener('click', () => {
                 const modal = document.getElementById('addStudentModal');
-                if (modal) modal.classList.add('show');
+                if (modal) {
+                    // Reset form to clean state before opening
+                    this.resetAddStudentForm();
+                    modal.classList.add('show');
+                }
             });
         }
 
@@ -220,11 +230,35 @@ class TeacherDashboard {
             });
         }
 
+        // Download sample CSV functionality
+        const downloadSampleCsvBtn = document.getElementById('downloadSampleCsvBtn');
+        if (downloadSampleCsvBtn) {
+            downloadSampleCsvBtn.addEventListener('click', () => {
+                this.downloadSampleCsv();
+            });
+        }
+
         const closeStudentModal = document.getElementById('closeStudentModal');
         if (closeStudentModal) {
             closeStudentModal.addEventListener('click', () => {
                 const modal = document.getElementById('addStudentModal');
-                if (modal) modal.classList.remove('show');
+                if (modal) {
+                    modal.classList.remove('show');
+                    // Reset form to clean state when modal is closed
+                    this.resetAddStudentForm();
+                }
+            });
+        }
+
+        const cancelStudentBtn = document.getElementById('cancelStudentBtn');
+        if (cancelStudentBtn) {
+            cancelStudentBtn.addEventListener('click', () => {
+                const modal = document.getElementById('addStudentModal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    // Reset form to clean state when modal is closed
+                    this.resetAddStudentForm();
+                }
             });
         }
 
@@ -283,6 +317,16 @@ class TeacherDashboard {
                 e.preventDefault();
                 this.addStudent();
             });
+            
+            // Add input event listeners to clear errors on typing
+            addStudentForm.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', () => {
+                    this.clearFieldError(input);
+                });
+            });
+            
+            // Setup image upload functionality
+            this.setupImageUpload();
         }
 
         const uploadCsvForm = document.getElementById('uploadCsvForm');
@@ -360,23 +404,47 @@ class TeacherDashboard {
         if (closeSessionModal) {
             closeSessionModal.addEventListener('click', () => {
                 const modal = document.getElementById('createSessionModal');
-                if (modal) modal.classList.remove('show');
+                if (modal) {
+                    modal.classList.remove('show');
+                    this.resetCreateSessionForm();
+                }
             });
         }
 
         const cancelSessionBtn = document.getElementById('cancelSessionBtn');
         if (cancelSessionBtn) {
-            cancelSessionBtn.addEventListener('click', () => {
+            cancelSessionBtn.addEventListener('click', (e) => {
+                console.log('Cancel button clicked');
+                e.preventDefault();
                 const modal = document.getElementById('createSessionModal');
-                if (modal) modal.classList.remove('show');
+                if (modal) {
+                    modal.classList.remove('show');
+                    this.resetCreateSessionForm();
+                }
+            });
+        } else {
+            console.log('Cancel button not found');
+        }
+
+        // Assign Slot Modal event listeners
+        const closeAssignSlotModal = document.getElementById('closeAssignSlotModal');
+        if (closeAssignSlotModal) {
+            closeAssignSlotModal.addEventListener('click', () => {
+                this.hideAssignSlotModal();
             });
         }
 
-        const createSessionForm = document.getElementById('createSessionForm');
-        if (createSessionForm) {
-            createSessionForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.createSessionSlots();
+        const cancelAssignBtn = document.getElementById('cancelAssignBtn');
+        if (cancelAssignBtn) {
+            cancelAssignBtn.addEventListener('click', () => {
+                this.hideAssignSlotModal();
+            });
+        }
+
+        const confirmAssignBtn = document.getElementById('confirmAssignBtn');
+        if (confirmAssignBtn) {
+            confirmAssignBtn.addEventListener('click', () => {
+                this.confirmSlotAssignment();
             });
         }
 
@@ -386,6 +454,8 @@ class TeacherDashboard {
             studentTypeSelect.addEventListener('change', (e) => {
                 this.handleStudentTypeChange(e.target.value);
             });
+            // Initialize - hide dropdown by default
+            this.handleStudentTypeChange('all');
         }
 
         // Session date change handler for real-time holiday validation
@@ -408,6 +478,10 @@ class TeacherDashboard {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     this.hideModal(modal.id);
+                    // Clear validation errors and reset form if it's the add student modal
+                    if (modal.id === 'addStudentModal') {
+                        this.resetAddStudentForm();
+                    }
                 }
             });
         });
@@ -645,56 +719,38 @@ class TeacherDashboard {
             this.showLoading();
 
             // Load students count from database
-            const studentsResponse = await fetch('/api/teachers/students', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const students = await window.apiService.get('/teachers/students');
+            const totalStudents = students.length || 0;
 
-            if (studentsResponse.ok) {
-                const students = await studentsResponse.json();
-                const totalStudents = students.length || 0;
+            // Update dashboard with real database count
+            const totalStudentsElement = document.getElementById('totalStudents');
+            if (totalStudentsElement) {
+                totalStudentsElement.textContent = totalStudents;
+                // Add animation to show real-time update
+                totalStudentsElement.style.animation = 'pulse 0.6s ease-out';
+                setTimeout(() => {
+                    totalStudentsElement.style.animation = '';
+                }, 600);
+            }
 
-                // Update dashboard with real database count
-                const totalStudentsElement = document.getElementById('totalStudents');
-                if (totalStudentsElement) {
-                    totalStudentsElement.textContent = totalStudents;
-                    // Add animation to show real-time update
-                    totalStudentsElement.style.animation = 'pulse 0.6s ease-out';
-                    setTimeout(() => {
-                        totalStudentsElement.style.animation = '';
-                    }, 600);
-                }
+            this.updateRecentStudents(students.slice(0, 5));
 
-                this.updateRecentStudents(students.slice(0, 5));
-
-                // Update student count in students page header
-                const studentsHeader = document.querySelector('#students-page .page-header h2');
-                if (studentsHeader) {
-                    studentsHeader.textContent = `Students Management (${totalStudents})`;
-                }
-
+            // Update student count in students page header
+            const studentsHeader = document.querySelector('#students-page .page-header h2');
+            if (studentsHeader) {
+                studentsHeader.textContent = `Students Management (${totalStudents})`;
             }
 
             // Load quiz data from database
-            const quizzesResponse = await fetch('/api/teachers/quiz', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const result = await window.apiService.get('/teachers/quiz');
+            const quizzes = result.quizzes || [];
+            const totalQuizzes = quizzes.length || 0;
 
-            if (quizzesResponse.ok) {
-                const result = await quizzesResponse.json();
-                const quizzes = result.quizzes || [];
-                const totalQuizzes = quizzes.length || 0;
+            // Update dashboard with real quiz count
+            document.getElementById('totalQuizzes').textContent = totalQuizzes;
 
-                // Update dashboard with real quiz count
-                document.getElementById('totalQuizzes').textContent = totalQuizzes;
-
-                // Update recent quizzes
-                this.updateRecentQuizzes(quizzes.slice(0, 3));
-
-            }
+            // Update recent quizzes
+            this.updateRecentQuizzes(quizzes.slice(0, 3));
 
             // Load total sessions data
             await this.loadTotalSessionsForDashboard();
@@ -717,16 +773,31 @@ class TeacherDashboard {
             return;
         }
 
-        container.innerHTML = students.map(student => `
+        container.innerHTML = students.map(student => {
+            // Handle profile image URL
+            let profileImageUrl = student.profileImage;
+            if (profileImageUrl) {
+                // Convert Windows backslashes to forward slashes and ensure proper format
+                profileImageUrl = profileImageUrl.replace(/\\/g, '/');
+                if (!profileImageUrl.startsWith('/uploads/') && !profileImageUrl.startsWith('http')) {
+                    profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
+                }
+                if (profileImageUrl.startsWith('/uploads/')) {
+                    profileImageUrl = `http://localhost:5001${profileImageUrl}`;
+                }
+            }
+            
+            return `
             <div class="student-item">
-                <img src="${student.profileImage || 'https://via.placeholder.com/32'}" alt="${student.fullName}" class="student-avatar-small">
+                <img src="${profileImageUrl || 'https://picsum.photos/seed/' + student._id + '/32/32.jpg'}" alt="${student.fullName}" class="student-avatar-small">
                 <div class="student-info">
                     <h4>${student.fullName}</h4>
                     <p>${student.email}</p>
                 </div>
                 <span class="student-class">${student.class || 'N/A'}</span>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     updateRecentQuizzes(quizzes) {
@@ -829,11 +900,13 @@ class TeacherDashboard {
                             <label for="startDate">Start Date *</label>
                             <input type="date" name="startDate" id="startDate" required>
                             <small class="form-hint">Select holiday start date</small>
+                            <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                         </div>
                         <div class="form-group">
                             <label for="endDate">End Date *</label>
                             <input type="date" name="endDate" id="endDate" required>
                             <small class="form-hint">Select holiday end date</small>
+                            <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                         </div>
                     </div>
                     <div class="form-row" id="singleDateRow" style="display: none;">
@@ -841,19 +914,21 @@ class TeacherDashboard {
                             <label for="singleDate">Holiday Date *</label>
                             <input type="date" name="singleDate" id="singleDate">
                             <small class="form-hint">Select holiday date</small>
+                            <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="reason">Reason *</label>
+                        <label for="reason">Holiday Type *</label>
                         <select name="reason" id="reason" required>
-                            <option value="">Select Reason</option>
+                            <option value="">Select Holiday Type</option>
                             <option value="personal">Personal</option>
-                            <option value="public">Public Holiday</option>
+                            <option value="public">Public</option>
                         </select>
+                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                     </div>
                     <div class="form-group">
-                        <label for="note">Note (Optional)</label>
-                        <textarea name="note" id="note" placeholder="Add a note (optional)" rows="3"></textarea>
+                        <label for="note">Reason (Optional)</label>
+                        <textarea name="note" id="note" placeholder="Reason (optional)" rows="3"></textarea>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
@@ -878,6 +953,19 @@ class TeacherDashboard {
 
         // Add real-time validation
         this.setupHolidayValidation();
+        
+        // Add input event listeners to clear errors on typing
+        const holidayForm = document.getElementById('addHolidayForm');
+        if (holidayForm) {
+            holidayForm.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('input', () => {
+                    this.clearFieldError(input);
+                });
+                input.addEventListener('change', () => {
+                    this.clearFieldError(input);
+                });
+            });
+        }
     }
 
     setMinDateForDateInputs() {
@@ -919,20 +1007,17 @@ class TeacherDashboard {
 
     validateDateFormat(input) {
         const value = input.value.trim();
+        
+        // Clear previous error for this field
         const formGroup = input.closest('.form-group');
-        let errorElement = formGroup.querySelector('.error-message');
-
-        // Remove existing error
+        const errorElement = formGroup.querySelector('.error-message');
         if (errorElement) {
             errorElement.remove();
         }
         input.classList.remove('error');
 
+        // Return true if empty (required validation is handled separately)
         if (!value) {
-            if (input.hasAttribute('required')) {
-                this.showFieldError(input, 'Date is required');
-                return false;
-            }
             return true;
         }
 
@@ -965,14 +1050,15 @@ class TeacherDashboard {
         const formGroup = select.closest('.form-group');
         let errorElement = formGroup.querySelector('.error-message');
 
-        // Remove existing error
+        // Hide existing error instead of removing
         if (errorElement) {
-            errorElement.remove();
+            errorElement.style.display = 'none';
+            errorElement.textContent = '';
         }
         select.classList.remove('error');
 
         if (!select.value) {
-            this.showFieldError(select, 'Please select a reason');
+            this.showFieldError(select, 'Please select holiday type');
             return false;
         }
 
@@ -984,28 +1070,42 @@ class TeacherDashboard {
         const isSingleDay = document.getElementById('singleDayHoliday').checked;
         let isValid = true;
 
-        // Clear all previous errors
-        form.querySelectorAll('.error-message').forEach(error => error.remove());
+        // Clear all previous errors - hide instead of remove
+        form.querySelectorAll('.error-message').forEach(error => {
+            error.style.display = 'none';
+            error.textContent = '';
+        });
         form.querySelectorAll('.error').forEach(field => field.classList.remove('error'));
 
         if (isSingleDay) {
             const singleDateInput = document.getElementById('singleDate');
-            if (!this.validateDateFormat(singleDateInput)) {
+            if (!singleDateInput.value) {
+                this.showFieldError(singleDateInput, 'Holiday date is required');
+                isValid = false;
+            } else if (!this.validateDateFormat(singleDateInput)) {
                 isValid = false;
             }
         } else {
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
 
-            if (!this.validateDateFormat(startDateInput)) {
+            // Check if start date is empty
+            if (!startDateInput.value) {
+                this.showFieldError(startDateInput, 'Start date is required');
+                isValid = false;
+            } else if (!this.validateDateFormat(startDateInput)) {
                 isValid = false;
             }
 
-            if (!this.validateDateFormat(endDateInput)) {
+            // Check if end date is empty
+            if (!endDateInput.value) {
+                this.showFieldError(endDateInput, 'End date is required');
+                isValid = false;
+            } else if (!this.validateDateFormat(endDateInput)) {
                 isValid = false;
             }
 
-            // Validate date range
+            // Validate date range only if both dates are present
             if (startDateInput.value && endDateInput.value) {
                 if (startDateInput.value > endDateInput.value) {
                     this.showFieldError(endDateInput, 'End date cannot be before start date');
@@ -1036,18 +1136,85 @@ class TeacherDashboard {
         return isValid;
     }
 
-    showFieldError(field, message) {
-        field.classList.add('error');
-        const formGroup = field.closest('.form-group');
-        let errorElement = formGroup.querySelector('.error-message');
+    validateCreateSessionForm() {
+        console.log('validateCreateSessionForm called');
+        const form = document.getElementById('createSessionForm');
+        let isValid = true;
 
-        if (!errorElement) {
-            errorElement = document.createElement('div');
-            errorElement.className = 'error-message';
-            formGroup.appendChild(errorElement);
+        // Set submitted flag to true
+        this.isSessionFormSubmitted = true;
+
+        // Clear all previous errors
+        form.querySelectorAll('.error-message').forEach(error => error.remove());
+        form.querySelectorAll('.error').forEach(field => field.classList.remove('error'));
+
+        // Validate session title
+        const titleInput = document.getElementById('sessionTitle');
+        console.log('Title input value:', titleInput.value);
+        if (!titleInput.value.trim()) {
+            this.showFieldError(titleInput, 'Session title is required');
+            isValid = false;
         }
 
+        // Validate session date
+        const dateInput = document.getElementById('sessionDate');
+        console.log('Date input value:', dateInput.value);
+        if (!dateInput.value) {
+            this.showFieldError(dateInput, 'Date is required');
+            isValid = false;
+        }
+
+        // Validate session duration
+        const durationInput = document.getElementById('sessionDuration');
+        console.log('Duration input value:', durationInput.value);
+        if (!durationInput.value) {
+            this.showFieldError(durationInput, 'Session duration is required');
+            isValid = false;
+        }
+
+        // Validate break duration
+        const breakInput = document.getElementById('breakDuration');
+        console.log('Break input value:', breakInput.value);
+        if (!breakInput.value) {
+            this.showFieldError(breakInput, 'Break duration is required');
+            isValid = false;
+        }
+
+        console.log('Validation result:', isValid);
+        return isValid;
+    }
+
+    showFieldError(field, message) {
+        console.log('showFieldError called for:', field.id, 'with message:', message);
+        
+        // Only show errors if form has been submitted
+        if (!this.isSessionFormSubmitted) {
+            console.log('Form not submitted yet, skipping error display');
+            return;
+        }
+        
+        // Add error class and show message only after submission
+        field.classList.add('error');
+        
+        // Remove any existing error message for this field
+        const existingError = field.parentNode.querySelector('.error-message');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Always create new error element
+        const errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
         errorElement.textContent = message;
+        errorElement.style.color = '#dc3545';
+        errorElement.style.fontSize = '12px';
+        errorElement.style.marginTop = '4px';
+        errorElement.style.fontWeight = '500';
+        errorElement.style.display = 'block';
+        
+        // Insert error message immediately after the field
+        field.parentNode.insertBefore(errorElement, field.nextSibling);
+        console.log('Error message created and inserted');
     }
 
     isValidDate(dateString) {
@@ -1322,6 +1489,15 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const students = await response.json();
+                console.log('Students loaded from DB:', students);
+                console.log('Profile images:', students.map(s => ({ 
+                    name: s.fullName, 
+                    profileImage: s.profileImage,
+                    _id: s._id 
+                })));
+                
+                // Also update recent students with the same data
+                this.updateRecentStudents(students);
                 this.updateStudentsGrid(students);
             } else {
                 const error = await response.json();
@@ -1342,9 +1518,23 @@ class TeacherDashboard {
             return;
         }
 
-        container.innerHTML = students.map(student => `
+        container.innerHTML = students.map(student => {
+            // Handle profile image URL
+            let profileImageUrl = student.profileImage;
+            if (profileImageUrl) {
+                // Convert Windows backslashes to forward slashes and ensure proper format
+                profileImageUrl = profileImageUrl.replace(/\\/g, '/');
+                if (!profileImageUrl.startsWith('/uploads/') && !profileImageUrl.startsWith('http')) {
+                    profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
+                }
+                if (profileImageUrl.startsWith('/uploads/')) {
+                    profileImageUrl = `http://localhost:5001${profileImageUrl}`;
+                }
+            }
+            
+            return `
             <div class="student-card">
-                <img src="${student.profileImage || 'https://via.placeholder.com/60'}" alt="${student.fullName}" class="student-avatar">
+                <img src="${profileImageUrl || 'https://picsum.photos/seed/' + student._id + '/60/60.jpg'}" alt="${student.fullName}" class="student-avatar">
                 <div class="student-details">
                     <h4>${student.fullName}</h4>
                     <p><i class="fas fa-envelope"></i> ${student.email}</p>
@@ -1360,7 +1550,8 @@ class TeacherDashboard {
                     </button>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     updateStudentCount(count) {
@@ -1383,7 +1574,231 @@ class TeacherDashboard {
     }
 
 
+    validateAddStudentForm() {
+        const form = document.getElementById('addStudentForm');
+        const inputs = form.querySelectorAll('input[data-required="true"]');
+        let isValid = true;
+        
+        // Clear previous errors
+        form.querySelectorAll('.validation-error').forEach(error => error.remove());
+        form.querySelectorAll('input.error').forEach(input => input.classList.remove('error'));
+        
+        inputs.forEach(input => {
+            const value = input.value.trim();
+            
+            if (!value) {
+                this.showFieldError(input, `${this.getFieldName(input.name)} is required`);
+                isValid = false;
+            } else {
+                // Specific field validations
+                switch (input.name) {
+                    case 'email':
+                        if (!this.isValidEmail(value)) {
+                            this.showFieldError(input, 'Please enter a valid email address');
+                            isValid = false;
+                        }
+                        break;
+                    case 'mobileNo':
+                        if (!this.isValidMobile(value)) {
+                            this.showFieldError(input, 'Please enter a valid 10-digit mobile number');
+                            isValid = false;
+                        }
+                        break;
+                    case 'age':
+                        const age = parseInt(value);
+                        if (isNaN(age) || age < 1 || age > 120) {
+                            this.showFieldError(input, 'Age must be between 1 and 120');
+                            isValid = false;
+                        }
+                        break;
+                    case 'password':
+                        if (value.length < 6) {
+                            this.showFieldError(input, 'Password must be at least 6 characters long');
+                            isValid = false;
+                        }
+                        break;
+                }
+            }
+        });
+        
+        return isValid;
+    }
+    
+    showFieldError(input, message) {
+        input.classList.add('error');
+        
+        // Remove existing error message for this field
+        const existingError = input.parentNode.querySelector('.validation-error');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Add new error message
+        const errorElement = document.createElement('span');
+        errorElement.className = 'validation-error';
+        errorElement.textContent = message;
+        input.parentNode.appendChild(errorElement);
+    }
+    
+    clearFieldError(input) {
+        input.classList.remove('error');
+        
+        // Clear validation-error (for add student form)
+        const validationError = input.parentNode.querySelector('.validation-error');
+        if (validationError) {
+            validationError.remove();
+        }
+        
+        // Hide error-message spans (for holiday form) - don't remove them
+        const errorMessage = input.parentNode.querySelector('.error-message');
+        if (errorMessage) {
+            errorMessage.style.display = 'none';
+            errorMessage.textContent = '';
+        }
+        
+        // Also check form-group for any remaining error messages
+        const formGroup = input.closest('.form-group');
+        if (formGroup) {
+            const groupErrorMessage = formGroup.querySelector('.error-message');
+            if (groupErrorMessage) {
+                groupErrorMessage.style.display = 'none';
+                groupErrorMessage.textContent = '';
+            }
+        }
+    }
+    
+    resetAddStudentForm() {
+        const form = document.getElementById('addStudentForm');
+        if (form) {
+            // Reset form fields
+            form.reset();
+            
+            // Clear validation errors
+            form.querySelectorAll('.validation-error').forEach(error => error.remove());
+            form.querySelectorAll('input.error').forEach(input => input.classList.remove('error'));
+            
+            // Clear all error message spans
+            form.querySelectorAll('.error-message').forEach(errorMsg => {
+                errorMsg.style.display = 'none';
+                errorMsg.textContent = '';
+            });
+            
+            // Reset image preview
+            this.removeImage();
+        }
+    }
+    
+    clearAddStudentFormErrors() {
+        const form = document.getElementById('addStudentForm');
+        if (form) {
+            form.querySelectorAll('.validation-error').forEach(error => error.remove());
+            form.querySelectorAll('input.error').forEach(input => input.classList.remove('error'));
+        }
+    }
+    
+    setupImageUpload() {
+        const fileInput = document.getElementById('addProfileImageInput');
+        const profilePreview = document.getElementById('addProfilePreview');
+        
+        if (!fileInput || !profilePreview) return;
+        
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    handleImageFile(file) {
+        // Check file size (2MB limit)
+        if (file.size > 2 * 1024 * 1024) {
+            this.showMessage('Image size should be less than 2MB', 'error');
+            return;
+        }
+        
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+            this.showMessage('Please upload a valid image file', 'error');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.showImagePreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    showImagePreview(imageSrc) {
+        const uploadPlaceholder = document.querySelector('.upload-placeholder-clean');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        if (uploadPlaceholder && imagePreview && previewImg) {
+            previewImg.src = imageSrc;
+            uploadPlaceholder.style.display = 'none';
+            imagePreview.style.display = 'block';
+        }
+    }
+    
+    removeImage() {
+        // Handle Add Student form image reset
+        const addFileInput = document.getElementById('addProfileImageInput');
+        const addProfilePreview = document.getElementById('addProfilePreview');
+        
+        if (addFileInput && addProfilePreview) {
+            addFileInput.value = '';
+            addProfilePreview.src = '';
+        }
+        
+        // Handle other forms with different structure (profileImageInput, imagePreview)
+        const fileInput = document.getElementById('profileImageInput');
+        const uploadPlaceholder = document.querySelector('.upload-placeholder-clean');
+        const imagePreview = document.getElementById('imagePreview');
+        
+        if (fileInput && uploadPlaceholder && imagePreview) {
+            fileInput.value = '';
+            uploadPlaceholder.style.display = 'flex';
+            imagePreview.style.display = 'none';
+        }
+    }
+    
+    getFieldName(fieldName) {
+        const fieldNames = {
+            userId: 'User ID',
+            fullName: 'Full Name',
+            email: 'Email',
+            password: 'Password',
+            age: 'Age',
+            mobileNo: 'Mobile Number',
+            city: 'City',
+            state: 'State'
+        };
+        return fieldNames[fieldName] || fieldName;
+    }
+    
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    isValidMobile(mobile) {
+        const mobileRegex = /^[0-9]{10}$/;
+        return mobileRegex.test(mobile);
+    }
+
     async addStudent() {
+        // Validate form first
+        if (!this.validateAddStudentForm()) {
+            return;
+        }
+        
         const formData = new FormData(document.getElementById('addStudentForm'));
 
         try {
@@ -1406,16 +1821,18 @@ class TeacherDashboard {
                     this.updateStudentCount(result.totalStudents);
                 }
 
+                // Immediately add the new student to the display
+                if (result.student) {
+                    this.addStudentToDisplay(result.student);
+                }
+
                 // Close modal and reset form
                 const modal = document.getElementById('addStudentModal');
                 if (modal) modal.classList.remove('show');
                 document.getElementById('addStudentForm').reset();
 
-                // Refresh both students list and dashboard
-                await Promise.all([
-                    this.loadStudentsData(),
-                    this.loadDashboardData()
-                ]);
+                // Refresh dashboard data (but don't wait for it)
+                this.loadDashboardData();
 
                 // Show success animation
                 this.showAddSuccessAnimation();
@@ -1429,6 +1846,90 @@ class TeacherDashboard {
             this.showMessage('Error adding student to database', 'error');
         } finally {
             this.hideLoading();
+        }
+    }
+
+    addStudentToDisplay(student) {
+        // Handle profile image URL
+        let profileImageUrl = student.profileImage;
+        if (profileImageUrl) {
+            // Convert Windows backslashes to forward slashes and ensure proper format
+            profileImageUrl = profileImageUrl.replace(/\\/g, '/');
+            if (!profileImageUrl.startsWith('/uploads/') && !profileImageUrl.startsWith('http')) {
+                profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
+            }
+            if (profileImageUrl.startsWith('/uploads/')) {
+                profileImageUrl = `http://localhost:5001${profileImageUrl}`;
+            }
+        }
+
+        // Create student card HTML
+        const studentCard = `
+            <div class="student-card">
+                <img src="${profileImageUrl || 'https://picsum.photos/seed/' + student._id + '/60/60.jpg'}" alt="${student.fullName}" class="student-avatar">
+                <div class="student-details">
+                    <h4>${student.fullName}</h4>
+                    <p><i class="fas fa-envelope"></i> ${student.email}</p>
+                    <p><i class="fas fa-phone"></i> ${student.mobileNo}</p>
+                    <p><i class="fas fa-graduation-cap"></i> ${student.class || 'N/A'}</p>
+                </div>
+                <div class="student-actions">
+                    <button class="btn-edit" onclick="dashboard.editStudent('${student._id || student.userId}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-delete" onclick="dashboard.deleteStudent('${student._id || student.userId}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add to students grid
+        const studentsGrid = document.getElementById('studentsGrid');
+        if (studentsGrid) {
+            // If grid is empty, remove the "No students found" message
+            if (studentsGrid.innerHTML.includes('No students found')) {
+                studentsGrid.innerHTML = '';
+            }
+            
+            // Add the new student at the beginning with animation
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = studentCard;
+            const newCard = tempDiv.firstElementChild;
+            newCard.style.animation = 'slideIn 0.3s ease-out';
+            studentsGrid.insertBefore(newCard, studentsGrid.firstChild);
+        }
+
+        // Also add to recent students list
+        const recentStudents = document.getElementById('recentStudents');
+        if (recentStudents) {
+            const recentStudentItem = `
+                <div class="student-item" style="animation: slideIn 0.3s ease-out;">
+                    <img src="${profileImageUrl || 'https://picsum.photos/seed/' + student._id + '/32/32.jpg'}" alt="${student.fullName}" class="student-avatar-small">
+                    <div class="student-info">
+                        <h4>${student.fullName}</h4>
+                        <p>${student.email}</p>
+                    </div>
+                    <span class="student-class">${student.class || 'N/A'}</span>
+                </div>
+            `;
+            
+            // If list is empty, remove the "No students added yet" message
+            if (recentStudents.innerHTML.includes('No students added yet')) {
+                recentStudents.innerHTML = '';
+            }
+            
+            // Add at the beginning and limit to 5 recent students
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = recentStudentItem;
+            const newItem = tempDiv.firstElementChild;
+            recentStudents.insertBefore(newItem, recentStudents.firstChild);
+            
+            // Remove the last item if more than 5
+            const items = recentStudents.querySelectorAll('.student-item');
+            if (items.length > 5) {
+                items[items.length - 1].remove();
+            }
         }
     }
 
@@ -1487,7 +1988,12 @@ class TeacherDashboard {
     }
 
     async deleteStudent(studentId) {
-        if (!confirm('Are you sure you want to delete this student? This action cannot be undone.')) return;
+        const confirmed = await this.showConfirmDialog(
+            'Are you sure you want to delete this student? This action cannot be undone.',
+            'Delete Student'
+        );
+        
+        if (!confirmed) return;
 
         try {
             this.showLoading();
@@ -1581,6 +2087,96 @@ class TeacherDashboard {
         }
     }
 
+    setupEditStudentValidation() {
+        const form = document.getElementById('editStudentForm');
+        if (!form) return;
+
+        // Add input event listeners to clear errors
+        const inputs = form.querySelectorAll('input[data-required="true"]');
+        inputs.forEach(input => {
+            input.addEventListener('input', () => this.clearFieldError(input));
+            input.addEventListener('blur', () => this.validateField(input));
+        });
+    }
+
+    validateField(input) {
+        const value = input.value.trim();
+        const fieldName = input.previousElementSibling?.textContent || input.name;
+        
+        if (!value) {
+            this.showFieldError(input, `${fieldName} is required`);
+            return false;
+        }
+
+        // Email validation
+        if (input.type === 'email') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                this.showFieldError(input, 'Invalid email format');
+                return false;
+            }
+        }
+
+        // Mobile validation
+        if (input.name === 'mobileNo') {
+            const mobileRegex = /^[0-9]{10}$/;
+            if (!mobileRegex.test(value)) {
+                this.showFieldError(input, 'Mobile must be 10 digits');
+                return false;
+            }
+        }
+
+        // Age validation
+        if (input.name === 'age') {
+            const age = parseInt(value);
+            if (isNaN(age) || age < 1 || age > 120) {
+                this.showFieldError(input, 'Age must be between 1 and 120');
+                return false;
+            }
+        }
+
+        this.clearFieldError(input);
+        return true;
+    }
+
+    showFieldError(input, message) {
+        input.style.borderColor = '#dc3545';
+        input.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
+        
+        const errorElement = input.parentElement.querySelector('.error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+    }
+
+    clearFieldError(input) {
+        input.style.borderColor = '';
+        input.style.boxShadow = '';
+        
+        const errorElement = input.parentElement.querySelector('.error-message');
+        if (errorElement) {
+            errorElement.textContent = '';
+            errorElement.style.display = 'none';
+        }
+    }
+
+    validateEditStudentForm() {
+        const form = document.getElementById('editStudentForm');
+        if (!form) return false;
+
+        const inputs = form.querySelectorAll('input[data-required="true"]');
+        let isValid = true;
+
+        inputs.forEach(input => {
+            if (!this.validateField(input)) {
+                isValid = false;
+            }
+        });
+
+        return isValid;
+    }
+
     showDeleteSuccessAnimation() {
         // Create a temporary success notification
         const successDiv = document.createElement('div');
@@ -1636,37 +2232,111 @@ class TeacherDashboard {
             editModal.id = 'editStudentModal';
             editModal.className = 'modal';
             editModal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
+                <div class="modal-content modal-wide">
+                    <div class="modal-header-clean">
                         <h3>Edit Student</h3>
-                        <button class="close-btn" id="closeEditModal">&times;</button>
+                        <button class="modal-close-clean" id="closeEditModal">&times;</button>
                     </div>
-                    <form id="editStudentForm">
-                        <div class="form-row">
-                            <input type="hidden" id="editStudentId" name="userId">
-                            <input type="text" name="fullName" placeholder="Full Name" required>
-                            <input type="email" name="email" placeholder="Email" required>
+                    <form id="editStudentForm" enctype="multipart/form-data" novalidate>
+                        <div class="form-wide-grid">
+                            <!-- Basic Info Section -->
+                            <div class="form-section">
+                                <h4 class="section-title-clean">Basic Info</h4>
+                                <div class="form-row-wide">
+                                    <div class="form-field-clean required">
+                                        <label for="editUserId">User ID</label>
+                                        <input type="text" name="userId" id="editUserId" placeholder="Enter user ID" data-required="true" readonly>
+                                    </div>
+                                    <div class="form-field-clean required">
+                                        <label for="editFullName">Full Name</label>
+                                        <input type="text" name="fullName" id="editFullName" placeholder="Enter full name" data-required="true">
+                                    </div>
+                                    <div class="form-field-clean required">
+                                        <label for="editEmail">Email</label>
+                                        <input type="email" name="email" id="editEmail" placeholder="student@example.com" data-required="true">
+                                    </div>
+                                </div>
+                                <div class="form-row-wide">
+                                    <div class="form-field-clean">
+                                        <label for="editPassword">Password</label>
+                                        <input type="password" name="password" id="editPassword" placeholder="Leave blank to keep current">
+                                    </div>
+                                    <div class="form-field-clean required">
+                                        <label for="editAge">Age</label>
+                                        <input type="number" name="age" id="editAge" placeholder="Age" min="1" max="120" data-required="true">
+                                    </div>
+                                    <div class="form-field-clean">
+                                        <!-- Empty field for balance -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Contact Info Section -->
+                            <div class="form-section">
+                                <h4 class="section-title-clean">Contact Info</h4>
+                                <div class="form-row-wide">
+                                    <div class="form-field-clean required">
+                                        <label for="editMobileNo">Mobile</label>
+                                        <input type="tel" name="mobileNo" id="editMobileNo" placeholder="10-digit number" maxlength="10" data-required="true">
+                                    </div>
+                                    <div class="form-field-clean required">
+                                        <label for="editCity">City</label>
+                                        <input type="text" name="city" id="editCity" placeholder="City" data-required="true">
+                                    </div>
+                                    <div class="form-field-clean required">
+                                        <label for="editState">State</label>
+                                        <input type="text" name="state" id="editState" placeholder="State" data-required="true">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Academic Info Section -->
+                            <div class="form-section">
+                                <h4 class="section-title-clean">Academic Info</h4>
+                                <div class="form-row-wide">
+                                    <div class="form-field-clean">
+                                        <label for="editClass">Class</label>
+                                        <input type="text" name="class" id="editClass" placeholder="e.g., 10th Grade">
+                                    </div>
+                                    <div class="form-field-clean">
+                                        <label for="editTimezone">Timezone</label>
+                                        <input type="text" name="timezone" id="editTimezone" placeholder="e.g., Asia/Kolkata">
+                                    </div>
+                                    <div class="form-field-clean">
+                                        <!-- Empty field for balance -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Profile Image Section -->
+                            <div class="form-section">
+                                <h4 class="section-title-clean">Profile Image</h4>
+                                <div class="form-row-wide">
+                                    <div class="form-field-clean">
+                                        <label for="editProfileImage">Profile Image</label>
+                                        <input type="file" name="image" id="editProfileImage" accept="image/*">
+                                    </div>
+                                    <div class="form-field-clean">
+                                        <!-- Empty field for balance -->
+                                    </div>
+                                    <div class="form-field-clean">
+                                        <!-- Empty field for balance -->
+                                    </div>
+                                </div>
+                                <div class="form-row-wide" id="currentImagePreview" style="display: none;">
+                                    <div class="form-field-clean">
+                                        <label>Current Profile Image:</label>
+                                        <img id="currentProfileImage" src="" alt="Current Profile" style="width: 60px; height: 60px; border-radius: 4px; object-fit: cover; margin-top: 8px;">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-row">
-                            <input type="number" name="age" placeholder="Age" min="1" max="120">
-                            <input type="text" name="mobileNo" placeholder="Mobile Number" required>
+                        
+                        <!-- Actions -->
+                        <div class="form-actions-clean">
+                            <button type="button" class="btn btn-outline" id="cancelEditBtn">Cancel</button>
+                            <button type="submit" class="btn btn-primary-clean">Update Student</button>
                         </div>
-                        <div class="form-row">
-                            <input type="text" name="class" placeholder="Class">
-                            <input type="text" name="city" placeholder="City">
-                            <input type="text" name="state" placeholder="State">
-                        </div>
-                        <div class="form-row">
-                            <input type="text" name="timezone" placeholder="Timezone (Optional)">
-                        </div>
-                        <div class="form-row">
-                            <input type="file" name="image" accept="image/*" onchange="dashboard.previewImage(this)">
-                        </div>
-                        <div class="form-row" id="currentImagePreview" style="display: none;">
-                            <label>Current Profile Image:</label>
-                            <img id="currentProfileImage" src="" alt="Current Profile" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;">
-                        </div>
-                        <button type="submit" class="btn-primary">Update Student</button>
                     </form>
                 </div>
             `;
@@ -1675,6 +2345,12 @@ class TeacherDashboard {
             // Add event listeners for edit modal
             document.getElementById('closeEditModal').addEventListener('click', () => {
                 editModal.classList.remove('show');
+                editModal.remove();
+            });
+
+            document.getElementById('cancelEditBtn').addEventListener('click', () => {
+                editModal.classList.remove('show');
+                editModal.remove();
             });
 
             document.getElementById('editStudentForm').addEventListener('submit', (e) => {
@@ -1691,15 +2367,19 @@ class TeacherDashboard {
         }
 
         // Populate form with student data
-        document.getElementById('editStudentId').value = student._id || student.userId;
-        document.getElementById('editStudentForm').elements['fullName'].value = student.fullName || '';
-        document.getElementById('editStudentForm').elements['email'].value = student.email || '';
-        document.getElementById('editStudentForm').elements['age'].value = student.age || '';
-        document.getElementById('editStudentForm').elements['mobileNo'].value = student.mobileNo || '';
-        document.getElementById('editStudentForm').elements['class'].value = student.class || '';
-        document.getElementById('editStudentForm').elements['city'].value = student.city || '';
-        document.getElementById('editStudentForm').elements['state'].value = student.state || '';
-        document.getElementById('editStudentForm').elements['timezone'].value = student.timezone || '';
+        document.getElementById('editUserId').value = student._id || student.userId;
+        document.getElementById('editFullName').value = student.fullName || '';
+        document.getElementById('editEmail').value = student.email || '';
+        document.getElementById('editAge').value = student.age || '';
+        document.getElementById('editMobileNo').value = student.mobileNo || '';
+        document.getElementById('editClass').value = student.class || '';
+        document.getElementById('editCity').value = student.city || '';
+        document.getElementById('editState').value = student.state || '';
+        // Set timezone dropdown value
+        const editTimezoneSelect = document.getElementById('editTimezone');
+        if (editTimezoneSelect && student.timezone) {
+            editTimezoneSelect.value = student.timezone;
+        }
 
         // Show current profile image if exists
         if (student.profileImage) {
@@ -1964,9 +2644,12 @@ class TeacherDashboard {
     }
 
     async deleteQuiz(quizId) {
-        if (!confirm('Are you sure you want to delete this quiz?')) {
-            return;
-        }
+        const confirmed = await this.showConfirmDialog(
+            'Are you sure you want to delete this quiz?',
+            'Delete Quiz'
+        );
+        
+        if (!confirmed) return;
 
         try {
             const response = await fetch(`/api/teachers/quiz/${quizId}`, {
@@ -2057,7 +2740,7 @@ class TeacherDashboard {
                     <h3>Edit Quiz</h3>
                     <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
-                <form id="editQuizForm">
+                <form id="editQuizForm" novalidate>
                     <input type="hidden" name="quizId" value="${quiz._id}">
                     <div class="form-group">
                         <label>Quiz Title</label>
@@ -2231,22 +2914,391 @@ class TeacherDashboard {
 
     updateWeeklyAvailabilityDisplay(weeklyAvailability) {
         const container = document.getElementById('weeklyAvailabilityDisplay');
-        if (!weeklyAvailability || weeklyAvailability.length === 0) {
-            container.innerHTML = '<p class="empty">No weekly schedule set</p>';
+        
+        const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        
+        // Create a map of available data for easy lookup
+        const availabilityMap = {};
+        if (weeklyAvailability && weeklyAvailability.length > 0) {
+            weeklyAvailability.forEach(slot => {
+                availabilityMap[slot.day] = slot;
+            });
+        }
+
+        // Generate display for all days, using empty data if not available
+        const displayData = dayOrder.map(day => {
+            const slot = availabilityMap[day];
+            if (slot) {
+                return {
+                    day,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    hasData: true
+                };
+            } else {
+                return {
+                    day,
+                    startTime: '',
+                    endTime: '',
+                    hasData: false
+                };
+            }
+        });
+
+        container.innerHTML = displayData.map(slot => `
+            <div class="weekly-slot" data-day="${slot.day}">
+                <div class="day-name">${this.capitalizeFirst(slot.day)}</div>
+                <div class="time-range-display">${slot.hasData ? `${this.formatTimeInTeacherTimezone(slot.startTime)} - ${this.formatTimeInTeacherTimezone(slot.endTime)}` : 'Not set'}</div>
+                <div class="time-range-edit" style="display: none;">
+                    <input type="text" class="time-input-start" value="${slot.hasData ? this.formatTime24Hour(slot.startTime) : ''}" placeholder="HH:MM">
+                    <span class="time-separator">-</span>
+                    <input type="text" class="time-input-end" value="${slot.hasData ? this.formatTime24Hour(slot.endTime) : ''}" placeholder="HH:MM">
+                </div>
+                <div class="slot-actions">
+                    <button class="edit-slot-btn" onclick="dashboard.editWeeklySlot('${slot.day}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="save-slot-btn" onclick="dashboard.saveWeeklySlot('${slot.day}')" style="display: none;">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="clear-slot-btn" onclick="dashboard.clearWeeklySlot('${slot.day}')">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                    <button class="cancel-slot-btn" onclick="dashboard.cancelEditSlot('${slot.day}')" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('') + `
+            <div class="weekly-actions">
+                <button class="btn-primary" onclick="dashboard.saveAllWeeklyChanges()">
+                    <i class="fas fa-save"></i> Save All Changes
+                </button>
+            </div>
+        `;
+    }
+
+    editWeeklySlot(day) {
+        const slot = document.querySelector(`.weekly-slot[data-day="${day}"]`);
+        if (!slot) return;
+
+        const displayDiv = slot.querySelector('.time-range-display');
+        const editDiv = slot.querySelector('.time-range-edit');
+        const editBtn = slot.querySelector('.edit-slot-btn');
+        const saveBtn = slot.querySelector('.save-slot-btn');
+        const clearBtn = slot.querySelector('.clear-slot-btn');
+        const cancelBtn = slot.querySelector('.cancel-slot-btn');
+
+        // Store original value for potential cancel
+        slot.dataset.originalDisplay = displayDiv.textContent;
+
+        // Show edit mode
+        displayDiv.style.display = 'none';
+        editDiv.style.display = 'flex';
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'flex';
+        clearBtn.style.display = 'none';
+        cancelBtn.style.display = 'flex';
+
+        // Focus on start time input
+        const startInput = editDiv.querySelector('.time-input-start');
+        if (startInput) {
+            startInput.focus();
+            if (startInput.value) {
+                startInput.select();
+            }
+        }
+    }
+
+    async saveWeeklySlot(day) {
+        const slot = document.querySelector(`.weekly-slot[data-day="${day}"]`);
+        if (!slot) return;
+
+        const editDiv = slot.querySelector('.time-range-edit');
+        const startInput = editDiv.querySelector('.time-input-start');
+        const endInput = editDiv.querySelector('.time-input-end');
+
+        const startTime = startInput.value.trim();
+        const endTime = endInput.value.trim();
+
+        // Validate time format
+        const timePattern = /^([0-2][0-9]):([0-5][0-9])$/;
+        if (startTime && !timePattern.test(startTime)) {
+            this.showMessage('Please enter start time in HH:MM format (24-hour)', 'error');
+            startInput.focus();
+            return;
+        }
+        if (endTime && !timePattern.test(endTime)) {
+            this.showMessage('Please enter end time in HH:MM format (24-hour)', 'error');
+            endInput.focus();
             return;
         }
 
-        const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        const sortedAvailability = weeklyAvailability.sort((a, b) =>
-            dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
-        );
+        // Validate time logic
+        if (startTime && endTime && startTime >= endTime) {
+            this.showMessage('End time must be greater than start time', 'error');
+            endInput.focus();
+            return;
+        }
 
-        container.innerHTML = sortedAvailability.map(slot => `
-            <div class="weekly-slot">
-                <div class="day-name">${this.capitalizeFirst(slot.day)}</div>
-                <div class="time-range">${this.formatTimeInTeacherTimezone(slot.startTime)} - ${this.formatTimeInTeacherTimezone(slot.endTime)}</div>
-            </div>
-        `).join('');
+        try {
+            this.showLoading();
+
+            // Get current availability data
+            const slots = document.querySelectorAll('.weekly-slot[data-day]');
+            const weeklyAvailability = [];
+
+            slots.forEach(slot => {
+                const slotDay = slot.dataset.day;
+                const slotDisplayDiv = slot.querySelector('.time-range-display');
+                const slotTimeText = slotDisplayDiv.textContent;
+
+                // For the current slot being saved, use the new values
+                if (slotDay === day && startTime && endTime) {
+                    weeklyAvailability.push({
+                        day: slotDay,
+                        startTime,
+                        endTime
+                    });
+                } else if (slotTimeText !== 'Not set' && slotTimeText && slotTimeText.trim() !== '') {
+                    // For other slots, use existing values
+                    const [existingStartTime, existingEndTime] = slotTimeText.split(' - ').map(time => {
+                        return this.formatTime24Hour(time.trim());
+                    });
+
+                    if (existingStartTime && existingEndTime && existingStartTime !== '' && existingEndTime !== '') {
+                        weeklyAvailability.push({
+                            day: slotDay,
+                            startTime: existingStartTime,
+                            endTime: existingEndTime
+                        });
+                    }
+                }
+            });
+
+            // Save to database
+            const response = await fetch('/api/teacher-availability/availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ weeklyAvailability })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Update the display with the saved time
+                const displayDiv = slot.querySelector('.time-range-display');
+                if (startTime && endTime) {
+                    displayDiv.textContent = `${this.formatTimeInTeacherTimezone(startTime)} - ${this.formatTimeInTeacherTimezone(endTime)}`;
+                } else {
+                    displayDiv.textContent = 'Not set';
+                }
+
+                // Exit edit mode
+                this.cancelEditSlot(day);
+
+                // Update the entire display with server response to ensure consistency
+                if (result.availability && result.availability.weeklyAvailability) {
+                    this.updateWeeklyAvailabilityDisplay(result.availability.weeklyAvailability);
+                }
+
+                this.showMessage(`${this.capitalizeFirst(day)} schedule saved successfully`, 'success');
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to save schedule', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving weekly slot:', error);
+            this.showMessage('Error saving schedule', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    cancelEditSlot(day) {
+        const slot = document.querySelector(`.weekly-slot[data-day="${day}"]`);
+        if (!slot) return;
+
+        const displayDiv = slot.querySelector('.time-range-display');
+        const editDiv = slot.querySelector('.time-range-edit');
+        const editBtn = slot.querySelector('.edit-slot-btn');
+        const saveBtn = slot.querySelector('.save-slot-btn');
+        const clearBtn = slot.querySelector('.clear-slot-btn');
+        const cancelBtn = slot.querySelector('.cancel-slot-btn');
+        const startInput = editDiv.querySelector('.time-input-start');
+        const endInput = editDiv.querySelector('.time-input-end');
+
+        // Restore original display value
+        if (slot.dataset.originalDisplay) {
+            displayDiv.textContent = slot.dataset.originalDisplay;
+            
+            // Restore input values based on original display
+            if (slot.dataset.originalDisplay === 'Not set') {
+                startInput.value = '';
+                endInput.value = '';
+            } else {
+                const times = slot.dataset.originalDisplay.split(' - ');
+                if (times.length === 2) {
+                    startInput.value = this.formatTime24Hour(times[0].trim());
+                    endInput.value = this.formatTime24Hour(times[1].trim());
+                }
+            }
+        }
+
+        // Hide edit mode
+        displayDiv.style.display = 'block';
+        editDiv.style.display = 'none';
+        editBtn.style.display = 'flex';
+        saveBtn.style.display = 'none';
+        clearBtn.style.display = 'flex';
+        cancelBtn.style.display = 'none';
+
+        // Clear stored original value
+        delete slot.dataset.originalDisplay;
+    }
+
+    async clearWeeklySlot(day) {
+        const slot = document.querySelector(`.weekly-slot[data-day="${day}"]`);
+        if (!slot) return;
+
+        try {
+            this.showLoading();
+
+            // Get current availability data and remove the specified day
+            const slots = document.querySelectorAll('.weekly-slot[data-day]');
+            const weeklyAvailability = [];
+
+            slots.forEach(slot => {
+                const slotDay = slot.dataset.day;
+                const slotDisplayDiv = slot.querySelector('.time-range-display');
+                const slotTimeText = slotDisplayDiv.textContent;
+
+                // Skip the day being cleared
+                if (slotDay === day) {
+                    return;
+                }
+
+                // Include other slots that have time data
+                if (slotTimeText !== 'Not set' && slotTimeText && slotTimeText.trim() !== '') {
+                    const [existingStartTime, existingEndTime] = slotTimeText.split(' - ').map(time => {
+                        return this.formatTime24Hour(time.trim());
+                    });
+
+                    if (existingStartTime && existingEndTime && existingStartTime !== '' && existingEndTime !== '') {
+                        weeklyAvailability.push({
+                            day: slotDay,
+                            startTime: existingStartTime,
+                            endTime: existingEndTime
+                        });
+                    }
+                }
+            });
+
+            // Save to database
+            const response = await fetch('/api/teacher-availability/availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ weeklyAvailability })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Update the display to show "Not set"
+                const displayDiv = slot.querySelector('.time-range-display');
+                const editDiv = slot.querySelector('.time-range-edit');
+                const startInput = editDiv.querySelector('.time-input-start');
+                const endInput = editDiv.querySelector('.time-input-end');
+
+                displayDiv.textContent = 'Not set';
+                startInput.value = '';
+                endInput.value = '';
+
+                // Update the entire display with server response to ensure consistency
+                if (result.availability && result.availability.weeklyAvailability) {
+                    this.updateWeeklyAvailabilityDisplay(result.availability.weeklyAvailability);
+                }
+
+                this.showMessage(`${this.capitalizeFirst(day)} schedule cleared successfully`, 'info');
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to clear schedule', 'error');
+            }
+        } catch (error) {
+            console.error('Error clearing weekly slot:', error);
+            this.showMessage('Error clearing schedule', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async saveAllWeeklyChanges() {
+        const slots = document.querySelectorAll('.weekly-slot[data-day]');
+        const weeklyAvailability = [];
+
+        slots.forEach(slot => {
+            const day = slot.dataset.day;
+            const displayDiv = slot.querySelector('.time-range-display');
+            const timeText = displayDiv.textContent;
+
+            // Only save days that have actual time data (not "Not set")
+            if (timeText !== 'Not set' && timeText && timeText.trim() !== '') {
+                // Parse the time range from display
+                const [startTime, endTime] = timeText.split(' - ').map(time => {
+                    // Convert from display format back to 24-hour format
+                    return this.formatTime24Hour(time.trim());
+                });
+
+                // Only add to array if both times are valid
+                if (startTime && endTime && startTime !== '' && endTime !== '') {
+                    weeklyAvailability.push({
+                        day,
+                        startTime,
+                        endTime
+                    });
+                }
+            }
+        });
+
+        try {
+            this.showLoading();
+
+            const response = await fetch('/api/teacher-availability/availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ weeklyAvailability })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.showMessage('Weekly schedule saved successfully', 'success');
+                
+                // Update the display with the saved data from the server response
+                if (result.availability && result.availability.weeklyAvailability) {
+                    this.updateWeeklyAvailabilityDisplay(result.availability.weeklyAvailability);
+                } else {
+                    // Fallback: reload from server
+                    await this.loadWeeklyAvailability();
+                }
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to save weekly schedule', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving weekly availability:', error);
+            this.showMessage('Error saving weekly schedule', 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 
     formatTime24Hour(timeString) {
@@ -2551,7 +3603,7 @@ class TeacherDashboard {
             this.currentUser.timezone = teacher.timezone || 'Asia/Kolkata';
             console.log('Updated currentUser timezone:', this.currentUser.timezone);
         }
-        
+
         // Update profile view
         document.getElementById('profileName').textContent = teacher.fullName || 'Teacher';
         document.getElementById('profileEmail').textContent = teacher.email || 'teacher@example.com';
@@ -2671,28 +3723,7 @@ class TeacherDashboard {
         if (loading) loading.classList.remove('active');
     }
 
-    showMessage(message, type = 'info') {
-        let container = document.getElementById('messages');
-
-        // Create messages container if it doesn't exist
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'messages';
-            container.className = 'messages';
-            document.body.appendChild(container);
-        }
-
-        const messageEl = document.createElement('div');
-        messageEl.className = `message ${type}`;
-        messageEl.textContent = message;
-
-        container.appendChild(messageEl);
-
-        setTimeout(() => {
-            messageEl.remove();
-        }, 5000);
-    }
-
+    
     // Student Management Functions
     async loadStudentsData() {
         try {
@@ -2748,22 +3779,26 @@ class TeacherDashboard {
             <div class="students-grid">
                 ${students.map(student => `
                     <div class="student-card">
-                        <div class="student-card-header">
-                            <img src="${student.profileImage || `https://picsum.photos/seed/${student._id}/48/48.jpg`}" alt="${student.fullName}" class="student-avatar">
+                        <img src="${student.profileImage || `https://picsum.photos/seed/${student._id}/48/48.jpg`}" alt="${student.fullName}" class="student-avatar">
+                        <div class="student-details">
                             <h3 class="student-name">${student.fullName}</h3>
-                        </div>
-                        <div class="student-meta">
-                            <div class="student-meta-item">
-                                <i class="fas fa-envelope"></i>
-                                <span>${student.email}</span>
-                            </div>
-                            <div class="student-meta-item">
-                                <i class="fas fa-phone"></i>
-                                <span>${student.mobileNo || 'N/A'}</span>
-                            </div>
-                            <div class="student-meta-item">
-                                <i class="fas fa-graduation-cap"></i>
-                                <span>${student.grade || student.class || 'N/A'}</span>
+                            <div class="student-meta">
+                                <div class="student-meta-item">
+                                    <i class="fas fa-id-card"></i>
+                                    <span>${student.userId || 'N/A'}</span>
+                                </div>
+                                <div class="student-meta-item">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>${student.email}</span>
+                                </div>
+                                <div class="student-meta-item">
+                                    <i class="fas fa-phone"></i>
+                                    <span>${student.mobileNo || 'N/A'}</span>
+                                </div>
+                                <div class="student-meta-item">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span>${student.grade || student.class || 'N/A'}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="student-actions">
@@ -2811,92 +3846,268 @@ class TeacherDashboard {
         const modal = document.createElement('div');
         modal.className = 'modal show';
         modal.innerHTML = `
-            <div class="modal-content modal-minimal">
-                <div class="modal-header">
-                    <h3><i class="fas fa-user-edit"></i> Edit Student</h3>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            <div class="modal-content modal-wide">
+                <div class="modal-header-clean">
+                    <h3>Edit Student</h3>
+                    <button class="modal-close-clean" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
-                <form id="editStudentForm">
-                    <input type="hidden" name="userId" value="${student._id || student.userId}">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editFullName">Full Name</label>
-                            <input type="text" id="editFullName" name="fullName" value="${student.fullName || ''}" required>
+                <form id="editStudentForm" enctype="multipart/form-data" novalidate>
+                    <div class="form-wide-grid">
+                        <!-- Basic Info Section -->
+                        <div class="form-section">
+                            <h4 class="section-title-clean">Basic Info</h4>
+                            <div class="form-row-wide">
+                                <div class="form-field-clean" style="display: none;">
+                                    <label for="editUserId">User ID</label>
+                                    <input type="text" name="userId" id="editUserId" value="${student._id || student.userId}" data-required="true" readonly>
+                                </div>
+                                <div class="form-field-clean">
+                                    <label for="editStudentId">Student ID</label>
+                                    <input type="text" id="editStudentId" value="${student.userId || 'N/A'}" readonly style="background: #f8fafc; color: #64748b;">
+                                    <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">Student ID (read-only)</small>
+                                </div>
+                                <div class="form-field-clean required">
+                                    <label for="editFullName">Full Name</label>
+                                    <input type="text" name="fullName" id="editFullName" value="${student.fullName || ''}" data-required="true">
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                </div>
+                                <div class="form-field-clean required">
+                                    <label for="editEmail">Email</label>
+                                    <input type="email" name="email" id="editEmail" value="${student.email || ''}" data-required="true">
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                </div>
+                            </div>
+                            <div class="form-row-wide">
+                                <div class="form-field-clean required">
+                                    <label for="editAge">Age</label>
+                                    <input type="number" name="age" id="editAge" value="${student.age || ''}" min="1" max="120" data-required="true">
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                </div>
+                                <div class="form-field-clean">
+                                    <!-- Empty field for balance -->
+                                </div>
+                                <div class="form-field-clean">
+                                    <!-- Empty field for balance -->
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="editEmail">Email</label>
-                            <input type="email" id="editEmail" name="email" value="${student.email || ''}" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editPhone">Phone</label>
-                            <input type="tel" id="editPhone" name="mobileNo" value="${student.phone || student.mobileNo || ''}" placeholder="+1234567890">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="editGrade">Class</label>
-                            <input type="text" id="editGrade" name="class" value="${student.grade || student.class || ''}" placeholder="Enter class">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editAge">Age</label>
-                            <input type="number" id="editAge" name="age" value="${student.age || ''}" min="1" max="120">
+                        <!-- Contact Info Section -->
+                        <div class="form-section">
+                            <h4 class="section-title-clean">Contact Info</h4>
+                            <div class="form-row-wide">
+                                <div class="form-field-clean required">
+                                    <label for="editMobileNo">Mobile</label>
+                                    <input type="tel" name="mobileNo" id="editMobileNo" value="${student.mobileNo || student.phone || ''}" placeholder="10-digit number" maxlength="10" data-required="true">
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                </div>
+                                <div class="form-field-clean required">
+                                    <label for="editCity">City</label>
+                                    <input type="text" name="city" id="editCity" value="${student.city || ''}" placeholder="City" data-required="true">
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                </div>
+                                <div class="form-field-clean required">
+                                    <label for="editState">State</label>
+                                    <input type="text" name="state" id="editState" value="${student.state || ''}" placeholder="State" data-required="true">
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="editCity">City</label>
-                            <input type="text" id="editCity" name="city" value="${student.city || ''}" placeholder="Enter city">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editState">State</label>
-                            <input type="text" id="editState" name="state" value="${student.state || ''}" placeholder="Enter state">
+                        <!-- Academic Info Section -->
+                        <div class="form-section">
+                            <h4 class="section-title-clean">Academic Info</h4>
+                            <div class="form-row-wide">
+                                <div class="form-field-clean">
+                                    <label for="editClass">Class</label>
+                                    <input type="text" name="class" id="editClass" value="${student.class || student.grade || ''}" placeholder="e.g., 10th Grade">
+                                </div>
+                                <div class="form-field-clean">
+                                    <label for="editTimezone">Timezone</label>
+                                    <select name="timezone" id="editTimezone">
+                                        <option value="">Select Timezone</option>
+                                        <option value="Asia/Kolkata" ${student.timezone === 'Asia/Kolkata' ? 'selected' : ''}>India - Asia/Kolkata</option>
+                                        <option value="America/New_York" ${student.timezone === 'America/New_York' ? 'selected' : ''}>USA East - America/New_York</option>
+                                        <option value="America/Los_Angeles" ${student.timezone === 'America/Los_Angeles' ? 'selected' : ''}>USA West - America/Los_Angeles</option>
+                                        <option value="America/Chicago" ${student.timezone === 'America/Chicago' ? 'selected' : ''}>USA Central - America/Chicago</option>
+                                        <option value="America/Denver" ${student.timezone === 'America/Denver' ? 'selected' : ''}>USA Mountain - America/Denver</option>
+                                        <option value="Europe/London" ${student.timezone === 'Europe/London' ? 'selected' : ''}>UK - Europe/London</option>
+                                        <option value="Europe/Paris" ${student.timezone === 'Europe/Paris' ? 'selected' : ''}>France - Europe/Paris</option>
+                                        <option value="Europe/Berlin" ${student.timezone === 'Europe/Berlin' ? 'selected' : ''}>Germany - Europe/Berlin</option>
+                                        <option value="Europe/Moscow" ${student.timezone === 'Europe/Moscow' ? 'selected' : ''}>Russia - Europe/Moscow</option>
+                                        <option value="Asia/Tokyo" ${student.timezone === 'Asia/Tokyo' ? 'selected' : ''}>Japan - Asia/Tokyo</option>
+                                        <option value="Asia/Shanghai" ${student.timezone === 'Asia/Shanghai' ? 'selected' : ''}>China - Asia/Shanghai</option>
+                                        <option value="Asia/Hong_Kong" ${student.timezone === 'Asia/Hong_Kong' ? 'selected' : ''}>Hong Kong - Asia/Hong_Kong</option>
+                                        <option value="Asia/Singapore" ${student.timezone === 'Asia/Singapore' ? 'selected' : ''}>Singapore - Asia/Singapore</option>
+                                        <option value="Asia/Dubai" ${student.timezone === 'Asia/Dubai' ? 'selected' : ''}>UAE - Asia/Dubai</option>
+                                        <option value="Australia/Sydney" ${student.timezone === 'Australia/Sydney' ? 'selected' : ''}>Australia East - Australia/Sydney</option>
+                                        <option value="Australia/Melbourne" ${student.timezone === 'Australia/Melbourne' ? 'selected' : ''}>Australia - Australia/Melbourne</option>
+                                        <option value="Australia/Perth" ${student.timezone === 'Australia/Perth' ? 'selected' : ''}>Australia West - Australia/Perth</option>
+                                        <option value="Pacific/Auckland" ${student.timezone === 'Pacific/Auckland' ? 'selected' : ''}>New Zealand - Pacific/Auckland</option>
+                                        <option value="America/Toronto" ${student.timezone === 'America/Toronto' ? 'selected' : ''}>Canada - America/Toronto</option>
+                                        <option value="America/Vancouver" ${student.timezone === 'America/Vancouver' ? 'selected' : ''}>Canada West - America/Vancouver</option>
+                                        <option value="America/Mexico_City" ${student.timezone === 'America/Mexico_City' ? 'selected' : ''}>Mexico - America/Mexico_City</option>
+                                        <option value="America/Sao_Paulo" ${student.timezone === 'America/Sao_Paulo' ? 'selected' : ''}>Brazil - America/Sao_Paulo</option>
+                                        <option value="Europe/Rome" ${student.timezone === 'Europe/Rome' ? 'selected' : ''}>Italy - Europe/Rome</option>
+                                        <option value="Europe/Madrid" ${student.timezone === 'Europe/Madrid' ? 'selected' : ''}>Spain - Europe/Madrid</option>
+                                        <option value="Asia/Seoul" ${student.timezone === 'Asia/Seoul' ? 'selected' : ''}>South Korea - Asia/Seoul</option>
+                                        <option value="Asia/Bangkok" ${student.timezone === 'Asia/Bangkok' ? 'selected' : ''}>Thailand - Asia/Bangkok</option>
+                                        <option value="Asia/Jakarta" ${student.timezone === 'Asia/Jakarta' ? 'selected' : ''}>Indonesia - Asia/Jakarta</option>
+                                        <option value="Africa/Cairo" ${student.timezone === 'Africa/Cairo' ? 'selected' : ''}>Egypt - Africa/Cairo</option>
+                                        <option value="Africa/Johannesburg" ${student.timezone === 'Africa/Johannesburg' ? 'selected' : ''}>South Africa - Africa/Johannesburg</option>
+                                    </select>
+                                </div>
+                                <div class="form-field-clean">
+                                    <!-- Empty field for balance -->
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="editTimezone">Timezone</label>
-                            <input type="text" id="editTimezone" name="timezone" value="${student.timezone || ''}" placeholder="Enter timezone">
+                        <!-- Profile Image Section -->
+                        <div class="form-section">
+                            <h4 class="section-title-clean">Profile Image</h4>
+                            <div class="form-row-wide">
+                                <div class="form-field-clean">
+                                    <label>Profile Image</label>
+                                    <div class="profile-upload-compact">
+                                        <img src="${student.profileImage || ''}" alt="Profile" class="profile-image-circle" id="editProfilePreview">
+                                        <div class="upload-icon-overlay" onclick="document.getElementById('editProfileImageInput').click()">
+                                            <i class="fas fa-upload"></i>
+                                        </div>
+                                        <input type="file" name="image" id="editProfileImageInput" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="form-field-clean">
+                                    <!-- Empty field for balance -->
+                                </div>
+                                <div class="form-field-clean">
+                                    <!-- Empty field for balance -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="editProfileImage">Profile Image</label>
-                        <input type="file" id="editProfileImage" name="image" accept="image/*">
-                        <small style="color: #64748b; font-size: 12px;">Leave empty to keep current image</small>
-                        ${student.profileImage ? `<div style="margin-top: 8px;"><img src="${student.profileImage}" alt="Current profile" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;"></div>` : ''}
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-save"></i> Update Student
-                        </button>
+                    <!-- Actions -->
+                    <div class="form-actions-clean">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button type="submit" class="btn btn-primary-clean">Update Student</button>
                     </div>
                 </form>
             </div>
         `;
         document.body.appendChild(modal);
 
+        // Set timezone dropdown value explicitly after modal is added to DOM
+        const editTimezoneSelect = document.getElementById('editTimezone');
+        if (editTimezoneSelect && student.timezone) {
+            editTimezoneSelect.value = student.timezone;
+        }
+
+        // Add image preview functionality for edit modal
+        const editProfileInput = document.getElementById('editProfileImageInput');
+        const editProfilePreview = document.getElementById('editProfilePreview');
+        
+        if (editProfileInput && editProfilePreview) {
+            editProfileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        editProfilePreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
         // Add form submit event listener
         modal.querySelector('#editStudentForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            this.updateStudent();
+            if (this.validateEditStudentForm()) {
+                this.updateStudent();
+            }
         });
+
+        // Add validation event listeners
+        this.setupEditStudentValidation();
     }
 
     async deleteStudent(studentId) {
-        if (!confirm('Are you sure you want to delete this student?')) {
-            return;
-        }
+        this.showDeleteStudentModal(studentId);
+    }
 
+    showDeleteStudentModal(studentId) {
+        const modal = document.createElement('div');
+        modal.className = 'modal show';
+        modal.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+        `;
+        
+        modal.innerHTML = `
+            <div style="
+                background: white;
+                padding: 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                max-width: 320px;
+                width: 90%;
+                text-align: center;
+            ">
+                <div style="
+                    color: #dc3545;
+                    font-size: 18px;
+                    margin-bottom: 16px;
+                    font-weight: 500;
+                ">Delete Student?</div>
+                <div style="
+                    color: #6c757d;
+                    font-size: 14px;
+                    margin-bottom: 24px;
+                    line-height: 1.4;
+                ">Are you sure you want to delete this student? This action cannot be undone.</div>
+                <div style="
+                    display: flex;
+                    gap: 12px;
+                    justify-content: center;
+                ">
+                    <button onclick="this.closest('.modal').remove()" style="
+                        padding: 8px 16px;
+                        border: 1px solid #dee2e6;
+                        background: white;
+                        color: #6c757d;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">Cancel</button>
+                    <button onclick="dashboard.confirmDeleteStudent('${studentId}', this.closest('.modal'))" style="
+                        padding: 8px 16px;
+                        border: none;
+                        background: #dc3545;
+                        color: white;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">Delete</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async confirmDeleteStudent(studentId, modal) {
         try {
+            this.showLoading();
+            
             const response = await fetch(`/api/teachers/students/${studentId}`, {
                 method: 'DELETE',
                 headers: {
@@ -2905,8 +4116,10 @@ class TeacherDashboard {
             });
 
             if (response.ok) {
-                this.showMessage('Student deleted successfully', 'success');
+                const result = await response.json();
+                this.showMessage(result.message || 'Student deleted successfully', 'success');
                 await this.loadStudentsData(); // Reload students list
+                modal.remove();
             } else {
                 const error = await response.json();
                 this.showMessage(error.message || 'Failed to delete student', 'error');
@@ -2914,6 +4127,8 @@ class TeacherDashboard {
         } catch (error) {
             console.error('Error deleting student:', error);
             this.showMessage('Error deleting student', 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
@@ -3076,7 +4291,7 @@ class TeacherDashboard {
 
         if (!sessions || sessions.length === 0) {
             container.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px; background: white; border: 1px solid #e3f2fd; border-radius: 8px;">
+                <div style="text-align: center; padding: 60px 20px; background: white; border: 1px solid #e3f2fd; border-radius: 8px; grid-column: 1 / -1;">
                     <div style="color: #1976d2; font-size: 48px; margin-bottom: 20px;">📅</div>
                     <h3 style="color: #1976d2; margin: 0 0 8px 0; font-weight: 500;">No Sessions Created Yet</h3>
                     <p style="color: #546e7a; margin: 0; font-size: 14px;">Create your first session to start managing your schedule</p>
@@ -3090,81 +4305,84 @@ class TeacherDashboard {
             return;
         }
 
-        const sessionsHtml = sessions.map(session => {
-            const availableSlots = session.availableSlots || [];
-            const bookedSlots = session.bookedSlots || [];
-            const totalSlots = availableSlots.length + bookedSlots.length;
-            const availableCount = totalSlots - bookedSlots.length;
-            const status = this.getSessionStatus(session);
-            const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0;
+        // Create grid container with responsive 2-column layout
+        const sessionsHtml = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                ${sessions.map(session => {
+                    const availableSlots = session.availableSlots || [];
+                    const bookedSlots = session.bookedSlots || [];
+                    const totalSlots = availableSlots.length + bookedSlots.length;
+                    const availableCount = totalSlots - bookedSlots.length;
+                    const status = this.getSessionStatus(session);
+                    const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0;
 
-            return `
-                <div class="session-item" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; margin-bottom: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <!-- Session Header -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e3f2fd;">
-                        <div>
-                            <h3 style="margin: 0; color: #1976d2; font-size: 18px; font-weight: 500;">${session.title || 'Untitled Session'}</h3>
-                            <p style="margin: 4px 0 0 0; color: #546e7a; font-size: 14px;">${this.formatSessionDate(session.date)}</p>
-                            ${session.type === 'personal' && session.studentName ? `
-                                <p style="margin: 4px 0 0 0; color: #1976d2; font-size: 13px; font-weight: 500;">
-                                    <span style="background: #e3f2fd; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Personal</span>
-                                    👤 ${session.studentName}
-                                </p>
-                            ` : session.type === 'common' ? `
-                                <p style="margin: 4px 0 0 0; color: #4caf50; font-size: 13px; font-weight: 500;">
-                                    <span style="background: #e8f5e8; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Common</span>
-                                    👥 All Students
-                                </p>
-                            ` : ''}
+                    return `
+                        <div class="session-item" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: fit-content;">
+                            <!-- Session Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e3f2fd;">
+                                <div>
+                                    <h3 style="margin: 0; color: #1976d2; font-size: 18px; font-weight: 500;">${session.title || 'Untitled Session'}</h3>
+                                    <p style="margin: 4px 0 0 0; color: #546e7a; font-size: 14px;">${this.formatSessionDate(session.date)}</p>
+                                    ${session.type === 'personal' && session.studentName ? `
+                                        <p style="margin: 4px 0 0 0; color: #1976d2; font-size: 13px; font-weight: 500;">
+                                            👤 ${session.studentName}
+                                        </p>
+                                    ` : session.type === 'common' ? `
+                                        <p style="margin: 4px 0 0 0; color: #4caf50; font-size: 13px; font-weight: 500;">
+                                            <span style="background: #e8f5e8; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">All Students</span>
+                                           
+                                        </p>
+                                    ` : ''}
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="background: ${status === 'completed' ? '#2196f3' : '#1976d2'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500; text-transform: uppercase;">
+                                        ${status}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Session Stats -->
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #e3f2fd; margin-bottom: 16px; border-radius: 4px; overflow: hidden;">
+                                <div style="background: white; padding: 12px; text-align: center;">
+                                    <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${totalSlots}</div>
+                                    <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
+                                </div>
+                                <div style="background: white; padding: 12px; text-align: center;">
+                                    <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${availableCount}</div>
+                                    <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Available</div>
+                                </div>
+                                <div style="background: white; padding: 12px; text-align: center;">
+                                    <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${bookedSlots.length}</div>
+                                    <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Booked</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Session Info -->
+                            <div style="display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; color: #546e7a;">
+                                <span style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="color: #1976d2;">⏱</span> ${session.sessionDuration || 30} min
+                                </span>
+                                <span style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="color: #1976d2;">☕</span> ${session.breakDuration || 5} min break
+                                </span>
+                            </div>
+                            
+                            <!-- Slots Preview -->
+                            <div style="margin-bottom: 16px;">
+                                ${this.generateUnifiedSlotsView(availableSlots, bookedSlots, session.date, session._id, session.type)}
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #e3f2fd;">
+                                <button onclick="dashboard.deleteSession('${session._id}')" style="background: white; color: #1976d2; border: 1px solid #1976d2; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;">
+                                    Delete
+                                </button>
+                            </div>
                         </div>
-                        <div style="text-align: right;">
-                            <span style="background: ${status === 'completed' ? '#2196f3' : '#1976d2'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500; text-transform: uppercase;">
-                                ${status}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <!-- Session Stats -->
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #e3f2fd; margin-bottom: 16px; border-radius: 4px; overflow: hidden;">
-                        <div style="background: white; padding: 12px; text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${totalSlots}</div>
-                            <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
-                        </div>
-                        <div style="background: white; padding: 12px; text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${availableCount}</div>
-                            <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Available</div>
-                        </div>
-                        <div style="background: white; padding: 12px; text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: #1976d2;">${bookedSlots.length}</div>
-                            <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Booked</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Session Info -->
-                    <div style="display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; color: #546e7a;">
-                        <span style="display: flex; align-items: center; gap: 6px;">
-                            <span style="color: #1976d2;">⏱</span> ${session.sessionDuration || 30} min
-                        </span>
-                        <span style="display: flex; align-items: center; gap: 6px;">
-                            <span style="color: #1976d2;">☕</span> ${session.breakDuration || 5} min break
-                        </span>
-                    </div>
-                    
-                    <!-- Slots Preview -->
-                    <div style="margin-bottom: 16px;">
-                        ${this.generateUnifiedSlotsView(availableSlots, bookedSlots, session.date)}
-                    </div>
-                    
-                    <!-- Actions -->
-                    <div style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #e3f2fd;">
-                        <button onclick="dashboard.deleteSession('${session._id}')" style="background: white; color: #1976d2; border: 1px solid #1976d2; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;">
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
+                    `;
+                }).join('')}
+            </div>
+        `;
 
         const paginationHtml = this.generatePaginationHTML(pagination);
         container.innerHTML = sessionsHtml + paginationHtml;
@@ -3251,16 +4469,16 @@ class TeacherDashboard {
         }
     }
 
-generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
+    generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate, sessionId = null, sessionType = null) {
         // Create a map of all possible slots with their booking status
         const allSlotsMap = new Map();
-        
+
         // First, add all available slots to map
         availableSlots.forEach(slot => {
             const startTime = this.formatTimeInTeacherTimezone(slot.startTime);
             const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
             const key = `${startTime}-${endTime}`;
-            
+
             allSlotsMap.set(key, {
                 startTime: startTime,
                 endTime: endTime,
@@ -3268,26 +4486,32 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                 studentName: null
             });
         });
-        
+
         // Then, mark slots as booked (this will overwrite available slots with same time)
         bookedSlots.forEach(slot => {
             const startTime = this.formatTimeInTeacherTimezone(slot.startTime);
             const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
             const key = `${startTime}-${endTime}`;
-            
+
+            // For personal sessions, hide student name, for common sessions show it
+            const displayStudentName = (sessionType !== 'personal') && (slot.bookedBy ? slot.bookedBy.fullName : 'Booked');
+
             allSlotsMap.set(key, {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
-                studentName: slot.bookedBy ? slot.bookedBy.fullName : 'Booked'
+                studentName: displayStudentName
             });
         });
-        
+
         // Convert map to array and sort by start time
         const allSlots = Array.from(allSlotsMap.values()).sort((a, b) => {
-            return a.startTime.localeCompare(b.startTime);
+            // Parse times to compare chronologically
+            const timeA = moment(a.startTime, 'HH:mm');
+            const timeB = moment(b.startTime, 'HH:mm');
+            return timeA.diff(timeB);
         });
-        
+
         if (allSlots.length === 0) {
             return `
                 <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 4px; color: #546e7a; font-size: 13px;">
@@ -3295,35 +4519,55 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                 </div>
             `;
         }
-        
+
         return `
             <div>
                 <div style="color: #1976d2; font-size: 13px; font-weight: 500; margin-bottom: 8px;">My Slots (${allSlots.length})</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                     ${allSlots.map(slot => {
-                        if (slot.type === 'available') {
-                            return `
-                                <span style="background: #1976d2; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+            if (slot.type === 'available') {
+                return `
+                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'available', null, '${sessionId}', '${sessionType}')" 
+                                        style="background: #1976d2; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s ease;"
+                                        onmouseover="this.style.background='#1565c0'; this.style.transform='scale(1.05)';"
+                                        onmouseout="this.style.background='#1976d2'; this.style.transform='scale(1)';">
                                     ${slot.startTime} - ${slot.endTime}
-                                </span>
+                                </button>
                             `;
-                        } else {
-                            return `
-                                <span style="background: #d32f2f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
-                                    ${slot.studentName} [${slot.startTime} – ${slot.endTime}]
-                                </span>
+            } else {
+                const buttonText = slot.studentName ? `${slot.studentName} [${slot.startTime} – ${slot.endTime}]` : `${slot.startTime} – ${slot.endTime}`;
+                return `
+                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.studentName || 'Booked'}', '${sessionId}', '${sessionType}')" 
+                                        style="background: #d32f2f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s ease;"
+                                        onmouseover="this.style.background='#c62828'; this.style.transform='scale(1.05)';"
+                                        onmouseout="this.style.background='#d32f2f'; this.style.transform='scale(1)';">
+                                    ${buttonText}
+                                </button>
                             `;
-                        }
-                    }).join('')}
+            }
+        }).join('')}
                 </div>
             </div>
         `;
     }
 
+    handleSlotClick(startTime, endTime, type, studentName = null, sessionId = null, sessionType = null) {
+        console.log('Slot clicked:', { startTime, endTime, type, studentName, sessionId, sessionType });
+        
+        if (type === 'available') {
+            // Show student selection modal for available slots
+            this.showAssignSlotModal(startTime, endTime, sessionId, sessionType);
+        } else if (type === 'booked') {
+            // Handle booked slot click
+            this.showMessage(`Booked by ${studentName}: ${startTime} - ${endTime}`, 'info');
+            // You can add more functionality here, like showing student details
+        }
+    }
+
     generateUnifiedSlotsModalView(availableSlots, bookedSlots, sessionDate) {
         // Create a map of all possible slots with their booking status
         const allSlotsMap = new Map();
-        
+
         // First, add all available slots to map
         availableSlots.forEach(slot => {
             const key = `${this.formatTimeInTeacherTimezone(slot.startTime)}-${this.formatTimeInTeacherTimezone(slot.endTime)}`;
@@ -3335,31 +4579,38 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                 studentEmail: null
             });
         });
-        
+
         // Then, mark slots as booked (this will overwrite available slots with same time)
         bookedSlots.forEach(slot => {
             const startTime = this.formatTimeInTeacherTimezone(slot.startTime);
             const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
             const key = `${startTime}-${endTime}`;
-            
+
+            // For personal sessions, hide student name, for common sessions show it
+            const displayStudentName = (sessionType !== 'personal') && (slot.bookedBy ? slot.bookedBy.fullName : 'Booked');
+            const displayStudentEmail = (sessionType !== 'personal') && (slot.bookedBy ? slot.bookedBy.email : '');
+
             allSlotsMap.set(key, {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
-                studentName: slot.bookedBy ? slot.bookedBy.fullName : 'Booked',
-                studentEmail: slot.bookedBy ? slot.bookedBy.email : ''
+                studentName: displayStudentName,
+                studentEmail: displayStudentEmail
             });
         });
-        
+
         // Convert map to array and sort by start time
         const allSlots = Array.from(allSlotsMap.values()).sort((a, b) => {
-            return a.startTime.localeCompare(b.startTime);
+            // Parse times to compare chronologically
+            const timeA = moment(a.startTime, 'HH:mm');
+            const timeB = moment(b.startTime, 'HH:mm');
+            return timeA.diff(timeB);
         });
-        
+
         if (allSlots.length === 0) {
             return '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #6c757d;">No slots available</div>';
         }
-        
+
         return allSlots.map((slot, index) => `
             <div class="slot-card ${slot.type}" style="background: ${slot.type === 'available' ? 'white' : '#fee2e2'}; border: 2px solid ${slot.type === 'available' ? '#28a745' : '#dc2626'}; border-radius: 8px; padding: 15px;">
                 <div style="font-weight: bold; color: ${slot.type === 'available' ? '#28a745' : 'white'}; margin-bottom: 8px;">
@@ -3375,15 +4626,26 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                 ` : ''}
                 ${slot.type === 'booked' ? `
                     <div style="background: white; padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="width: 30px; height: 30px; background: #ffc107; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-user" style="color: white;"></i>
+                        ${slot.studentName ? `
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 30px; height: 30px; background: #ffc107; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user" style="color: white;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: bold; color: #856404;">${slot.studentName}</div>
+                                    ${slot.studentEmail ? `<div style="font-size: 12px; color: #856404;">${slot.studentEmail}</div>` : ''}
+                                </div>
                             </div>
-                            <div>
-                                <div style="font-weight: bold; color: #856404;">${slot.studentName}</div>
-                                ${slot.studentEmail ? `<div style="font-size: 12px; color: #856404;">${slot.studentEmail}</div>` : ''}
+                        ` : `
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 30px; height: 30px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-check" style="color: white;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: bold; color: #dc2626;">Booked</div>
+                                </div>
                             </div>
-                        </div>
+                        `}
                     </div>
                 ` : ''}
             </div>
@@ -3392,24 +4654,24 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
 
     formatTimeInTeacherTimezone(timeString) {
         if (!timeString) return '';
-        
+
         // Get teacher's timezone from current user or default to Asia/Kolkata
         const teacherTimezone = this.currentUser?.timezone || 'Asia/Kolkata';
-        
+
         // If it's already in HH:MM format, return as-is (already converted by backend)
         if (typeof timeString === 'string' && /^\d{2}:\d{2}$/.test(timeString)) {
             return timeString;
         }
-        
+
         // Handle time strings with seconds (HH:MM:SS), remove seconds
         if (typeof timeString === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
             return timeString.substring(0, 5);
         }
-        
+
         // Handle Date objects or UTC time strings - convert to teacher timezone
         try {
             let momentDate;
-            
+
             // Handle different input formats
             if (timeString instanceof Date) {
                 // It's a Date object
@@ -3427,7 +4689,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                 // Any other type
                 momentDate = moment(timeString);
             }
-            
+
             if (momentDate.isValid()) {
                 // Convert to teacher timezone and format as HH:mm
                 return momentDate.tz(teacherTimezone).format('HH:mm');
@@ -3435,7 +4697,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
         } catch (error) {
             console.warn('Error converting time to teacher timezone:', error, 'Input:', timeString);
         }
-        
+
         // Fallback: try to parse as string and format to HH:MM
         try {
             const fallbackDate = moment.tz(timeString, teacherTimezone);
@@ -3445,7 +4707,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
         } catch (error) {
             console.warn('Error with fallback time conversion:', error);
         }
-        
+
         // Final fallback - return as string if possible
         return typeof timeString === 'string' ? timeString : '';
     }
@@ -3508,22 +4770,22 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
     showSessionDetailsModal(session) {
         const availableSlots = session.availableSlots || [];
         const bookedSlots = session.bookedSlots || [];
-        
+
         // Create a map of all unique slots to avoid double-counting
         const allSlotsMap = new Map();
-        
+
         // Add all available slots
         availableSlots.forEach(slot => {
             const key = `${slot.startTime}-${slot.endTime}`;
             allSlotsMap.set(key, { type: 'available', slot });
         });
-        
+
         // Add or update booked slots (this will overwrite available slots with same time)
         bookedSlots.forEach(slot => {
             const key = `${slot.startTime}-${slot.endTime}`;
             allSlotsMap.set(key, { type: 'booked', slot });
         });
-        
+
         const totalSlots = allSlotsMap.size;
 
         const modal = document.createElement('div');
@@ -3577,7 +4839,7 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
                                 <div>
                                     <strong style="color: #6c757d;">Session Type:</strong>
-                                    <div style="margin-top: 5px;">${session.allowedStudentId ? '👤 Personal Session' : '👥 Common Session'}</div>
+                                    <div style="margin-top: 5px;">${session.allowedStudentId ? '👤 Personal Session' : '👥 All Students Session'}</div>
                                 </div>
                                 <div>
                                     <strong style="color: #6c757d;">Session Duration:</strong>
@@ -3629,9 +4891,12 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
     }
 
     async deleteSession(sessionId) {
-        if (!confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
-            return;
-        }
+        const confirmed = await this.showConfirmDialog(
+            'Are you sure you want to delete this session? This action cannot be undone.',
+            'Delete Session'
+        );
+        
+        if (!confirmed) return;
 
         try {
             this.showLoading();
@@ -3695,6 +4960,9 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
     }
 
     showCreateSessionModal() {
+        // Reset form to initial state first
+        this.resetCreateSessionForm();
+        
         // Load students for the dropdown
         this.loadStudentsForSession();
 
@@ -3716,7 +4984,52 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
             // Set default timezone based on user's browser timezone
             this.setDefaultTimezone();
 
+            // Setup form validation when modal is shown
+            this.setupCreateSessionFormValidation();
+
             modal.classList.add('show');
+        }
+    }
+
+    setupCreateSessionFormValidation() {
+        const createSessionForm = document.getElementById('createSessionForm');
+        if (createSessionForm) {
+            // Remove existing listeners to avoid duplicates
+            const newForm = createSessionForm.cloneNode(true);
+            createSessionForm.parentNode.replaceChild(newForm, createSessionForm);
+            
+            // Add submit event listener
+            newForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (this.validateCreateSessionForm()) {
+                    this.createSessionSlots();
+                }
+            });
+
+            // Re-add cancel button listener after form cloning
+            const cancelBtn = newForm.querySelector('#cancelSessionBtn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', (e) => {
+                    console.log('Cancel button clicked');
+                    e.preventDefault();
+                    const modal = document.getElementById('createSessionModal');
+                    if (modal) {
+                        modal.classList.remove('show');
+                        this.resetCreateSessionForm();
+                    }
+                });
+            }
+
+            // Add real-time validation to clear errors on input
+            const sessionInputs = newForm.querySelectorAll('input, select');
+            sessionInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    this.clearFieldError(input);
+                });
+                input.addEventListener('change', () => {
+                    this.clearFieldError(input);
+                });
+            });
         }
     }
 
@@ -3747,10 +5060,21 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
 
     handleStudentTypeChange(studentType) {
         const particularStudentGroup = document.getElementById('particularStudentGroup');
+        
+        // Clear all inline styles first
+        particularStudentGroup.style.cssText = '';
 
         if (studentType === 'particular') {
+            // Show the dropdown
+            particularStudentGroup.style.visibility = 'visible';
+            particularStudentGroup.style.opacity = '1';
+            particularStudentGroup.style.maxHeight = '120px';
             particularStudentGroup.style.display = 'block';
         } else {
+            // Hide the dropdown
+            particularStudentGroup.style.visibility = 'hidden';
+            particularStudentGroup.style.opacity = '0';
+            particularStudentGroup.style.maxHeight = '0';
             particularStudentGroup.style.display = 'none';
             // Clear the particular student selection when switching back to "All Students"
             const particularStudentSelect = document.getElementById('particularStudentSelect');
@@ -4038,19 +5362,11 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
     async loadTeacherData() {
         // Load teacher profile to get timezone information
         try {
-            const response = await fetch('/api/teachers/profile', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (response.ok) {
-                const teacher = await response.json();
-                // Update currentUser object with timezone
-                if (this.currentUser) {
-                    this.currentUser.timezone = teacher.timezone || 'Asia/Kolkata';
-                    console.log('Loaded teacher timezone:', this.currentUser.timezone);
-                }
+            const teacher = await window.apiService.get('/teachers/profile');
+            // Update currentUser object with timezone
+            if (this.currentUser) {
+                this.currentUser.timezone = teacher.timezone || 'Asia/Kolkata';
+                console.log('Loaded teacher timezone:', this.currentUser.timezone);
             }
         } catch (error) {
             console.warn('Could not load teacher profile for timezone:', error);
@@ -4061,25 +5377,201 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
         await this.loadPageData(this.currentPage);
     }
 
+    resetCreateSessionForm() {
+        const form = document.getElementById('createSessionForm');
+        if (!form) return;
+
+        // Reset submitted flag
+        this.isSessionFormSubmitted = false;
+
+        // Reset form and session type
+        form.reset();
+        document.getElementById('studentType').value = ' ';
+
+        // Reset dropdowns to default empty state
+        document.getElementById('sessionDuration').value = '';
+        document.getElementById('breakDuration').value = '';
+
+        // Hide student dropdown
+        const dropdown = document.getElementById('particularStudentGroup');
+        if (dropdown) {
+            dropdown.style.cssText = 'visibility: hidden; opacity: 0; max-height: 0; display: none;';
+        }
+
+        // Clear all error classes and messages
+        form.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+        form.querySelectorAll('.error-message').forEach(msg => {
+            msg.style.display = 'none';
+            msg.textContent = '';
+        });
+    }
+
+    downloadSampleCsv() {
+        const csvContent = `userId,fullName,email,password,age,mobileNo,city,state,class,timezone
+s101,John Smith,john.smith@email.com,password123,18,9876543210,Mumbai,Maharashtra,10th Grade,Asia/Kolkata
+s102,Emily Johnson,emily.j@email.com,password123,17,9876543211,Delhi,Delhi,9th Grade,Asia/Kolkata
+s103,Michael Brown,michael.b@email.com,password123,19,9876543212,Bangalore,Karnataka,11th Grade,Asia/Kolkata
+s104,Sarah Davis,sarah.d@email.com,password123,18,9876543213,Chennai,Tamil Nadu,10th Grade,Asia/Kolkata
+s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Bengal,9th Grade,Asia/Kolkata`;
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sample_students.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        this.showMessage('Sample CSV downloaded successfully!', 'success');
+    }
+
     showMessage(message, type = 'info') {
         // Remove any existing messages
         const existingMessages = document.querySelectorAll('.message');
         existingMessages.forEach(msg => msg.remove());
 
-        // Create message element
+        // Find or create messages container with proper positioning
+        let container = document.getElementById('messages');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'messages';
+            container.className = 'messages';
+            document.body.appendChild(container);
+        }
+
+        // Create message element with enhanced styling
         const messageElement = document.createElement('div');
         messageElement.className = `message ${type}`;
-        messageElement.textContent = message;
+        
+        // Add icon based on type
+        let icon = '';
+        switch(type) {
+            case 'success':
+                icon = '<i class="fas fa-check-circle"></i>';
+                break;
+            case 'error':
+                icon = '<i class="fas fa-exclamation-circle"></i>';
+                break;
+            case 'warning':
+                icon = '<i class="fas fa-exclamation-triangle"></i>';
+                break;
+            default:
+                icon = '<i class="fas fa-info-circle"></i>';
+        }
+        
+        messageElement.innerHTML = `
+            <div class="message-icon">${icon}</div>
+            <div class="message-text">${message}</div>
+            <button class="message-close" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
 
-        // Add to page
-        document.body.appendChild(messageElement);
+        // Add to container
+        container.appendChild(messageElement);
 
-        // Auto remove after 3 seconds
+        // Trigger animation
+        setTimeout(() => {
+            messageElement.classList.add('show');
+        }, 10);
+
+        // Auto remove after 5 seconds
         setTimeout(() => {
             if (messageElement.parentNode) {
-                messageElement.parentNode.removeChild(messageElement);
+                messageElement.classList.remove('show');
+                setTimeout(() => {
+                    if (messageElement.parentNode) {
+                        messageElement.parentNode.removeChild(messageElement);
+                    }
+                }, 300);
             }
-        }, 3000);
+        }, 5000);
+    }
+
+    showConfirmDialog(message, title = 'Confirm Action', onConfirm = null, onCancel = null) {
+        // Create modal overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-overlay confirm-dialog-overlay';
+        
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.className = 'confirm-dialog';
+        modalContent.innerHTML = `
+            <div class="confirm-dialog-header">
+                <div class="confirm-dialog-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>${title}</h3>
+            </div>
+            <div class="confirm-dialog-body">
+                <p>${message}</p>
+            </div>
+            <div class="confirm-dialog-footer">
+                <button class="btn btn-secondary confirm-cancel">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-danger confirm-confirm">
+                    <i class="fas fa-check"></i> Confirm
+                </button>
+            </div>
+        `;
+        
+        modalOverlay.appendChild(modalContent);
+        document.body.appendChild(modalOverlay);
+        
+        // Trigger animation
+        setTimeout(() => {
+            modalOverlay.classList.add('show');
+            modalContent.classList.add('show');
+        }, 10);
+        
+        // Handle button clicks
+        const cancelBtn = modalContent.querySelector('.confirm-cancel');
+        const confirmBtn = modalContent.querySelector('.confirm-confirm');
+        
+        const closeModal = () => {
+            modalOverlay.classList.remove('show');
+            modalContent.classList.remove('show');
+            setTimeout(() => {
+                if (modalOverlay.parentNode) {
+                    modalOverlay.parentNode.removeChild(modalOverlay);
+                }
+            }, 300);
+        };
+        
+        cancelBtn.addEventListener('click', () => {
+            closeModal();
+            if (onCancel) onCancel();
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            closeModal();
+            if (onConfirm) onConfirm();
+        });
+        
+        // Close on overlay click
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeModal();
+                if (onCancel) onCancel();
+            }
+        });
+        
+        // Return promise for async usage
+        return new Promise((resolve) => {
+            cancelBtn.onclick = () => {
+                closeModal();
+                resolve(false);
+                if (onCancel) onCancel();
+            };
+            confirmBtn.onclick = () => {
+                closeModal();
+                resolve(true);
+                if (onConfirm) onConfirm();
+            };
+        });
     }
 
     showLoading() {
@@ -4099,17 +5591,17 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
     // Test function to verify timezone conversion
     testTimezoneConversion() {
         console.log('Testing timezone conversion...');
-        
+
         // Set up test data
         this.currentUser = this.currentUser || {};
         this.currentUser.timezone = 'Asia/Kolkata';
-        
+
         // Test case: 04:30 UTC should show 10:00 in Asia/Kolkata (UTC+5:30)
         const testUtcTime = '04:30';
         const testDate = '20-01-2026';
-        
+
         const result = this.formatUtcTimeToTeacherTimezone(testUtcTime, testDate);
-        
+
         console.log('Timezone conversion test:', {
             input: `${testUtcTime} UTC`,
             date: testDate,
@@ -4118,8 +5610,188 @@ generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate) {
             actual: result,
             success: result === '10:00'
         });
-        
+
         return result === '10:00';
+    }
+
+    // Slot Assignment Functions
+    async showAssignSlotModal(startTime, endTime, sessionId, sessionType = null) {
+        try {
+            this.currentSlotAssignment = {
+                startTime,
+                endTime,
+                sessionId,
+                sessionType
+            };
+
+            // Update slot info in modal
+            const slotInfo = document.getElementById('selectedSlotInfo');
+            if (slotInfo) {
+                slotInfo.innerHTML = `
+                    <div><strong>Time:</strong> ${startTime} - ${endTime}</div>
+                    <div><strong>Date:</strong> ${this.formatSessionDate(new Date())}</div>
+                    ${sessionType ? `<div><strong>Session Type:</strong> ${sessionType}</div>` : ''}
+                `;
+            }
+
+            // Handle student selection based on session type
+            const studentSelectContainer = document.getElementById('studentSelectContainer');
+            const confirmAssignBtn = document.getElementById('confirmAssignBtn');
+
+            if (sessionType === 'personal') {
+                // Hide student selection for personal sessions
+                if (studentSelectContainer) {
+                    studentSelectContainer.style.display = 'none';
+                }
+                if (confirmAssignBtn) {
+                    confirmAssignBtn.textContent = 'Book Slot';
+                }
+            } else {
+                // Show student selection for common sessions
+                if (studentSelectContainer) {
+                    studentSelectContainer.style.display = 'block';
+                }
+                if (confirmAssignBtn) {
+                    confirmAssignBtn.textContent = 'Assign Slot';
+                }
+                // Load students for this teacher
+                await this.loadStudentsForAssignment();
+            }
+
+            // Show modal
+            const modal = document.getElementById('assignSlotModal');
+            if (modal) {
+                modal.classList.add('show');
+            }
+        } catch (error) {
+            console.error('Error showing assign slot modal:', error);
+            this.showMessage('Error loading assignment modal', 'error');
+        }
+    }
+
+    async loadStudentsForAssignment() {
+        try {
+            const response = await fetch('/api/teachers/students', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const studentSelect = document.getElementById('studentSelect');
+                
+                if (studentSelect) {
+                    studentSelect.innerHTML = '<option value="">Select a student...</option>';
+                    
+                    if (data && data.length > 0) {
+                        data.forEach(student => {
+                            const option = document.createElement('option');
+                            option.value = student._id;
+                            option.textContent = student.fullName;
+                            studentSelect.appendChild(option);
+                        });
+                    } else {
+                        studentSelect.innerHTML = '<option value="">No students found</option>';
+                    }
+                }
+            } else {
+                throw new Error('Failed to load students');
+            }
+        } catch (error) {
+            console.error('Error loading students:', error);
+            this.showMessage('Error loading students', 'error');
+        }
+    }
+
+    hideAssignSlotModal() {
+        const modal = document.getElementById('assignSlotModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
+        
+        // Reset form
+        const studentSelect = document.getElementById('studentSelect');
+        if (studentSelect) {
+            studentSelect.value = '';
+        }
+        
+        this.currentSlotAssignment = null;
+    }
+
+    async confirmSlotAssignment() {
+        try {
+            if (!this.currentSlotAssignment) {
+                this.showMessage('No slot selected for assignment', 'error');
+                return;
+            }
+
+            let studentId;
+
+            if (this.currentSlotAssignment.sessionType === 'personal') {
+                // For personal sessions, we need to get the pre-assigned student from the session
+                // This would require fetching the session details first
+                const sessionResponse = await fetch(`/api/sessions/${this.currentSlotAssignment.sessionId}/details`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (sessionResponse.ok) {
+                    const sessionData = await sessionResponse.json();
+                    studentId = sessionData.allowedStudentId?._id;
+                    
+                    if (!studentId) {
+                        this.showMessage('No student assigned to this personal session', 'error');
+                        return;
+                    }
+                } else {
+                    this.showMessage('Failed to get session details', 'error');
+                    return;
+                }
+            } else {
+                // For common sessions, get the selected student from dropdown
+                const studentSelect = document.getElementById('studentSelect');
+                studentId = studentSelect.value;
+
+                if (!studentId) {
+                    this.showMessage('Please select a student', 'error');
+                    return;
+                }
+            }
+
+            this.showLoading();
+
+            const response = await fetch('/api/sessions/assign-slot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    sessionId: this.currentSlotAssignment.sessionId,
+                    startTime: this.currentSlotAssignment.startTime,
+                    studentId: studentId
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.showMessage(`Slot assigned successfully to ${data.booking.studentName}`, 'success');
+                this.hideAssignSlotModal();
+                
+                // Refresh sessions data to show updated slot status
+                await this.loadSessionsData();
+            } else {
+                this.showMessage(data.message || 'Failed to assign slot', 'error');
+            }
+        } catch (error) {
+            console.error('Error assigning slot:', error);
+            this.showMessage('Error assigning slot', 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 }
 

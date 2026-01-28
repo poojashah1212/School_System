@@ -13,10 +13,7 @@ const generateAvailableSlots = async ({
   teacherTimezone,
   studentTimezone
 }) => {
-  console.log('generateAvailableSlots - studentTimezone:', studentTimezone);
-  console.log('generateAvailableSlots - teacherTimezone:', teacherTimezone);
-  console.log('generateAvailableSlots - studentId:', studentId);
-  console.log('generateAvailableSlots - condition check:', studentId && studentTimezone && studentTimezone !== teacherTimezone);
+  
 
   const bookedSlotsSignature = `${bookedSlots.length}:${bookedSlots.reduce((max, b) => {
     const t = new Date((b && (b.bookedAt || b.startTime)) || 0).getTime();

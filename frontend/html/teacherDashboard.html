@@ -10,17 +10,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.43/moment-timezone-with-data.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.43/moment-timezone-with-data.min.js"></script>
 </head>
 
 <body>
     <div class="dashboard">
         <!-- Sidebar will be loaded here by component loader -->
-        
+
         <!-- Main Content -->
         <main class="main">
             <!-- Header will be loaded here by component loader -->
-            
+
             <div class="content">
                 <!-- Dashboard Page -->
                 <div class="page active" id="dashboard-page">
@@ -127,12 +128,6 @@
                         <div id="weeklyAvailabilityDisplay" class="weekly-availability-display">
                             <p class="empty">No weekly schedule set</p>
                         </div>
-                        <div class="card-actions">
-                            <button class="btn-secondary" id="editWeeklyAvailabilityBtn">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -186,59 +181,14 @@
                                 <option value="personal">Personal</option>
                                 <option value="public">Public</option>
                             </select>
-                                                    </div>
+                        </div>
                         <div id="holidaysList">
                             <p class="empty">No holidays added yet</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Marks Page -->
-                <div class="page" id="marks-page">
-                    <div class="page-header">
-                        <h2>Student Marks</h2>
-                        <button class="btn-primary" id="addMarksBtn">
-                            <i class="fas fa-plus"></i>
-                            Add Marks
-                        </button>
-                    </div>
-
-                    <div class="form-card">
-                        <form id="marksForm">
-                            <div class="form-row">
-                                <select id="studentSelect" required>
-                                    <option value="">Select Student</option>
-                                </select>
-                                <input type="text" id="subject" placeholder="Subject" required>
-                                <input type="number" id="marks" placeholder="Marks" min="0" max="100" required>
-                                <button type="submit" class="btn-primary">Add</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="card">
-                        <h3>Marks Record</h3>
-                        <div class="table-container">
-                            <table class="marks-table">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Subject</th>
-                                        <th>Marks</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td colspan="5" class="empty">No records found</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
+                
                 <!-- Sessions Page -->
                 <div class="page" id="sessions-page">
                     <div class="page-header">
@@ -290,7 +240,7 @@
 
                     <div class="card">
                         <h3>Session List</h3>
-                        
+
                         <div id="sessionsList">
                             <p class="empty">No sessions created yet</p>
                         </div>
@@ -300,39 +250,171 @@
         </main>
     </div>
 
-    <!-- Modals -->
+    <!-- Add Student Modal -->
     <div class="modal" id="addStudentModal">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content modal-wide">
+            <div class="modal-header-clean">
                 <h3>Add New Student</h3>
-                <button class="modal-close" id="closeStudentModal">&times;</button>
+                <button class="modal-close-clean" id="closeStudentModal">&times;</button>
             </div>
-            <form id="addStudentForm" enctype="multipart/form-data">
-                <div class="form-row">
-                    <input type="text" name="userId" placeholder="User ID" required>
-                    <input type="text" name="fullName" placeholder="Full Name" required>
+
+            <form id="addStudentForm" enctype="multipart/form-data" novalidate>
+                <div class="form-wide-grid">
+                    <!-- Basic Info Section -->
+                    <div class="form-section">
+                        <h4 class="section-title-clean">Basic Info</h4>
+                        <div class="form-row-wide">
+                            <div class="form-field-clean required">
+                                <label for="userId">User ID</label>
+                                <input type="text" name="userId" id="userId" placeholder="Enter user ID"
+                                    data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                            <div class="form-field-clean required">
+                                <label for="fullName">Full Name</label>
+                                <input type="text" name="fullName" id="fullName" placeholder="Enter full name"
+                                    data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                            <div class="form-field-clean required">
+                                <label for="email">Email</label>
+                                <input type="email" name="email" id="email" placeholder="student@example.com"
+                                    data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                        </div>
+                        <div class="form-row-wide">
+                            <div class="form-field-clean required">
+                                <label for="password">Password</label>
+                                <input type="password" name="password" id="password" placeholder="Create password"
+                                    data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                            <div class="form-field-clean required">
+                                <label for="age">Age</label>
+                                <input type="number" name="age" id="age" placeholder="Age" min="1" max="120"
+                                    data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                            <div class="form-field-clean">
+                                <!-- Empty field for balance -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Info Section -->
+                    <div class="form-section">
+                        <h4 class="section-title-clean">Contact Info</h4>
+                        <div class="form-row-wide">
+                            <div class="form-field-clean required">
+                                <label for="mobileNo">Mobile</label>
+                                <input type="tel" name="mobileNo" id="mobileNo" placeholder="10-digit number"
+                                    maxlength="10" data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                            <div class="form-field-clean required">
+                                <label for="city">City</label>
+                                <input type="text" name="city" id="city" placeholder="City" data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                            <div class="form-field-clean required">
+                                <label for="state">State</label>
+                                <input type="text" name="state" id="state" placeholder="State" data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Academic Info Section -->
+                    <div class="form-section">
+                        <h4 class="section-title-clean">Academic Info</h4>
+                        <div class="form-row-wide">
+                            <div class="form-field-clean required">
+                                <label for="class">Class</label>
+                                <input type="text" name="class" id="class" placeholder="e.g., 10th Grade"
+                                    data-required="true">
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            </div>
+                            <div class="form-field-clean">
+                                <label for="timezone">Timezone</label>
+                                <select name="timezone" id="timezone">
+                                    <option value="">Select Timezone</option>
+                                    <option value="Asia/Kolkata">India - Asia/Kolkata</option>
+                                    <option value="America/New_York">USA East - America/New_York</option>
+                                    <option value="America/Los_Angeles">USA West - America/Los_Angeles</option>
+                                    <option value="America/Chicago">USA Central - America/Chicago</option>
+                                    <option value="America/Denver">USA Mountain - America/Denver</option>
+                                    <option value="Europe/London">UK - Europe/London</option>
+                                    <option value="Europe/Paris">France - Europe/Paris</option>
+                                    <option value="Europe/Berlin">Germany - Europe/Berlin</option>
+                                    <option value="Europe/Moscow">Russia - Europe/Moscow</option>
+                                    <option value="Asia/Tokyo">Japan - Asia/Tokyo</option>
+                                    <option value="Asia/Shanghai">China - Asia/Shanghai</option>
+                                    <option value="Asia/Hong_Kong">Hong Kong - Asia/Hong_Kong</option>
+                                    <option value="Asia/Singapore">Singapore - Asia/Singapore</option>
+                                    <option value="Asia/Dubai">UAE - Asia/Dubai</option>
+                                    <option value="Australia/Sydney">Australia East - Australia/Sydney</option>
+                                    <option value="Australia/Melbourne">Australia - Australia/Melbourne</option>
+                                    <option value="Australia/Perth">Australia West - Australia/Perth</option>
+                                    <option value="Pacific/Auckland">New Zealand - Pacific/Auckland</option>
+                                    <option value="America/Toronto">Canada - America/Toronto</option>
+                                    <option value="America/Vancouver">Canada West - America/Vancouver</option>
+                                    <option value="America/Mexico_City">Mexico - America/Mexico_City</option>
+                                    <option value="America/Sao_Paulo">Brazil - America/Sao_Paulo</option>
+                                    <option value="Europe/Rome">Italy - Europe/Rome</option>
+                                    <option value="Europe/Madrid">Spain - Europe/Madrid</option>
+                                    <option value="Asia/Seoul">South Korea - Asia/Seoul</option>
+                                    <option value="Asia/Bangkok">Thailand - Asia/Bangkok</option>
+                                    <option value="Asia/Jakarta">Indonesia - Asia/Jakarta</option>
+                                    <option value="Africa/Cairo">Egypt - Africa/Cairo</option>
+                                    <option value="Africa/Johannesburg">South Africa - Africa/Johannesburg</option>
+                                </select>
+                            </div>
+                            <div class="form-field-clean">
+                                <!-- Empty field for balance -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Image Section -->
+                    <div class="form-section">
+                        <h4 class="section-title-clean">Profile Image</h4>
+                        <div class="form-row-wide">
+                            <div class="form-field-clean">
+                                <label>Profile Image</label>
+                                <div class="profile-upload-compact">
+                                    <img src="" alt="Profile" class="profile-image-circle" id="addProfilePreview">
+                                    <div class="upload-icon-overlay"
+                                        onclick="document.getElementById('addProfileImageInput').click()">
+                                        <i class="fas fa-upload"></i>
+                                    </div>
+                                    <input type="file" name="image" id="addProfileImageInput" accept="image/*">
+                                </div>
+                            </div>
+                            <div class="form-field-clean">
+                                <!-- Empty field for balance -->
+                            </div>
+                            <div class="form-field-clean">
+                                <!-- Empty field for balance -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-row">
-                    <input type="email" name="email" placeholder="Email" required>
-                    <input type="password" name="password" placeholder="Password" required>
+
+                <!-- Actions -->
+                <div class="form-actions-clean">
+                    <button type="button" class="btn btn-outline" id="cancelStudentBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary-clean">Add Student</button>
                 </div>
-                <div class="form-row">
-                    <input type="number" name="age" placeholder="Age" min="1" max="120" required>
-                    <input type="tel" name="mobileNo" placeholder="Mobile Number" maxlength="10" required>
-                </div>
-                <div class="form-row">
-                    <input type="text" name="city" placeholder="City" required>
-                    <input type="text" name="state" placeholder="State" required>
-                </div>
-                <div class="form-row">
-                    <input type="text" name="class" placeholder="Class (Optional)">
-                    <input type="text" name="timezone" placeholder="Timezone (Optional)">
-                </div>
-                <div class="form-group">
-                    <label>Profile Image (Optional)</label>
-                    <input type="file" name="image" accept="image/*">
-                </div>
-                <button type="submit" class="btn-primary">Add Student</button>
             </form>
         </div>
     </div>
@@ -349,7 +431,10 @@
                     <input type="file" name="file" accept=".csv" required>
                     <small>Upload a CSV file to add student data</small>
                 </div>
-                <button type="submit" class="btn-primary">Upload CSV</button>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="downloadSampleCsvBtn">Download Sample CSV</button>
+                    <button type="submit" class="btn-primary">Upload CSV</button>
+                </div>
             </form>
         </div>
     </div>
@@ -360,7 +445,7 @@
                 <h3>Create New Quiz</h3>
                 <button class="modal-close" id="closeQuizModal">&times;</button>
             </div>
-            <form id="createQuizForm">
+            <form id="createQuizForm" novalidate>
                 <div class="form-group">
                     <label>Quiz Title</label>
                     <input type="text" name="title" placeholder="Enter quiz title" required>
@@ -410,16 +495,16 @@
             </div>
             <div class="profile-view" id="profileView">
                 <div class="profile-avatar-section">
-                    <img id="profileAvatar" src="https://picsum.photos/seed/teacher/100/100.jpg" alt="Profile"
+                    <img id="profileAvatar" src="" alt="Profile"
                         class="profile-avatar-large">
                     <div class="profile-info-display">
-                        <h4 id="profileName">Teacher Name</h4>
-                        <p id="profileEmail">teacher@example.com</p>
-                        <p><strong>Mobile:</strong> <span id="profileMobile">-</span></p>
-                        <p><strong>Age:</strong> <span id="profileAge">-</span></p>
-                        <p><strong>City:</strong> <span id="profileCity">-</span></p>
-                        <p><strong>State:</strong> <span id="profileState">-</span></p>
-                        <p><strong>Timezone:</strong> <span id="profileTimezone">-</span></p>
+                        <h4 id="profileName"></h4>
+                        <p id="profileEmail"></p>
+                        <p><strong>Mobile:</strong> <span id="profileMobile"></span></p>
+                        <p><strong>Age:</strong> <span id="profileAge"></span></p>
+                        <p><strong>City:</strong> <span id="profileCity"></span></p>
+                        <p><strong>State:</strong> <span id="profileState"></span></p>
+                        <p><strong>Timezone:</strong> <span id="profileTimezone"></span></p>
                     </div>
                 </div>
                 <div class="profile-actions">
@@ -429,7 +514,7 @@
 
             <form id="editProfileForm" class="profile-edit" style="display: none;">
                 <div class="profile-avatar-section">
-                    <img id="profileAvatarEdit" src="https://picsum.photos/seed/teacher/100/100.jpg" alt="Profile"
+                    <img id="profileAvatarEdit" src="" alt="Profile"
                         class="profile-avatar-large">
                     <div class="form-group">
                         <label>Profile Image</label>
@@ -472,128 +557,43 @@
 
                 <div class="form-group">
                     <label>Timezone</label>
-                    <input type="text" name="timezone" id="editTimezone" placeholder="e.g., Asia/Kolkata">
+                    <select name="timezone" id="editTimezone">
+                        <option value="">Select Timezone</option>
+                        <option value="Asia/Kolkata">India - Asia/Kolkata</option>
+                        <option value="America/New_York">USA East - America/New_York</option>
+                        <option value="America/Los_Angeles">USA West - America/Los_Angeles</option>
+                        <option value="America/Chicago">USA Central - America/Chicago</option>
+                        <option value="America/Denver">USA Mountain - America/Denver</option>
+                        <option value="Europe/London">UK - Europe/London</option>
+                        <option value="Europe/Paris">France - Europe/Paris</option>
+                        <option value="Europe/Berlin">Germany - Europe/Berlin</option>
+                        <option value="Europe/Moscow">Russia - Europe/Moscow</option>
+                        <option value="Asia/Tokyo">Japan - Asia/Tokyo</option>
+                        <option value="Asia/Shanghai">China - Asia/Shanghai</option>
+                        <option value="Asia/Hong_Kong">Hong Kong - Asia/Hong_Kong</option>
+                        <option value="Asia/Singapore">Singapore - Asia/Singapore</option>
+                        <option value="Asia/Dubai">UAE - Asia/Dubai</option>
+                        <option value="Australia/Sydney">Australia East - Australia/Sydney</option>
+                        <option value="Australia/Melbourne">Australia - Australia/Melbourne</option>
+                        <option value="Australia/Perth">Australia West - Australia/Perth</option>
+                        <option value="Pacific/Auckland">New Zealand - Pacific/Auckland</option>
+                        <option value="America/Toronto">Canada - America/Toronto</option>
+                        <option value="America/Vancouver">Canada West - America/Vancouver</option>
+                        <option value="America/Mexico_City">Mexico - America/Mexico_City</option>
+                        <option value="America/Sao_Paulo">Brazil - America/Sao_Paulo</option>
+                        <option value="Europe/Rome">Italy - Europe/Rome</option>
+                        <option value="Europe/Madrid">Spain - Europe/Madrid</option>
+                        <option value="Asia/Seoul">South Korea - Asia/Seoul</option>
+                        <option value="Asia/Bangkok">Thailand - Asia/Bangkok</option>
+                        <option value="Asia/Jakarta">Indonesia - Asia/Jakarta</option>
+                        <option value="Africa/Cairo">Egypt - Africa/Cairo</option>
+                        <option value="Africa/Johannesburg">South Africa - Africa/Johannesburg</option>
+                    </select>
                 </div>
 
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
                     <button type="submit" class="btn-primary">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Weekly Availability Modal -->
-    <div class="modal" id="weeklyAvailabilityModal">
-        <div class="modal-content modal-minimal">
-            <div class="modal-header">
-                <h3>Weekly Schedule</h3>
-                <button class="modal-close" id="closeWeeklyAvailabilityModal">&times;</button>
-            </div>
-            <form id="weeklyAvailabilityForm">
-                <div class="availability-grid">
-                    <div class="availability-day">
-                        <label>MON</label>
-                        <div class="time-range-wrapper">
-                            <div class="time-input-container">
-                                <input type="text" name="mondayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                            <span class="separator">-</span>
-                            <div class="time-input-container">
-                                <input type="text" name="mondayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="availability-day">
-                        <label>TUE</label>
-                        <div class="time-range-wrapper">
-                            <div class="time-input-container">
-                                <input type="text" name="tuesdayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                            <span class="separator">-</span>
-                            <div class="time-input-container">
-                                <input type="text" name="tuesdayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="availability-day">
-                        <label>WED</label>
-                        <div class="time-range-wrapper">
-                            <div class="time-input-container">
-                                <input type="text" name="wednesdayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                            <span class="separator">-</span>
-                            <div class="time-input-container">
-                                <input type="text" name="wednesdayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="availability-day">
-                        <label>THU</label>
-                        <div class="time-range-wrapper">
-                            <div class="time-input-container">
-                                <input type="text" name="thursdayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                            <span class="separator">-</span>
-                            <div class="time-input-container">
-                                <input type="text" name="thursdayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="availability-day">
-                        <label>FRI</label>
-                        <div class="time-range-wrapper">
-                            <div class="time-input-container">
-                                <input type="text" name="fridayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                            <span class="separator">-</span>
-                            <div class="time-input-container">
-                                <input type="text" name="fridayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="availability-day">
-                        <label>SAT</label>
-                        <div class="time-range-wrapper">
-                            <div class="time-input-container">
-                                <input type="text" name="saturdayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                            <span class="separator">-</span>
-                            <div class="time-input-container">
-                                <input type="text" name="saturdayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="availability-day">
-                        <label>SUN</label>
-                        <div class="time-range-wrapper">
-                            <div class="time-input-container">
-                                <input type="text" name="sundayStartTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                            <span class="separator">-</span>
-                            <div class="time-input-container">
-                                <input type="text" name="sundayEndTime" step="60" min="00:00" max="24:00" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM">
-                                <span class="time-icon">🕐</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="clearWeeklyAvailability">Clear All</button>
-                    <button type="submit" class="btn-primary">Save Schedule</button>
                 </div>
             </form>
         </div>
@@ -606,45 +606,100 @@
                 <h3>Create Session Slots</h3>
                 <button class="modal-close" id="closeSessionModal">&times;</button>
             </div>
-            <form id="createSessionForm">
+            <form id="createSessionForm" novalidate>
                 <div class="form-group">
                     <label for="sessionTitle">Session Title *</label>
-                    <input type="text" name="title" id="sessionTitle" placeholder="e.g., Mathematics Tutoring" required>
+                    <input type="text" name="title" id="sessionTitle" placeholder="e.g., Mathematics Tutoring" 
+                           title="Enter a descriptive title for the session (e.g., Mathematics Tutoring, Science Lab)" required>
+                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="sessionDate">Date *</label>
-                        <input type="date" name="date" id="sessionDate" required>
+                        <input type="date" name="date" id="sessionDate" 
+                               title="Select the date when the session will be held" required>
+                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                     </div>
                     <div class="form-group">
                         <label for="sessionDuration">Session Duration (minutes) *</label>
-                        <input type="number" name="sessionDuration" id="sessionDuration" min="15" max="180" value="30" required>
+                        <select name="sessionDuration" id="sessionDuration" 
+                                title="Duration of each session slot" required>
+                            <option value="">Select duration</option>
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                            <option value="120">120 minutes</option>
+                        </select>
+                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="breakDuration">Break Duration (minutes) *</label>
-                        <input type="number" name="breakDuration" id="breakDuration" min="0" max="30" value="5" required>
+                        <select name="breakDuration" id="breakDuration" 
+                                title="Break time between consecutive sessions" required>
+                            <option value="">Select break duration</option>
+                            <option value="5">5 minutes</option>
+                            <option value="10">10 minutes</option>
+                            <option value="15">15 minutes</option>
+                            <option value="20">20 minutes</option>
+                        </select>
+                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                     </div>
                     <div class="form-group">
-                        <label for="studentType">Student (Optional)</label>
-                        <select name="studentType" id="studentType">
+                        <label for="studentType">Session Type</label>
+                        <select name="studentType" id="studentType" onchange="dashboard.handleStudentTypeChange(this.value)"
+                                title="Choose whether this session is for all students or a specific student">
+                            <option value=" ">select type</option>   
                             <option value="all">All Students</option>
                             <option value="particular">Particular Student</option>
                         </select>
+                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                     </div>
-                    <div class="form-group" id="particularStudentGroup" style="display: none;">
+                    <div class="form-group student-dropdown-container" id="particularStudentGroup">
                         <label for="particularStudentSelect">Select Student</label>
-                        <select name="student_id" id="particularStudentSelect">
+                        <select name="student_id" id="particularStudentSelect" title="Select a specific student for the session">
                             <option value="">Select a student</option>
                         </select>
+                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                     </div>
                 </div>
-                                <div class="form-actions">
+                <div class="form-actions">
                     <button type="button" class="btn-secondary" id="cancelSessionBtn">Cancel</button>
                     <button type="submit" class="btn-primary">Create Session Slots</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Assign Slot Modal -->
+    <div class="modal" id="assignSlotModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Assign Slot to Student</h3>
+                <button class="modal-close" id="closeAssignSlotModal">&times;</button>
+            </div>
+            
+            <div class="slot-info" style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; color: #1976d2; font-size: 14px;">Selected Slot</h4>
+                <div id="selectedSlotInfo" style="color: #546e7a; font-size: 13px;">
+                    <!-- Slot details will be populated here -->
+                </div>
+            </div>
+
+            <div id="studentSelectContainer">
+                <div class="form-group">
+                    <label for="studentSelect">Select Student *</label>
+                    <select id="studentSelect" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <option value="">Loading students...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancelAssignBtn">Cancel</button>
+                <button type="button" class="btn-primary" id="confirmAssignBtn">Assign Slot</button>
+            </div>
         </div>
     </div>
 
@@ -657,6 +712,7 @@
     <div class="messages" id="messages"></div>
 
     <script src="../js/componentLoader.js"></script>
+    <script src="../js/apiService.js"></script>
     <script src="../js/teacherDashboard.js"></script>
 </body>
 

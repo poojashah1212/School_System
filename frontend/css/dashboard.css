@@ -1056,7 +1056,7 @@ body.modal-open {
 .modal-content {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
     border-radius: 20px;
-    padding: 32px;
+    padding: 20px;
     max-width: 600px;
     width: 90%;
     max-height: 90vh;
@@ -1081,13 +1081,13 @@ body.modal-open {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 10px;
 }
 
 .modal-header h3 {
     font-size: 20px;
     font-weight: 600;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, #f8fafc 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -1113,18 +1113,23 @@ body.modal-open {
 .modal-content form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 12px;
+}
+
+/* Center CSV Upload Button */
+#uploadCsvForm .btn-primary {
+    align-self: center;
 }
 
 .modal-content .form-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
+    gap: 12px;
 }
 
 .modal-content input,
 .modal-content select {
-    padding: 14px 16px;
+    padding: 10px 12px;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     font-size: 14px;
@@ -1147,6 +1152,137 @@ body.modal-open {
 
 .modal-content input[type="file"]:hover {
     border-color: #3b82f6;
+}
+
+/* Delete Modal Styles */
+.modal-small {
+    max-width: 480px;
+    width: 90%;
+}
+
+.modal-header-danger {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #fee2e2;
+}
+
+.danger-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.modal-header-danger h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+    flex: 1;
+}
+
+.modal-body-danger {
+    margin-bottom: 24px;
+}
+
+.danger-message {
+    font-size: 16px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.danger-warning {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.danger-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.danger-list li {
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.danger-list li:before {
+    content: "•";
+    position: absolute;
+    left: 8px;
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.modal-footer-danger {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
+}
+
+.btn-outline {
+    background: transparent;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
 }
 
 @keyframes pulse {

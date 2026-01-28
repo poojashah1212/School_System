@@ -16,9 +16,19 @@ const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
 exports.weeklyAvailabilityValidation = [
   body("weeklyAvailability")
     .exists().withMessage("weeklyAvailability is required")
-    .isArray({ min: 1 }).withMessage("weeklyAvailability must be a non-empty array"),
+    .isArray().withMessage("weeklyAvailability must be an array"),
 
   body("weeklyAvailability").custom((value) => {
+    // Allow empty array (when all days are "Not set")
+    if (!Array.isArray(value)) {
+      throw new Error("weeklyAvailability must be an array");
+    }
+
+    // If array is empty, validation passes (all days are "Not set")
+    if (value.length === 0) {
+      return true;
+    }
+
     const usedDays = new Set();
 
     for (let i = 0; i < value.length; i++) {
