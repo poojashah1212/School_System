@@ -800,23 +800,22 @@ exports.getAllSlotsForSession = async (req, res) => {
 
 exports.assignSlotToStudent = async (req, res) => {
   try {
+    console.log('🔍 DEBUG: Updated assignSlotToStudent function called');
     const { sessionId, startTime, studentId } = req.body;
     const teacherId = req.user.id;
 
+    console.log('🔍 DEBUG: Request body:', { sessionId, startTime, studentId });
+
     // Validate required fields
-    if (!sessionId || !startTime || !studentId) {
+    if (!sessionId || !startTime) {
       return res.status(400).json({
         success: false,
-        message: "Session ID, start time, and student ID are required"
+        message: "Session ID and start time are required"
       });
     }
 
-    // Verify session and student ownership
-    const [session, student] = await Promise.all([
-      SessionSlot.findOne({ _id: sessionId, teacherId }),
-      User.findOne({ _id: studentId, teacherId, role: "student" })
-    ]);
-
+    // Verify the session belongs to the logged-in teacher
+    const session = await SessionSlot.findOne({ _id: sessionId, teacherId });
     if (!session) {
       return res.status(404).json({
         success: false,
@@ -824,36 +823,135 @@ exports.assignSlotToStudent = async (req, res) => {
       });
     }
 
-    if (!student) {
-      return res.status(403).json({
+    let student = null;
+    
+    // For personal sessions, get the student from allowedStudentId
+    if (session.allowedStudentId) {
+      student = await User.findOne({ _id: session.allowedStudentId, teacherId, role: "student" });
+      if (!student) {
+        return res.status(403).json({
+          success: false,
+          message: "Assigned student not found or does not belong to you"
+        });
+      }
+    } else {
+      // For common sessions, studentId is required
+      if (!studentId) {
+        return res.status(400).json({
+          success: false,
+          message: "Student ID is required for common sessions"
+        });
+      }
+      
+      // Verify the student belongs to this teacher
+      student = await User.findOne({ _id: studentId, teacherId, role: "student" });
+      if (!student) {
+        return res.status(403).json({
+          success: false,
+          message: "Student not found or does not belong to you"
+        });
+      }
+    }
+
+    // Get teacher availability and timezone
+    const teacher = await User.findById(teacherId);
+    const availability = await TeacherAvailability.findOne({ teacherId });
+    const teacherTimezone = normalizeTimezone(teacher?.timezone);
+
+    if (!availability) {
+      return res.status(400).json({
         success: false,
-        message: "Student not found or does not belong to you"
+        message: "Teacher availability not found"
       });
     }
 
-    // Check if slot is already booked
-    const slotDate = moment(session.date).format("YYYY-MM-DD");
-    const slotKey = `slot:${sessionId}:${slotDate}:${startTime}`;
-    
-    const existingBooking = await redisClient.get(slotKey);
-    if (existingBooking) {
+    // Get day availability for this session
+    const dayName = moment(session.date).format("dddd").toLowerCase();
+    const dayAvailability = availability.weeklyAvailability.find(
+      d => d.day === dayName
+    );
+
+    if (!dayAvailability) {
+      return res.status(400).json({
+        success: false,
+        message: "No availability found for this day"
+      });
+    }
+
+    // Generate available slots for validation
+    const availableSlots = await generateAvailableSlots({
+      date: session.date,
+      availability: dayAvailability,
+      sessionDuration: session.sessionDuration,
+      breakDuration: session.breakDuration,
+      bookedSlots: session.bookedSlots || [],
+      teacherId,
+      sessionId: session._id,
+      teacherTimezone,
+      studentTimezone: teacherTimezone
+    });
+
+    // Find matching slot by startTime
+    const matchingSlot = availableSlots?.find(slot => {
+      return slot.startTime === startTime;
+    });
+
+    if (!matchingSlot) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid slot. Please select from available slots only"
+      });
+    }
+
+    // Use teacher timezone timestamps from available slot
+    const bookingStartUTC = moment.utc(matchingSlot.teacherStart);
+    const bookingEndUTC = moment.utc(matchingSlot.teacherEnd);
+
+    // Check if this slot is already booked
+    const isSlotOccupied = session.bookedSlots.some(b => {
+      const bookedStart = moment.utc(b.startTime);
+      const bookedEnd = moment.utc(b.endTime);
+      const requestedStart = bookingStartUTC;
+      const requestedEnd = bookingEndUTC;
+      
+      // Check for any overlap
+      return (
+        (requestedStart.isSameOrAfter(bookedStart) && requestedStart.isBefore(bookedEnd)) ||
+        (requestedEnd.isAfter(bookedStart) && requestedEnd.isSameOrBefore(bookedEnd)) ||
+        (requestedStart.isSameOrBefore(bookedStart) && requestedEnd.isSameOrAfter(bookedEnd))
+      );
+    });
+
+    if (isSlotOccupied) {
       return res.status(400).json({
         success: false,
         message: "This slot is already booked"
       });
     }
 
-    // Create booking
+    // Create the booking document
     const bookingDoc = {
-      startTime: moment.utc(`${slotDate} ${startTime}`, "YYYY-MM-DD HH:mm").toDate(),
-      endTime: moment.utc(`${slotDate} ${startTime}`, "YYYY-MM-DD HH:mm").add(session.sessionDuration, "minutes").toDate(),
-      bookedBy: studentId,
+      startTime: bookingStartUTC.toDate(),
+      endTime: bookingEndUTC.toDate(),
+      bookedBy: student._id, // Use the resolved student ID
       bookedAt: new Date()
     };
 
-    // Update database and Redis atomically
+    // Atomically book the slot
     const updatedSession = await SessionSlot.findOneAndUpdate(
-      { _id: sessionId, "bookedSlots.startTime": { $ne: bookingDoc.startTime } },
+      {
+        _id: session._id,
+        $nor: [
+          {
+            bookedSlots: {
+              $elemMatch: {
+                startTime: { $lt: bookingDoc.endTime },
+                endTime: { $gt: bookingDoc.startTime }
+              }
+            }
+          }
+        ]
+      },
       { $push: { bookedSlots: bookingDoc } },
       { new: true }
     );
@@ -865,28 +963,33 @@ exports.assignSlotToStudent = async (req, res) => {
       });
     }
 
-    // Cache in Redis for 24 hours
-    await redisClient.setex(slotKey, 86400, JSON.stringify({
-      studentId,
-      studentName: student.fullName,
-      bookedAt: bookingDoc.bookedAt
-    }));
-
+    // Return success response with booking details
     res.json({
       success: true,
       message: "Slot assigned successfully",
       booking: {
         sessionId: session._id,
-        studentId: studentId,
+        studentId: student._id,
         studentName: student.fullName,
+        studentEmail: student.email,
         date: moment(session.date).format("DD-MM-YYYY"),
         startTime: startTime,
-        endTime: moment(bookingDoc.endTime).format("HH:mm")
+        endTime: matchingSlot.endTime,
+        bookedAt: moment.utc(bookingDoc.bookedAt).tz(teacherTimezone).format("DD-MM-YYYY HH:mm")
       }
     });
 
   } catch (err) {
     console.error("Error in assignSlotToStudent:", err);
+    
+    // Handle MongoDB duplicate key error
+    if (err.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "This slot is already booked"
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Failed to assign slot: " + err.message

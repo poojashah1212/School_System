@@ -436,15 +436,17 @@ class TeacherDashboard {
 
         const cancelAssignBtn = document.getElementById('cancelAssignBtn');
         if (cancelAssignBtn) {
-            cancelAssignBtn.addEventListener('click', () => {
+            cancelAssignBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 this.hideAssignSlotModal();
             });
         }
 
-        const confirmAssignBtn = document.getElementById('confirmAssignBtn');
-        if (confirmAssignBtn) {
-            confirmAssignBtn.addEventListener('click', () => {
-                this.confirmSlotAssignment();
+        const assignSlotForm = document.getElementById('assignSlotForm');
+        if (assignSlotForm) {
+            assignSlotForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAssignSlotSubmit();
             });
         }
 
@@ -4317,7 +4319,7 @@ class TeacherDashboard {
                     const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0;
 
                     return `
-                        <div class="session-item" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: fit-content;">
+                        <div class="session-item" data-session-id="${session._id}" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: fit-content;">
                             <!-- Session Header -->
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e3f2fd;">
                                 <div>
@@ -4469,7 +4471,7 @@ class TeacherDashboard {
         }
     }
 
-    generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate, sessionId = null, sessionType = null) {
+    generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate, sessionId, sessionType) {
         // Create a map of all possible slots with their booking status
         const allSlotsMap = new Map();
 
@@ -4493,23 +4495,17 @@ class TeacherDashboard {
             const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
             const key = `${startTime}-${endTime}`;
 
-            // For personal sessions, hide student name, for common sessions show it
-            const displayStudentName = (sessionType !== 'personal') && (slot.bookedBy ? slot.bookedBy.fullName : 'Booked');
-
             allSlotsMap.set(key, {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
-                studentName: displayStudentName
+                studentName: sessionType === 'personal' ? '' : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked')
             });
         });
 
         // Convert map to array and sort by start time
         const allSlots = Array.from(allSlotsMap.values()).sort((a, b) => {
-            // Parse times to compare chronologically
-            const timeA = moment(a.startTime, 'HH:mm');
-            const timeB = moment(b.startTime, 'HH:mm');
-            return timeA.diff(timeB);
+            return a.startTime.localeCompare(b.startTime);
         });
 
         if (allSlots.length === 0) {
@@ -4527,7 +4523,7 @@ class TeacherDashboard {
                     ${allSlots.map(slot => {
             if (slot.type === 'available') {
                 return `
-                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'available', null, '${sessionId}', '${sessionType}')" 
+                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'available', null, '${sessionId}')" 
                                         style="background: #1976d2; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s ease;"
                                         onmouseover="this.style.background='#1565c0'; this.style.transform='scale(1.05)';"
                                         onmouseout="this.style.background='#1976d2'; this.style.transform='scale(1)';">
@@ -4535,13 +4531,12 @@ class TeacherDashboard {
                                 </button>
                             `;
             } else {
-                const buttonText = slot.studentName ? `${slot.studentName} [${slot.startTime} – ${slot.endTime}]` : `${slot.startTime} – ${slot.endTime}`;
                 return `
-                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.studentName || 'Booked'}', '${sessionId}', '${sessionType}')" 
+                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.studentName}', '${sessionId}')" 
                                         style="background: #d32f2f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s ease;"
                                         onmouseover="this.style.background='#c62828'; this.style.transform='scale(1.05)';"
                                         onmouseout="this.style.background='#d32f2f'; this.style.transform='scale(1)';">
-                                    ${buttonText}
+                                    ${slot.studentName ? `${slot.studentName} [${slot.startTime} – ${slot.endTime}]` : `${slot.startTime} – ${slot.endTime}`}
                                 </button>
                             `;
             }
@@ -4551,12 +4546,12 @@ class TeacherDashboard {
         `;
     }
 
-    handleSlotClick(startTime, endTime, type, studentName = null, sessionId = null, sessionType = null) {
-        console.log('Slot clicked:', { startTime, endTime, type, studentName, sessionId, sessionType });
+    handleSlotClick(startTime, endTime, type, studentName = null, sessionId = null) {
+        console.log('Slot clicked:', { startTime, endTime, type, studentName, sessionId });
         
         if (type === 'available') {
-            // Show student selection modal for available slots
-            this.showAssignSlotModal(startTime, endTime, sessionId, sessionType);
+            // Handle available slot click - open assign modal
+            this.showAssignSlotModal(startTime, endTime, sessionId);
         } else if (type === 'booked') {
             // Handle booked slot click
             this.showMessage(`Booked by ${studentName}: ${startTime} - ${endTime}`, 'info');
@@ -4564,7 +4559,7 @@ class TeacherDashboard {
         }
     }
 
-    generateUnifiedSlotsModalView(availableSlots, bookedSlots, sessionDate) {
+    generateUnifiedSlotsModalView(availableSlots, bookedSlots, sessionDate, sessionType) {
         // Create a map of all possible slots with their booking status
         const allSlotsMap = new Map();
 
@@ -4586,25 +4581,18 @@ class TeacherDashboard {
             const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
             const key = `${startTime}-${endTime}`;
 
-            // For personal sessions, hide student name, for common sessions show it
-            const displayStudentName = (sessionType !== 'personal') && (slot.bookedBy ? slot.bookedBy.fullName : 'Booked');
-            const displayStudentEmail = (sessionType !== 'personal') && (slot.bookedBy ? slot.bookedBy.email : '');
-
             allSlotsMap.set(key, {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
-                studentName: displayStudentName,
-                studentEmail: displayStudentEmail
+                studentName: sessionType === 'personal' ? '' : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
+                studentEmail: sessionType === 'personal' ? '' : (slot.bookedBy ? slot.bookedBy.email : '')
             });
         });
 
         // Convert map to array and sort by start time
         const allSlots = Array.from(allSlotsMap.values()).sort((a, b) => {
-            // Parse times to compare chronologically
-            const timeA = moment(a.startTime, 'HH:mm');
-            const timeB = moment(b.startTime, 'HH:mm');
-            return timeA.diff(timeB);
+            return a.startTime.localeCompare(b.startTime);
         });
 
         if (allSlots.length === 0) {
@@ -4625,28 +4613,19 @@ class TeacherDashboard {
                     </div>
                 ` : ''}
                 ${slot.type === 'booked' ? `
+                    ${slot.studentName ? `
                     <div style="background: white; padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107;">
-                        ${slot.studentName ? `
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="width: 30px; height: 30px; background: #ffc107; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-user" style="color: white;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-weight: bold; color: #856404;">${slot.studentName}</div>
-                                    ${slot.studentEmail ? `<div style="font-size: 12px; color: #856404;">${slot.studentEmail}</div>` : ''}
-                                </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 30px; height: 30px; background: #ffc107; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user" style="color: white;"></i>
                             </div>
-                        ` : `
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="width: 30px; height: 30px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-check" style="color: white;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-weight: bold; color: #dc2626;">Booked</div>
-                                </div>
+                            <div>
+                                <div style="font-weight: bold; color: #856404;">${slot.studentName}</div>
+                                ${slot.studentEmail ? `<div style="font-size: 12px; color: #856404;">${slot.studentEmail}</div>` : ''}
                             </div>
-                        `}
+                        </div>
                     </div>
+                    ` : ''}
                 ` : ''}
             </div>
         `).join('');
@@ -4862,7 +4841,7 @@ class TeacherDashboard {
                                 <i class="fas fa-clock"></i> Time Slots
                             </h4>
                             <div class="slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
-                                ${this.generateUnifiedSlotsModalView(availableSlots, bookedSlots, session.date)}
+                                ${this.generateUnifiedSlotsModalView(availableSlots, bookedSlots, session.date, session.type)}
                             </div>
                         </div>
                     </div>
@@ -5614,48 +5593,66 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         return result === '10:00';
     }
 
-    // Slot Assignment Functions
-    async showAssignSlotModal(startTime, endTime, sessionId, sessionType = null) {
+    // Assign Slot Modal Functions
+    async showAssignSlotModal(startTime, endTime, sessionId) {
         try {
-            this.currentSlotAssignment = {
-                startTime,
-                endTime,
-                sessionId,
-                sessionType
-            };
-
-            // Update slot info in modal
-            const slotInfo = document.getElementById('selectedSlotInfo');
-            if (slotInfo) {
-                slotInfo.innerHTML = `
-                    <div><strong>Time:</strong> ${startTime} - ${endTime}</div>
-                    <div><strong>Date:</strong> ${this.formatSessionDate(new Date())}</div>
-                    ${sessionType ? `<div><strong>Session Type:</strong> ${sessionType}</div>` : ''}
-                `;
+            if (!sessionId) {
+                this.showMessage('Session ID is required. Please try again.', 'error');
+                return;
             }
 
-            // Handle student selection based on session type
-            const studentSelectContainer = document.getElementById('studentSelectContainer');
-            const confirmAssignBtn = document.getElementById('confirmAssignBtn');
-
-            if (sessionType === 'personal') {
-                // Hide student selection for personal sessions
-                if (studentSelectContainer) {
-                    studentSelectContainer.style.display = 'none';
+            // Fetch session details to check if it's a personal session
+            const sessionResponse = await fetch(`/api/sessions/${sessionId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
-                if (confirmAssignBtn) {
-                    confirmAssignBtn.textContent = 'Book Slot';
+            });
+
+            let sessionDetails = null;
+            if (sessionResponse.ok) {
+                sessionDetails = await sessionResponse.json();
+            }
+
+            // Set slot information
+            document.getElementById('slotTimeDisplay').textContent = `${startTime} - ${endTime}`;
+            document.getElementById('assignSessionId').value = sessionId;
+            document.getElementById('assignStartTime').value = startTime;
+
+            // Get the student selection form group
+            const studentFormGroup = document.querySelector('#assignSlotForm .form-group:nth-child(2)');
+            const modalTitle = document.querySelector('#assignSlotModal .modal-header h3');
+
+            if (sessionDetails && sessionDetails.allowedStudentId) {
+                // This is a personal session - hide student dropdown and update title
+                if (studentFormGroup) {
+                    studentFormGroup.style.display = 'none';
+                }
+                if (modalTitle) {
+                    modalTitle.textContent = 'Personal Session Slot';
+                }
+                
+                // Remove required attribute from student select since it's hidden
+                const studentSelect = document.getElementById('studentSelect');
+                if (studentSelect) {
+                    studentSelect.removeAttribute('required');
                 }
             } else {
-                // Show student selection for common sessions
-                if (studentSelectContainer) {
-                    studentSelectContainer.style.display = 'block';
+                // This is a common session - show student dropdown and use default title
+                if (studentFormGroup) {
+                    studentFormGroup.style.display = 'block';
                 }
-                if (confirmAssignBtn) {
-                    confirmAssignBtn.textContent = 'Assign Slot';
+                if (modalTitle) {
+                    modalTitle.textContent = 'Assign Slot to Student';
                 }
+                
+                // Add required attribute back to student select
+                const studentSelect = document.getElementById('studentSelect');
+                if (studentSelect) {
+                    studentSelect.setAttribute('required', '');
+                }
+
                 // Load students for this teacher
-                await this.loadStudentsForAssignment();
+                await this.loadStudentsForAssignModal();
             }
 
             // Show modal
@@ -5665,11 +5662,34 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             }
         } catch (error) {
             console.error('Error showing assign slot modal:', error);
-            this.showMessage('Error loading assignment modal', 'error');
+            this.showMessage('Error opening assign slot modal', 'error');
         }
     }
 
-    async loadStudentsForAssignment() {
+    hideAssignSlotModal() {
+        const modal = document.getElementById('assignSlotModal');
+        if (modal) {
+            modal.classList.remove('show');
+            this.resetAssignSlotForm();
+        }
+    }
+
+    resetAssignSlotForm() {
+        const form = document.getElementById('assignSlotForm');
+        if (form) {
+            form.reset();
+            // Clear error messages
+            form.querySelectorAll('.error-message').forEach(error => {
+                error.style.display = 'none';
+                error.textContent = '';
+            });
+            form.querySelectorAll('.error').forEach(field => {
+                field.classList.remove('error');
+            });
+        }
+    }
+
+    async loadStudentsForAssignModal() {
         try {
             const response = await fetch('/api/teachers/students', {
                 headers: {
@@ -5678,22 +5698,18 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             });
 
             if (response.ok) {
-                const data = await response.json();
-                const studentSelect = document.getElementById('studentSelect');
+                const students = await response.json();
+                const selectElement = document.getElementById('studentSelect');
                 
-                if (studentSelect) {
-                    studentSelect.innerHTML = '<option value="">Select a student...</option>';
+                if (selectElement) {
+                    selectElement.innerHTML = '<option value="">Select a student</option>';
                     
-                    if (data && data.length > 0) {
-                        data.forEach(student => {
-                            const option = document.createElement('option');
-                            option.value = student._id;
-                            option.textContent = student.fullName;
-                            studentSelect.appendChild(option);
-                        });
-                    } else {
-                        studentSelect.innerHTML = '<option value="">No students found</option>';
-                    }
+                    students.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student._id;
+                        option.textContent = `${student.fullName} (${student.email})`;
+                        selectElement.appendChild(option);
+                    });
                 }
             } else {
                 throw new Error('Failed to load students');
@@ -5701,90 +5717,95 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         } catch (error) {
             console.error('Error loading students:', error);
             this.showMessage('Error loading students', 'error');
+            
+            // Show error in select element
+            const selectElement = document.getElementById('studentSelect');
+            if (selectElement) {
+                selectElement.innerHTML = '<option value="">Error loading students</option>';
+            }
         }
     }
 
-    hideAssignSlotModal() {
-        const modal = document.getElementById('assignSlotModal');
-        if (modal) {
-            modal.classList.remove('show');
-        }
-        
-        // Reset form
-        const studentSelect = document.getElementById('studentSelect');
-        if (studentSelect) {
-            studentSelect.value = '';
-        }
-        
-        this.currentSlotAssignment = null;
-    }
-
-    async confirmSlotAssignment() {
+    async handleAssignSlotSubmit() {
         try {
-            if (!this.currentSlotAssignment) {
-                this.showMessage('No slot selected for assignment', 'error');
+            const form = document.getElementById('assignSlotForm');
+            
+            // Clear previous errors
+            form.querySelectorAll('.error-message').forEach(error => {
+                error.style.display = 'none';
+                error.textContent = '';
+            });
+            form.querySelectorAll('.error').forEach(field => {
+                field.classList.remove('error');
+            });
+
+            // Get form data
+            const formData = new FormData(form);
+            const sessionId = formData.get('sessionId');
+            const startTime = formData.get('startTime');
+            const studentId = formData.get('studentId');
+
+            // Validate
+            let isValid = true;
+
+            if (!sessionId) {
+                this.showMessage('Session ID is missing', 'error');
+                isValid = false;
+            }
+
+            if (!startTime) {
+                this.showFieldError(document.getElementById('assignStartTime'), 'Start time is missing');
+                isValid = false;
+            }
+
+            // Check if student selection is required (only if the dropdown is visible)
+            const studentFormGroup = document.querySelector('#assignSlotForm .form-group:nth-child(2)');
+            const isStudentSelectionRequired = studentFormGroup && studentFormGroup.style.display !== 'none';
+            
+            if (isStudentSelectionRequired && !studentId) {
+                this.showFieldError(document.getElementById('studentSelect'), 'Please select a student');
+                isValid = false;
+            }
+
+            if (!isValid) {
                 return;
             }
 
-            let studentId;
-
-            if (this.currentSlotAssignment.sessionType === 'personal') {
-                // For personal sessions, we need to get the pre-assigned student from the session
-                // This would require fetching the session details first
-                const sessionResponse = await fetch(`/api/sessions/${this.currentSlotAssignment.sessionId}/details`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-
-                if (sessionResponse.ok) {
-                    const sessionData = await sessionResponse.json();
-                    studentId = sessionData.allowedStudentId?._id;
-                    
-                    if (!studentId) {
-                        this.showMessage('No student assigned to this personal session', 'error');
-                        return;
-                    }
-                } else {
-                    this.showMessage('Failed to get session details', 'error');
-                    return;
-                }
-            } else {
-                // For common sessions, get the selected student from dropdown
-                const studentSelect = document.getElementById('studentSelect');
-                studentId = studentSelect.value;
-
-                if (!studentId) {
-                    this.showMessage('Please select a student', 'error');
-                    return;
-                }
-            }
-
+            // Show loading
             this.showLoading();
 
+            // For personal sessions, we don't need to send studentId
+            // The backend will handle it based on the session's allowedStudentId
+            const payload = {
+                sessionId,
+                startTime
+            };
+
+            // Only include studentId for common sessions
+            if (isStudentSelectionRequired && studentId) {
+                payload.studentId = studentId;
+            }
+
+            // Call API
             const response = await fetch('/api/sessions/assign-slot', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({
-                    sessionId: this.currentSlotAssignment.sessionId,
-                    startTime: this.currentSlotAssignment.startTime,
-                    studentId: studentId
-                })
+                body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
+            const result = await response.json();
 
-            if (response.ok && data.success) {
-                this.showMessage(`Slot assigned successfully to ${data.booking.studentName}`, 'success');
+            if (response.ok) {
+                this.showMessage(result.message || 'Slot assigned successfully!', 'success');
                 this.hideAssignSlotModal();
                 
-                // Refresh sessions data to show updated slot status
+                // Reload sessions data to show the updated slot
                 await this.loadSessionsData();
             } else {
-                this.showMessage(data.message || 'Failed to assign slot', 'error');
+                this.showMessage(result.message || 'Failed to assign slot', 'error');
             }
         } catch (error) {
             console.error('Error assigning slot:', error);

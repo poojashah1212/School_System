@@ -679,27 +679,31 @@
                 <h3>Assign Slot to Student</h3>
                 <button class="modal-close" id="closeAssignSlotModal">&times;</button>
             </div>
-            
-            <div class="slot-info" style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 8px 0; color: #1976d2; font-size: 14px;">Selected Slot</h4>
-                <div id="selectedSlotInfo" style="color: #546e7a; font-size: 13px;">
-                    <!-- Slot details will be populated here -->
+            <form id="assignSlotForm" novalidate>
+                <div class="form-group">
+                    <label>Selected Slot</label>
+                    <div id="selectedSlotInfo" style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                        <div style="font-weight: 500; color: #1976d2; margin-bottom: 4px;">Time Slot</div>
+                        <div id="slotTimeDisplay" style="color: #546e7a;"></div>
+                    </div>
                 </div>
-            </div>
-
-            <div id="studentSelectContainer">
+                
                 <div class="form-group">
                     <label for="studentSelect">Select Student *</label>
-                    <select id="studentSelect" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <select name="studentId" id="studentSelect" required>
                         <option value="">Loading students...</option>
                     </select>
+                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                 </div>
-            </div>
-
-            <div class="form-actions">
-                <button type="button" class="btn-secondary" id="cancelAssignBtn">Cancel</button>
-                <button type="button" class="btn-primary" id="confirmAssignBtn">Assign Slot</button>
-            </div>
+                
+                <input type="hidden" id="assignSessionId" name="sessionId">
+                <input type="hidden" id="assignStartTime" name="startTime">
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelAssignBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Assign Slot</button>
+                </div>
+            </form>
         </div>
     </div>
 
