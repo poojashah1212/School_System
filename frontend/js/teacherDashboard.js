@@ -3,6 +3,8 @@ class TeacherDashboard {
     constructor() {
         this.currentUser = null;
         this.currentPage = 'dashboard';
+        this.currentCancelSlotData = null; // Store current slot data for cancellation
+        this.highlightedSessionId = null; // Store session ID to highlight
 
         // Initialize API service
         if (window.apiService) {
@@ -106,6 +108,39 @@ class TeacherDashboard {
                     this.src = 'https://picsum.photos/seed/teacher/100/100.jpg';
                 };
             }
+        }
+    }
+
+    // Helper function to format session duration
+    formatSessionDuration(duration) {
+        if (!duration) return '30 Minutes';
+
+        const numDuration = parseInt(duration);
+
+        if (numDuration >= 60) {
+            const hours = numDuration / 60;
+            return hours === 1 ? '1 Hour' : `${hours} Hours`;
+        } else {
+            return `${numDuration} Minutes`;
+        }
+    }
+
+    // Navigate to sessions page with optional session ID
+    navigateToSession(sessionId = null) {
+        console.log('navigateToSession called with sessionId:', sessionId);
+
+        // Switch to sessions page
+        this.navigateToPage('sessions');
+
+        // If session ID is provided, highlight or scroll to that session
+        if (sessionId) {
+            // Store the session ID to highlight it after page loads
+            this.highlightedSessionId = sessionId;
+
+            // Load sessions data which will handle the highlighting
+            setTimeout(() => {
+                this.loadSessionsData();
+            }, 100);
         }
     }
 
@@ -317,14 +352,14 @@ class TeacherDashboard {
                 e.preventDefault();
                 this.addStudent();
             });
-            
+
             // Add input event listeners to clear errors on typing
             addStudentForm.querySelectorAll('input').forEach(input => {
                 input.addEventListener('input', () => {
                     this.clearFieldError(input);
                 });
             });
-            
+
             // Setup image upload functionality
             this.setupImageUpload();
         }
@@ -439,6 +474,32 @@ class TeacherDashboard {
             cancelAssignBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.hideAssignSlotModal();
+            });
+        }
+
+        // Cancel Slot Modal event listeners
+        const closeCancelSlotModal = document.getElementById('closeCancelSlotModal');
+        if (closeCancelSlotModal) {
+            closeCancelSlotModal.addEventListener('click', () => {
+                this.hideModal('cancelSlotModal');
+                this.currentCancelSlotData = null;
+            });
+        }
+
+        const cancelSlotBtnCancel = document.getElementById('cancelSlotBtnCancel');
+        if (cancelSlotBtnCancel) {
+            cancelSlotBtnCancel.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.hideModal('cancelSlotModal');
+                this.currentCancelSlotData = null;
+            });
+        }
+
+        const cancelSlotBtnConfirm = document.getElementById('cancelSlotBtnConfirm');
+        if (cancelSlotBtnConfirm) {
+            cancelSlotBtnConfirm.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.cancelSlot();
             });
         }
 
@@ -735,7 +796,10 @@ class TeacherDashboard {
                 }, 600);
             }
 
-            this.updateRecentStudents(students.slice(0, 5));
+            // Load sessions data for recent sessions display
+            const sessionsResponse = await window.apiService.get('/sessions/teacher');
+            const sessions = sessionsResponse.sessions || [];
+            this.updateRecentSessions(sessions.slice(0, 5)); // Show recent 5 sessions
 
             // Update student count in students page header
             const studentsHeader = document.querySelector('#students-page .page-header h2');
@@ -788,7 +852,7 @@ class TeacherDashboard {
                     profileImageUrl = `http://localhost:5001${profileImageUrl}`;
                 }
             }
-            
+
             return `
             <div class="student-item">
                 <img src="${profileImageUrl || 'https://picsum.photos/seed/' + student._id + '/32/32.jpg'}" alt="${student.fullName}" class="student-avatar-small">
@@ -797,6 +861,43 @@ class TeacherDashboard {
                     <p>${student.email}</p>
                 </div>
                 <span class="student-class">${student.class || 'N/A'}</span>
+            </div>
+            `;
+        }).join('');
+    }
+
+    updateRecentSessions(sessions) {
+        const container = document.getElementById('recentSessions'); // Use the dedicated sessions container
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = '<p class="empty">No sessions created yet</p>';
+            return;
+        }
+
+        container.innerHTML = sessions.map(session => {
+            const bookedSlots = session.bookedSlots?.length || 0;
+            const sessionId = session._id || session.id; // Handle both _id and id
+
+            return `
+            <div class="session-item clickable" style="background: white; border-radius: 8px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #1976d2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s ease;" onclick="console.log('Session clicked:', '${sessionId}'); window.dashboard.navigateToSession('${sessionId}')">
+                <div class="session-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: #1976d2;">${session.title || 'Untitled Session'}</h4>
+                    <span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+                        ${this.formatSessionDuration(session.sessionDuration)}
+                    </span>
+                </div>
+                <div class="session-info" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666;">
+                    <span style="display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-calendar" style="color: #999;"></i>
+                        ${this.formatSessionDate(session.date)}
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-users" style="color: #999;"></i>
+                        ${bookedSlots} booked
+                    </span>
+                </div>
+                <div class="session-type" style="margin-top: 6px; font-size: 11px; color: #888;">
+                    ${session.allowedStudentId ? '👤 Personal Session' : '👥 All Students Session'}
+                </div>
             </div>
             `;
         }).join('');
@@ -955,7 +1056,7 @@ class TeacherDashboard {
 
         // Add real-time validation
         this.setupHolidayValidation();
-        
+
         // Add input event listeners to clear errors on typing
         const holidayForm = document.getElementById('addHolidayForm');
         if (holidayForm) {
@@ -1009,7 +1110,7 @@ class TeacherDashboard {
 
     validateDateFormat(input) {
         const value = input.value.trim();
-        
+
         // Clear previous error for this field
         const formGroup = input.closest('.form-group');
         const errorElement = formGroup.querySelector('.error-message');
@@ -1188,22 +1289,22 @@ class TeacherDashboard {
 
     showFieldError(field, message) {
         console.log('showFieldError called for:', field.id, 'with message:', message);
-        
+
         // Only show errors if form has been submitted
         if (!this.isSessionFormSubmitted) {
             console.log('Form not submitted yet, skipping error display');
             return;
         }
-        
+
         // Add error class and show message only after submission
         field.classList.add('error');
-        
+
         // Remove any existing error message for this field
         const existingError = field.parentNode.querySelector('.error-message');
         if (existingError) {
             existingError.remove();
         }
-        
+
         // Always create new error element
         const errorElement = document.createElement('div');
         errorElement.className = 'error-message';
@@ -1213,7 +1314,7 @@ class TeacherDashboard {
         errorElement.style.marginTop = '4px';
         errorElement.style.fontWeight = '500';
         errorElement.style.display = 'block';
-        
+
         // Insert error message immediately after the field
         field.parentNode.insertBefore(errorElement, field.nextSibling);
         console.log('Error message created and inserted');
@@ -1492,12 +1593,12 @@ class TeacherDashboard {
             if (response.ok) {
                 const students = await response.json();
                 console.log('Students loaded from DB:', students);
-                console.log('Profile images:', students.map(s => ({ 
-                    name: s.fullName, 
+                console.log('Profile images:', students.map(s => ({
+                    name: s.fullName,
                     profileImage: s.profileImage,
-                    _id: s._id 
+                    _id: s._id
                 })));
-                
+
                 // Also update recent students with the same data
                 this.updateRecentStudents(students);
                 this.updateStudentsGrid(students);
@@ -1533,7 +1634,7 @@ class TeacherDashboard {
                     profileImageUrl = `http://localhost:5001${profileImageUrl}`;
                 }
             }
-            
+
             return `
             <div class="student-card">
                 <img src="${profileImageUrl || 'https://picsum.photos/seed/' + student._id + '/60/60.jpg'}" alt="${student.fullName}" class="student-avatar">
@@ -1580,14 +1681,14 @@ class TeacherDashboard {
         const form = document.getElementById('addStudentForm');
         const inputs = form.querySelectorAll('input[data-required="true"]');
         let isValid = true;
-        
+
         // Clear previous errors
         form.querySelectorAll('.validation-error').forEach(error => error.remove());
         form.querySelectorAll('input.error').forEach(input => input.classList.remove('error'));
-        
+
         inputs.forEach(input => {
             const value = input.value.trim();
-            
+
             if (!value) {
                 this.showFieldError(input, `${this.getFieldName(input.name)} is required`);
                 isValid = false;
@@ -1622,42 +1723,42 @@ class TeacherDashboard {
                 }
             }
         });
-        
+
         return isValid;
     }
-    
+
     showFieldError(input, message) {
         input.classList.add('error');
-        
+
         // Remove existing error message for this field
         const existingError = input.parentNode.querySelector('.validation-error');
         if (existingError) {
             existingError.remove();
         }
-        
+
         // Add new error message
         const errorElement = document.createElement('span');
         errorElement.className = 'validation-error';
         errorElement.textContent = message;
         input.parentNode.appendChild(errorElement);
     }
-    
+
     clearFieldError(input) {
         input.classList.remove('error');
-        
+
         // Clear validation-error (for add student form)
         const validationError = input.parentNode.querySelector('.validation-error');
         if (validationError) {
             validationError.remove();
         }
-        
+
         // Hide error-message spans (for holiday form) - don't remove them
         const errorMessage = input.parentNode.querySelector('.error-message');
         if (errorMessage) {
             errorMessage.style.display = 'none';
             errorMessage.textContent = '';
         }
-        
+
         // Also check form-group for any remaining error messages
         const formGroup = input.closest('.form-group');
         if (formGroup) {
@@ -1668,28 +1769,28 @@ class TeacherDashboard {
             }
         }
     }
-    
+
     resetAddStudentForm() {
         const form = document.getElementById('addStudentForm');
         if (form) {
             // Reset form fields
             form.reset();
-            
+
             // Clear validation errors
             form.querySelectorAll('.validation-error').forEach(error => error.remove());
             form.querySelectorAll('input.error').forEach(input => input.classList.remove('error'));
-            
+
             // Clear all error message spans
             form.querySelectorAll('.error-message').forEach(errorMsg => {
                 errorMsg.style.display = 'none';
                 errorMsg.textContent = '';
             });
-            
+
             // Reset image preview
             this.removeImage();
         }
     }
-    
+
     clearAddStudentFormErrors() {
         const form = document.getElementById('addStudentForm');
         if (form) {
@@ -1697,80 +1798,80 @@ class TeacherDashboard {
             form.querySelectorAll('input.error').forEach(input => input.classList.remove('error'));
         }
     }
-    
+
     setupImageUpload() {
         const fileInput = document.getElementById('addProfileImageInput');
         const profilePreview = document.getElementById('addProfilePreview');
-        
+
         if (!fileInput || !profilePreview) return;
-        
+
         // File selection
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file && file.type.startsWith('image/')) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     profilePreview.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
         });
     }
-    
+
     handleImageFile(file) {
         // Check file size (2MB limit)
         if (file.size > 2 * 1024 * 1024) {
             this.showMessage('Image size should be less than 2MB', 'error');
             return;
         }
-        
+
         // Check file type
         if (!file.type.startsWith('image/')) {
             this.showMessage('Please upload a valid image file', 'error');
             return;
         }
-        
+
         const reader = new FileReader();
         reader.onload = (e) => {
             this.showImagePreview(e.target.result);
         };
         reader.readAsDataURL(file);
     }
-    
+
     showImagePreview(imageSrc) {
         const uploadPlaceholder = document.querySelector('.upload-placeholder-clean');
         const imagePreview = document.getElementById('imagePreview');
         const previewImg = document.getElementById('previewImg');
-        
+
         if (uploadPlaceholder && imagePreview && previewImg) {
             previewImg.src = imageSrc;
             uploadPlaceholder.style.display = 'none';
             imagePreview.style.display = 'block';
         }
     }
-    
+
     removeImage() {
         // Handle Add Student form image reset
         const addFileInput = document.getElementById('addProfileImageInput');
         const addProfilePreview = document.getElementById('addProfilePreview');
-        
+
         if (addFileInput && addProfilePreview) {
             addFileInput.value = '';
             addProfilePreview.src = '';
         }
-        
+
         // Handle other forms with different structure (profileImageInput, imagePreview)
         const fileInput = document.getElementById('profileImageInput');
         const uploadPlaceholder = document.querySelector('.upload-placeholder-clean');
         const imagePreview = document.getElementById('imagePreview');
-        
+
         if (fileInput && uploadPlaceholder && imagePreview) {
             fileInput.value = '';
             uploadPlaceholder.style.display = 'flex';
             imagePreview.style.display = 'none';
         }
     }
-    
+
     getFieldName(fieldName) {
         const fieldNames = {
             userId: 'User ID',
@@ -1784,12 +1885,12 @@ class TeacherDashboard {
         };
         return fieldNames[fieldName] || fieldName;
     }
-    
+
     isValidEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     }
-    
+
     isValidMobile(mobile) {
         const mobileRegex = /^[0-9]{10}$/;
         return mobileRegex.test(mobile);
@@ -1800,7 +1901,7 @@ class TeacherDashboard {
         if (!this.validateAddStudentForm()) {
             return;
         }
-        
+
         const formData = new FormData(document.getElementById('addStudentForm'));
 
         try {
@@ -1893,7 +1994,7 @@ class TeacherDashboard {
             if (studentsGrid.innerHTML.includes('No students found')) {
                 studentsGrid.innerHTML = '';
             }
-            
+
             // Add the new student at the beginning with animation
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = studentCard;
@@ -1915,18 +2016,18 @@ class TeacherDashboard {
                     <span class="student-class">${student.class || 'N/A'}</span>
                 </div>
             `;
-            
+
             // If list is empty, remove the "No students added yet" message
             if (recentStudents.innerHTML.includes('No students added yet')) {
                 recentStudents.innerHTML = '';
             }
-            
+
             // Add at the beginning and limit to 5 recent students
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = recentStudentItem;
             const newItem = tempDiv.firstElementChild;
             recentStudents.insertBefore(newItem, recentStudents.firstChild);
-            
+
             // Remove the last item if more than 5
             const items = recentStudents.querySelectorAll('.student-item');
             if (items.length > 5) {
@@ -1994,7 +2095,7 @@ class TeacherDashboard {
             'Are you sure you want to delete this student? This action cannot be undone.',
             'Delete Student'
         );
-        
+
         if (!confirmed) return;
 
         try {
@@ -2104,7 +2205,7 @@ class TeacherDashboard {
     validateField(input) {
         const value = input.value.trim();
         const fieldName = input.previousElementSibling?.textContent || input.name;
-        
+
         if (!value) {
             this.showFieldError(input, `${fieldName} is required`);
             return false;
@@ -2144,7 +2245,7 @@ class TeacherDashboard {
     showFieldError(input, message) {
         input.style.borderColor = '#dc3545';
         input.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
-        
+
         const errorElement = input.parentElement.querySelector('.error-message');
         if (errorElement) {
             errorElement.textContent = message;
@@ -2155,7 +2256,7 @@ class TeacherDashboard {
     clearFieldError(input) {
         input.style.borderColor = '';
         input.style.boxShadow = '';
-        
+
         const errorElement = input.parentElement.querySelector('.error-message');
         if (errorElement) {
             errorElement.textContent = '';
@@ -2650,7 +2751,7 @@ class TeacherDashboard {
             'Are you sure you want to delete this quiz?',
             'Delete Quiz'
         );
-        
+
         if (!confirmed) return;
 
         try {
@@ -2916,9 +3017,9 @@ class TeacherDashboard {
 
     updateWeeklyAvailabilityDisplay(weeklyAvailability) {
         const container = document.getElementById('weeklyAvailabilityDisplay');
-        
+
         const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        
+
         // Create a map of available data for easy lookup
         const availabilityMap = {};
         if (weeklyAvailability && weeklyAvailability.length > 0) {
@@ -3090,7 +3191,7 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const result = await response.json();
-                
+
                 // Update the display with the saved time
                 const displayDiv = slot.querySelector('.time-range-display');
                 if (startTime && endTime) {
@@ -3136,7 +3237,7 @@ class TeacherDashboard {
         // Restore original display value
         if (slot.dataset.originalDisplay) {
             displayDiv.textContent = slot.dataset.originalDisplay;
-            
+
             // Restore input values based on original display
             if (slot.dataset.originalDisplay === 'Not set') {
                 startInput.value = '';
@@ -3211,7 +3312,7 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const result = await response.json();
-                
+
                 // Update the display to show "Not set"
                 const displayDiv = slot.querySelector('.time-range-display');
                 const editDiv = slot.querySelector('.time-range-edit');
@@ -3283,7 +3384,7 @@ class TeacherDashboard {
             if (response.ok) {
                 const result = await response.json();
                 this.showMessage('Weekly schedule saved successfully', 'success');
-                
+
                 // Update the display with the saved data from the server response
                 if (result.availability && result.availability.weeklyAvailability) {
                     this.updateWeeklyAvailabilityDisplay(result.availability.weeklyAvailability);
@@ -3725,7 +3826,7 @@ class TeacherDashboard {
         if (loading) loading.classList.remove('active');
     }
 
-    
+
     // Student Management Functions
     async loadStudentsData() {
         try {
@@ -4008,13 +4109,13 @@ class TeacherDashboard {
         // Add image preview functionality for edit modal
         const editProfileInput = document.getElementById('editProfileImageInput');
         const editProfilePreview = document.getElementById('editProfilePreview');
-        
+
         if (editProfileInput && editProfilePreview) {
-            editProfileInput.addEventListener('change', function(e) {
+            editProfileInput.addEventListener('change', function (e) {
                 const file = e.target.files[0];
                 if (file && file.type.startsWith('image/')) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         editProfilePreview.src = e.target.result;
                     };
                     reader.readAsDataURL(file);
@@ -4053,7 +4154,7 @@ class TeacherDashboard {
             bottom: 0;
             z-index: 1000;
         `;
-        
+
         modal.innerHTML = `
             <div style="
                 background: white;
@@ -4102,14 +4203,14 @@ class TeacherDashboard {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
     }
 
     async confirmDeleteStudent(studentId, modal) {
         try {
             this.showLoading();
-            
+
             const response = await fetch(`/api/teachers/students/${studentId}`, {
                 method: 'DELETE',
                 headers: {
@@ -4311,14 +4412,14 @@ class TeacherDashboard {
         const sessionsHtml = `
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px;">
                 ${sessions.map(session => {
-                    const availableSlots = session.availableSlots || [];
-                    const bookedSlots = session.bookedSlots || [];
-                    const totalSlots = availableSlots.length + bookedSlots.length;
-                    const availableCount = totalSlots - bookedSlots.length;
-                    const status = this.getSessionStatus(session);
-                    const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0;
+            const availableSlots = session.availableSlots || [];
+            const bookedSlots = session.bookedSlots || [];
+            const totalSlots = availableSlots.length + bookedSlots.length;
+            const availableCount = totalSlots - bookedSlots.length;
+            const status = this.getSessionStatus(session);
+            const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots.length / totalSlots) * 100) : 0;
 
-                    return `
+            return `
                         <div class="session-item" data-session-id="${session._id}" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: fit-content;">
                             <!-- Session Header -->
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e3f2fd;">
@@ -4362,7 +4463,7 @@ class TeacherDashboard {
                             <!-- Session Info -->
                             <div style="display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; color: #546e7a;">
                                 <span style="display: flex; align-items: center; gap: 6px;">
-                                    <span style="color: #1976d2;">⏱</span> ${session.sessionDuration || 30} min
+                                    <span style="color: #1976d2;">⏱</span> ${this.formatSessionDuration(session.sessionDuration)}
                                 </span>
                                 <span style="display: flex; align-items: center; gap: 6px;">
                                     <span style="color: #1976d2;">☕</span> ${session.breakDuration || 5} min break
@@ -4371,7 +4472,7 @@ class TeacherDashboard {
                             
                             <!-- Slots Preview -->
                             <div style="margin-bottom: 16px;">
-                                ${this.generateUnifiedSlotsView(availableSlots, bookedSlots, session.date, session._id, session.type)}
+                                ${this.generateUnifiedSlotsView(availableSlots, bookedSlots, session.date, session._id, session.type, session.allowedStudentId)}
                             </div>
                             
                             <!-- Actions -->
@@ -4382,7 +4483,7 @@ class TeacherDashboard {
                             </div>
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
 
@@ -4471,7 +4572,7 @@ class TeacherDashboard {
         }
     }
 
-    generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate, sessionId, sessionType) {
+    generateUnifiedSlotsView(availableSlots, bookedSlots, sessionDate, sessionId, sessionType, allowedStudentId = null) {
         // Create a map of all possible slots with their booking status
         const allSlotsMap = new Map();
 
@@ -4499,7 +4600,8 @@ class TeacherDashboard {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
-                studentName: sessionType === 'personal' ? '' : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked')
+                studentName: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.fullName : 'Personal Session') : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
+                slotId: slot._id // Add slot ID for cancellation
             });
         });
 
@@ -4532,7 +4634,7 @@ class TeacherDashboard {
                             `;
             } else {
                 return `
-                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.studentName}', '${sessionId}')" 
+                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.studentName}', '${sessionId}', '${slot.slotId}')" 
                                         style="background: #d32f2f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s ease;"
                                         onmouseover="this.style.background='#c62828'; this.style.transform='scale(1.05)';"
                                         onmouseout="this.style.background='#d32f2f'; this.style.transform='scale(1)';">
@@ -4546,20 +4648,92 @@ class TeacherDashboard {
         `;
     }
 
-    handleSlotClick(startTime, endTime, type, studentName = null, sessionId = null) {
-        console.log('Slot clicked:', { startTime, endTime, type, studentName, sessionId });
-        
+    handleSlotClick(startTime, endTime, type, studentName = null, sessionId = null, slotId = null) {
+        console.log('Slot clicked:', { startTime, endTime, type, studentName, sessionId, slotId });
+
         if (type === 'available') {
             // Handle available slot click - open assign modal
             this.showAssignSlotModal(startTime, endTime, sessionId);
         } else if (type === 'booked') {
-            // Handle booked slot click
-            this.showMessage(`Booked by ${studentName}: ${startTime} - ${endTime}`, 'info');
-            // You can add more functionality here, like showing student details
+            // Handle booked slot click - show cancellation confirmation
+            this.showCancelSlotConfirmation(startTime, endTime, studentName, sessionId, slotId);
         }
     }
 
-    generateUnifiedSlotsModalView(availableSlots, bookedSlots, sessionDate, sessionType) {
+    showCancelSlotConfirmation(startTime, endTime, studentName, sessionId, slotId) {
+        // Store slot data for later use
+        this.currentCancelSlotData = {
+            startTime,
+            endTime,
+            studentName,
+            sessionId,
+            slotId
+        };
+
+        // Populate modal with slot details
+        const detailsContainer = document.getElementById('cancelSlotDetails');
+        detailsContainer.innerHTML = `
+            <div class="detail-row">
+                <div class="detail-label">
+                    <i class="fas fa-user"></i>
+                    Student
+                </div>
+                <div class="detail-value">${studentName || 'N/A'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">
+                    <i class="fas fa-clock"></i>
+                    Time
+                </div>
+                <div class="detail-value">${startTime} - ${endTime}</div>
+            </div>
+        `;
+
+        // Show the modal
+        this.showModal('cancelSlotModal');
+    }
+
+    async cancelSlot() {
+        if (!this.currentCancelSlotData) {
+            console.error('No slot data available for cancellation');
+            return;
+        }
+
+        const { slotId, sessionId, startTime, endTime, studentName } = this.currentCancelSlotData;
+
+        try {
+            this.showLoading();
+
+            const response = await fetch(`/api/sessions/slots/${slotId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.showMessage(`Slot cancelled successfully: ${startTime} - ${endTime}`, 'success');
+                // Hide the modal
+                this.hideModal('cancelSlotModal');
+                // Clear stored data
+                this.currentCancelSlotData = null;
+                // Refresh the sessions data to show updated slot status
+                await this.loadSessionsData();
+            } else {
+                this.showMessage(result.message || 'Failed to cancel slot', 'error');
+            }
+        } catch (error) {
+            console.error('Error cancelling slot:', error);
+            this.showMessage('Error cancelling slot. Please try again.', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    generateUnifiedSlotsModalView(availableSlots, bookedSlots, sessionDate, sessionType, allowedStudentId = null) {
         // Create a map of all possible slots with their booking status
         const allSlotsMap = new Map();
 
@@ -4585,8 +4759,8 @@ class TeacherDashboard {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
-                studentName: sessionType === 'personal' ? '' : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
-                studentEmail: sessionType === 'personal' ? '' : (slot.bookedBy ? slot.bookedBy.email : '')
+                studentName: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.fullName : 'Personal Session') : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
+                studentEmail: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.email : '') : (slot.bookedBy ? slot.bookedBy.email : '')
             });
         });
 
@@ -4785,7 +4959,7 @@ class TeacherDashboard {
                                     <i class="fas fa-calendar"></i> ${this.formatSessionDate(session.date)}
                                 </span>
                                 <span style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 15px;">
-                                    <i class="fas fa-clock"></i> ${session.sessionDuration || 30} min
+                                    <i class="fas fa-clock"></i> ${this.formatSessionDuration(session.sessionDuration)}
                                 </span>
                             </div>
                         </div>
@@ -4822,7 +4996,7 @@ class TeacherDashboard {
                                 </div>
                                 <div>
                                     <strong style="color: #6c757d;">Session Duration:</strong>
-                                    <div style="margin-top: 5px;">⏱️ ${session.sessionDuration || 30} minutes</div>
+                                    <div style="margin-top: 5px;">⏱️ ${this.formatSessionDuration(session.sessionDuration)}</div>
                                 </div>
                                 <div>
                                     <strong style="color: #6c757d;">Break Duration:</strong>
@@ -4841,7 +5015,7 @@ class TeacherDashboard {
                                 <i class="fas fa-clock"></i> Time Slots
                             </h4>
                             <div class="slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
-                                ${this.generateUnifiedSlotsModalView(availableSlots, bookedSlots, session.date, session.type)}
+                                ${this.generateUnifiedSlotsModalView(availableSlots, bookedSlots, session.date, session.type, session.allowedStudentId)}
                             </div>
                         </div>
                     </div>
@@ -4874,7 +5048,7 @@ class TeacherDashboard {
             'Are you sure you want to delete this session? This action cannot be undone.',
             'Delete Session'
         );
-        
+
         if (!confirmed) return;
 
         try {
@@ -4941,7 +5115,7 @@ class TeacherDashboard {
     showCreateSessionModal() {
         // Reset form to initial state first
         this.resetCreateSessionForm();
-        
+
         // Load students for the dropdown
         this.loadStudentsForSession();
 
@@ -4976,7 +5150,7 @@ class TeacherDashboard {
             // Remove existing listeners to avoid duplicates
             const newForm = createSessionForm.cloneNode(true);
             createSessionForm.parentNode.replaceChild(newForm, createSessionForm);
-            
+
             // Add submit event listener
             newForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -5039,7 +5213,7 @@ class TeacherDashboard {
 
     handleStudentTypeChange(studentType) {
         const particularStudentGroup = document.getElementById('particularStudentGroup');
-        
+
         // Clear all inline styles first
         particularStudentGroup.style.cssText = '';
 
@@ -5303,7 +5477,7 @@ class TeacherDashboard {
                     </div>
                     <div class="detail-row">
                         <label>Session Duration:</label>
-                        <span>${session.sessionDuration || 30} minutes</span>
+                        <span>${this.formatSessionDuration(session.sessionDuration)}</span>
                     </div>
                     <div class="detail-row">
                         <label>Break Duration:</label>
@@ -5402,7 +5576,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        
+
         this.showMessage('Sample CSV downloaded successfully!', 'success');
     }
 
@@ -5423,10 +5597,10 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         // Create message element with enhanced styling
         const messageElement = document.createElement('div');
         messageElement.className = `message ${type}`;
-        
+
         // Add icon based on type
         let icon = '';
-        switch(type) {
+        switch (type) {
             case 'success':
                 icon = '<i class="fas fa-check-circle"></i>';
                 break;
@@ -5439,7 +5613,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             default:
                 icon = '<i class="fas fa-info-circle"></i>';
         }
-        
+
         messageElement.innerHTML = `
             <div class="message-icon">${icon}</div>
             <div class="message-text">${message}</div>
@@ -5473,7 +5647,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         // Create modal overlay
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'modal-overlay confirm-dialog-overlay';
-        
+
         // Create modal content
         const modalContent = document.createElement('div');
         modalContent.className = 'confirm-dialog';
@@ -5496,20 +5670,20 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 </button>
             </div>
         `;
-        
+
         modalOverlay.appendChild(modalContent);
         document.body.appendChild(modalOverlay);
-        
+
         // Trigger animation
         setTimeout(() => {
             modalOverlay.classList.add('show');
             modalContent.classList.add('show');
         }, 10);
-        
+
         // Handle button clicks
         const cancelBtn = modalContent.querySelector('.confirm-cancel');
         const confirmBtn = modalContent.querySelector('.confirm-confirm');
-        
+
         const closeModal = () => {
             modalOverlay.classList.remove('show');
             modalContent.classList.remove('show');
@@ -5519,17 +5693,17 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 }
             }, 300);
         };
-        
+
         cancelBtn.addEventListener('click', () => {
             closeModal();
             if (onCancel) onCancel();
         });
-        
+
         confirmBtn.addEventListener('click', () => {
             closeModal();
             if (onConfirm) onConfirm();
         });
-        
+
         // Close on overlay click
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) {
@@ -5537,7 +5711,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 if (onCancel) onCancel();
             }
         });
-        
+
         // Return promise for async usage
         return new Promise((resolve) => {
             cancelBtn.onclick = () => {
@@ -5615,6 +5789,22 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
 
             // Set slot information
             document.getElementById('slotTimeDisplay').textContent = `${startTime} - ${endTime}`;
+
+            // Set date information if session details are available
+            if (sessionDetails && sessionDetails.date) {
+                const formattedDate = this.formatSessionDate(sessionDetails.date);
+                document.getElementById('slotDateDisplay').textContent = formattedDate;
+            } else {
+                document.getElementById('slotDateDisplay').textContent = 'Date not available';
+            }
+
+            // Set session type information
+            if (sessionDetails && sessionDetails.allowedStudentId) {
+                document.getElementById('sessionTypeDisplay').textContent = 'Personal Session';
+            } else {
+                document.getElementById('sessionTypeDisplay').textContent = 'Common Session';
+            }
+
             document.getElementById('assignSessionId').value = sessionId;
             document.getElementById('assignStartTime').value = startTime;
 
@@ -5630,7 +5820,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 if (modalTitle) {
                     modalTitle.textContent = 'Personal Session Slot';
                 }
-                
+
                 // Remove required attribute from student select since it's hidden
                 const studentSelect = document.getElementById('studentSelect');
                 if (studentSelect) {
@@ -5644,7 +5834,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 if (modalTitle) {
                     modalTitle.textContent = 'Assign Slot to Student';
                 }
-                
+
                 // Add required attribute back to student select
                 const studentSelect = document.getElementById('studentSelect');
                 if (studentSelect) {
@@ -5700,10 +5890,10 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             if (response.ok) {
                 const students = await response.json();
                 const selectElement = document.getElementById('studentSelect');
-                
+
                 if (selectElement) {
                     selectElement.innerHTML = '<option value="">Select a student</option>';
-                    
+
                     students.forEach(student => {
                         const option = document.createElement('option');
                         option.value = student._id;
@@ -5717,7 +5907,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         } catch (error) {
             console.error('Error loading students:', error);
             this.showMessage('Error loading students', 'error');
-            
+
             // Show error in select element
             const selectElement = document.getElementById('studentSelect');
             if (selectElement) {
@@ -5729,7 +5919,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
     async handleAssignSlotSubmit() {
         try {
             const form = document.getElementById('assignSlotForm');
-            
+
             // Clear previous errors
             form.querySelectorAll('.error-message').forEach(error => {
                 error.style.display = 'none';
@@ -5761,7 +5951,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             // Check if student selection is required (only if the dropdown is visible)
             const studentFormGroup = document.querySelector('#assignSlotForm .form-group:nth-child(2)');
             const isStudentSelectionRequired = studentFormGroup && studentFormGroup.style.display !== 'none';
-            
+
             if (isStudentSelectionRequired && !studentId) {
                 this.showFieldError(document.getElementById('studentSelect'), 'Please select a student');
                 isValid = false;
@@ -5801,7 +5991,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             if (response.ok) {
                 this.showMessage(result.message || 'Slot assigned successfully!', 'success');
                 this.hideAssignSlotModal();
-                
+
                 // Reload sessions data to show the updated slot
                 await this.loadSessionsData();
             } else {

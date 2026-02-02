@@ -3,7 +3,7 @@ const jwtAuth = require("../middleware/auth");
 const roleAuth = require("../middleware/roleAuth");
 const {createSession,getStudentSessions} = require("../controllers/sessionController");
 const { createSessionValidation, validateSession } = require("../middleware/validation/sessionValidation");
-const { createSessionSlots,getMySessionSlots,confirmSessionSlot,getMyConfirmedSessions,getTeacherSessions,getSessionById,deleteSession,getAllSlotsForSession,assignSlotToStudent} = require("../controllers/sessionSlotController");
+const { createSessionSlots,getMySessionSlots,confirmSessionSlot,getMyConfirmedSessions,getTeacherSessions,getSessionById,deleteSession,getAllSlotsForSession,assignSlotToStudent,cancelSlot} = require("../controllers/sessionSlotController");
 const { createSessionSlotsValidation, confirmSessionSlotValidation, validateSessionSlot} = require("../middleware/validation/sessionSlotValidation");
 
 
@@ -50,6 +50,7 @@ router.get("/:id/all-slots", jwtAuth, roleAuth("teacher"), getAllSlotsForSession
 router.delete("/:id", jwtAuth, roleAuth("teacher"), deleteSession);
 router.post("/confirm", jwtAuth, roleAuth("student"), confirmSessionSlotValidation, validateSessionSlot,runValidation,confirmSessionSlot);
 router.post("/assign-slot", jwtAuth, roleAuth("teacher"), assignSlotToStudent);
+router.post("/slots/:slotId/cancel", jwtAuth, roleAuth("teacher"), cancelSlot);
 
 module.exports = router;
 

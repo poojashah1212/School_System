@@ -57,9 +57,9 @@
 
                     <div class="cards">
                         <div class="card">
-                            <h3>Recent Students</h3>
-                            <div id="recentStudents">
-                                <p class="empty">No students added yet</p>
+                            <h3>Recent Sessions</h3>
+                            <div id="recentSessions">
+                                <p class="empty">No sessions created yet</p>
                             </div>
                         </div>
                         <div class="card">
@@ -680,18 +680,30 @@
                 <button class="modal-close" id="closeAssignSlotModal">&times;</button>
             </div>
             <form id="assignSlotForm" novalidate>
+                <!-- Selected Slot Section -->
                 <div class="form-group">
-                    <label>Selected Slot</label>
-                    <div id="selectedSlotInfo" style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
-                        <div style="font-weight: 500; color: #1976d2; margin-bottom: 4px;">Time Slot</div>
-                        <div id="slotTimeDisplay" style="color: #546e7a;"></div>
+                    <label style="font-weight: 600; color: #374151; margin-bottom: 8px; display: block;">Selected Slot</label>
+                    <div id="selectedSlotInfo" style="background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <i class="fas fa-clock" style="color: #6b7280;"></i>
+                            <div id="slotTimeDisplay" style="font-weight: 500; color: #111827;"></div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <i class="fas fa-calendar" style="color: #6b7280;"></i>
+                            <div id="slotDateDisplay" style="color: #6b7280;"></div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-tag" style="color: #6b7280;"></i>
+                            <div id="sessionTypeDisplay" style="color: #6b7280;"></div>
+                        </div>
                     </div>
                 </div>
                 
+                <!-- Select Student Section -->
                 <div class="form-group">
-                    <label for="studentSelect">Select Student *</label>
-                    <select name="studentId" id="studentSelect" required>
-                        <option value="">Loading students...</option>
+                    <label for="studentSelect" style="font-weight: 600; color: #374151; margin-bottom: 8px; display: block;">Select Student</label>
+                    <select name="studentId" id="studentSelect" required style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: white;">
+                        <option value="">Select a student...</option>
                     </select>
                     <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                 </div>
@@ -699,11 +711,41 @@
                 <input type="hidden" id="assignSessionId" name="sessionId">
                 <input type="hidden" id="assignStartTime" name="startTime">
                 
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelAssignBtn">Cancel</button>
-                    <button type="submit" class="btn-primary">Assign Slot</button>
+                <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                    <button type="button" class="btn-secondary" id="cancelAssignBtn" style="padding: 10px 20px; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 6px; cursor: pointer; font-weight: 500;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Assign Slot</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Cancel Slot Confirmation Modal -->
+    <div class="modal" id="cancelSlotModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cancel Slot</h3>
+                <button class="modal-close" id="closeCancelSlotModal">&times;</button>
+            </div>
+            <div class="cancel-slot-content">
+                <div class="cancel-slot-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="cancel-slot-message">
+                    <h4>Are you sure you want to cancel this slot?</h4>
+                    <p>This action will make the slot available again for booking.</p>
+                </div>
+                <div class="cancel-slot-details" id="cancelSlotDetails">
+                    <!-- Slot details will be populated here -->
+                </div>
+                <div class="cancel-slot-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelSlotBtnCancel">
+                        <i class="fas fa-times"></i> No, Keep Slot
+                    </button>
+                    <button type="button" class="btn btn-danger" id="cancelSlotBtnConfirm">
+                        <i class="fas fa-trash"></i> Yes, Cancel Slot
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
