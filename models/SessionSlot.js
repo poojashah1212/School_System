@@ -13,6 +13,10 @@ const BookedSlotSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, ref: "User",
     required: true
   },
+  assignedBy: {
+    type: mongoose.Schema.Types.ObjectId, ref: "User",
+    default: null
+  },
   bookedAt: {
     type: Date,
     default: Date.now

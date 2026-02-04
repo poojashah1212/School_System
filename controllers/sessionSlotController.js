@@ -98,7 +98,7 @@ exports.createSessionSlots = async (req, res) => {
       sessionId: session._id,
       teacherId,
       teacherTimezone,
-      studentTimezone: teacherTimezone // For teacher session creation, use teacher timezone
+      studentTimezone: teacherTimezone
     });
 
     console.log('createSessionSlots - generated slots:', availableSlots.slice(0, 3));
@@ -405,6 +405,7 @@ exports.confirmSessionSlot = async (req, res) => {
       startTime: bookingStartUTC.toDate(),
       endTime: bookingEndUTC.toDate(),
       bookedBy: studentId,
+      assignedBy: null, // Student booked it themselves, not assigned by teacher
       bookedAt: new Date()
     };
 
@@ -925,6 +926,7 @@ exports.assignSlotToStudent = async (req, res) => {
       startTime: moment.utc(matchingSlot.teacherStart).toDate(),
       endTime: moment.utc(matchingSlot.teacherEnd).toDate(),
       bookedBy: student._id,
+      assignedBy: teacherId, // Track that teacher assigned this slot
       bookedAt: new Date()
     };
 

@@ -2,6 +2,8 @@ const User = require("../models/user");
 const fs = require("fs");
 const csv = require("csv-parser");
 const bcrypt = require("bcryptjs");
+const { sendEmail } = require("../utils/emailService");
+const emailTemplates = require("../services/emailTemplates");
 
 exports.getStudentById = async (req, res) => {
   try {
@@ -83,14 +85,6 @@ exports.createStudent = async (req, res) => {
       return res.status(400).json({ message: "Required fields missing" });
     }
 
-    const exists = await User.findOne({
-      $or: [{ userId }, { email }]
-    });
-
-    if (exists) {
-      return res.status(400).json({ message: "UserId or Email already in use" });
-    }
-
     const hashed = await bcrypt.hash(password, 10);
 
     const student = await User.create({
@@ -109,11 +103,47 @@ exports.createStudent = async (req, res) => {
       profileImage: req.file ? `/uploads/profiles/${req.file.filename}` : ""
     });
 
-    // Get updated student count
     const totalStudents = await User.countDocuments({
       role: "student",
       teacherId: req.user.id
     });
+
+    try {
+      const teacher = await User.findById(req.user.id).select('fullName email');
+      console.log('Teacher found for email:', teacher ? teacher.email : 'NOT FOUND');
+      
+      if (teacher) {
+        try {
+          console.log('Sending student welcome email to:', student.email);
+          const studentEmailResult = await sendEmail({
+            to: student.email,
+            subject: emailTemplates.student_welcome.subject,
+            html: emailTemplates.student_welcome.html(student.fullName, teacher.fullName, teacher.email, student.email, password)
+          });
+          console.log('Student email sent successfully to:', student.email);
+          
+          // Add delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (studentEmailError) {
+          console.error('Student email failed:', studentEmailError);
+        }
+        
+        try {
+          console.log('Sending teacher notification email to:', teacher.email);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const teacherEmailResult = await sendEmail({
+            to: teacher.email,
+            subject: emailTemplates.student_added.subject,
+            html: emailTemplates.student_added.html(teacher.fullName, student.fullName, student.email)
+          });
+          console.log('Teacher email sent successfully to:', teacher.email);
+        } catch (teacherEmailError) {
+          console.error('Teacher email failed:', teacherEmailError);
+        }
+      }
+    } catch (emailError) {
+      console.error('Email sending process failed:', emailError);
+    }
 
     res.status(201).json({
       message: "Student created successfully",
@@ -423,7 +453,9 @@ exports.uploadStudentsCSV = async (req, res) => {
     } = row;
 
     const exists = await User.findOne({
-      $or: [{ userId }, { email }]
+      $or: [{ userId }, { email }],
+      role: "student",
+      teacherId: teacherId
     });
 
     if (exists) {
@@ -439,7 +471,7 @@ exports.uploadStudentsCSV = async (req, res) => {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      await User.create({
+      const student = await User.create({
         role: "student",
         userId,
         fullName,
@@ -453,6 +485,35 @@ exports.uploadStudentsCSV = async (req, res) => {
         teacherId,
         timezone: timezone || "Asia/Kolkata"
       });
+
+      // Send welcome email to student with credentials (PRIORITY)
+      try {
+        const teacher = await User.findById(teacherId).select('fullName email');
+        
+        if (teacher) {
+          const studentEmailResult = await sendEmail({
+            to: student.email,
+            subject: emailTemplates.student_welcome.subject,
+            html: emailTemplates.student_welcome.html(student.fullName, teacher.fullName, teacher.email, student.email, password)
+          });
+          
+          // Add delay to avoid rate limiting (1 second delay between students)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Also send notification to teacher for CSV uploads
+          try {
+            const teacherEmailResult = await sendEmail({
+              to: teacher.email,
+              subject: emailTemplates.student_added.subject,
+              html: emailTemplates.student_added.html(teacher.fullName, student.fullName, student.email)
+            });
+          } catch (teacherEmailError) {
+            // Continue even if teacher email fails
+          }
+        }
+      } catch (emailError) {
+        // Email errors should not affect student creation
+      }
 
       inserted++;
     } catch (err) {

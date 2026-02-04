@@ -72,7 +72,7 @@ const userSchema = new mongoose.Schema(
         values: ["student", "teacher"],
         message: "Role must be either 'student' or 'teacher'"
       },
-      default: "student"
+      default: "teacher"
     },
     profileImage: {
   type: String,

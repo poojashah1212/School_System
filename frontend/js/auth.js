@@ -10,6 +10,7 @@ class AuthSystem {
         this.setupPasswordToggle();
         this.setupRoleHandler();
         this.setupFileUpload();
+        this.setupTimezoneCountryCode();
     }
 
     setupForms() {
@@ -23,7 +24,15 @@ class AuthSystem {
                 const input = document.getElementById(btn.dataset.target);
                 const icon = btn.querySelector('.eye-icon');
                 input.type = input.type === 'password' ? 'text' : 'password';
-                icon.textContent = input.type === 'password' ? '👁️' : '🙈';
+                
+                // Toggle Font Awesome icons
+                if (input.type === 'password') {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                } else {
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                }
             });
         });
     }
@@ -187,7 +196,7 @@ class AuthSystem {
             
             const result = await res.json();
             if (res.ok) {
-                this.showMessage('Login successful!', 'success');
+                this.showMessage('Welcome back!', 'success');
                 localStorage.setItem('token', result.token);
                 
                 // Check user role and redirect accordingly
@@ -227,10 +236,10 @@ class AuthSystem {
             
             const result = await res.json();
             if (res.ok) {
-                this.showMessage(result.message || 'Account created! Redirecting to login...', 'success');
+                this.showMessage(result.message || 'Account created successfully!', 'success');
                 setTimeout(() => {
-                    window.location.href = '/html/index.html';
-                }, 2000);
+                    window.location.href = '/html/login.html';
+                }, 1500);
             } else {
                 if (result.errors) {
                     result.errors.forEach(err => {
@@ -261,7 +270,6 @@ class AuthSystem {
             ['signup-password', 'password'],
             ['signup-age', 'required'],
             ['signup-mobileNo', 'mobile'],
-            ['signup-role', 'required'],
             ['signup-city', 'required'],
             ['signup-state', 'required']
         ];
@@ -270,13 +278,6 @@ class AuthSystem {
             const input = document.getElementById(id);
             if (input && !this.validateField(input, type)) isValid = false;
         });
-
-        // Handle class field for students
-        const role = document.getElementById('signup-role').value;
-        if (role === 'student') {
-            const classInput = document.getElementById('signup-class');
-            if (classInput && !this.validateField(classInput, 'required')) isValid = false;
-        }
 
         return isValid;
     }
@@ -301,7 +302,19 @@ class AuthSystem {
         const container = document.getElementById('message-container');
         const msg = document.createElement('div');
         msg.className = `message ${type}`;
-        msg.innerHTML = `${text}<button class="message-close">&times;</button>`;
+        
+        // Simple minimal design for success messages
+        if (type === 'success' && text === 'Welcome back!') {
+            msg.innerHTML = `
+                <div class="success-content">
+                    <div class="success-title">Welcome back!</div>
+                </div>
+                <button class="message-close">&times;</button>
+            `;
+        } else {
+            msg.innerHTML = `${text}<button class="message-close">&times;</button>`;
+        }
+        
         container.appendChild(msg);
 
         setTimeout(() => msg.remove(), 5000);
@@ -310,6 +323,59 @@ class AuthSystem {
 
     clearMessages() {
         document.getElementById('message-container').innerHTML = '';
+    }
+
+    setupTimezoneCountryCode() {
+        const timezoneSelect = document.getElementById('signup-timezone');
+        const countryCodeElement = document.getElementById('country-code');
+        
+        if (!timezoneSelect || !countryCodeElement) return;
+
+        // Mapping of timezones to country codes
+        const timezoneCountryCodeMap = {
+            'Asia/Kolkata': '+91',
+            'Asia/Tokyo': '+81',
+            'Asia/Shanghai': '+86',
+            'Asia/Hong_Kong': '+852',
+            'Asia/Singapore': '+65',
+            'Asia/Dubai': '+971',
+            'Asia/Seoul': '+82',
+            'Asia/Bangkok': '+66',
+            'Asia/Jakarta': '+62',
+            'America/New_York': '+1',
+            'America/Los_Angeles': '+1',
+            'America/Chicago': '+1',
+            'America/Denver': '+1',
+            'America/Toronto': '+1',
+            'America/Vancouver': '+1',
+            'America/Mexico_City': '+52',
+            'America/Sao_Paulo': '+55',
+            'Europe/London': '+44',
+            'Europe/Paris': '+33',
+            'Europe/Berlin': '+49',
+            'Europe/Moscow': '+7',
+            'Europe/Rome': '+39',
+            'Europe/Madrid': '+34',
+            'Africa/Cairo': '+20',
+            'Africa/Johannesburg': '+27',
+            'Australia/Sydney': '+61',
+            'Australia/Melbourne': '+61',
+            'Australia/Perth': '+61',
+            'Pacific/Auckland': '+64'
+        };
+
+        // Function to update country code based on selected timezone
+        const updateCountryCode = () => {
+            const selectedTimezone = timezoneSelect.value;
+            const countryCode = timezoneCountryCodeMap[selectedTimezone] || '+1';
+            countryCodeElement.textContent = countryCode;
+        };
+
+        // Add event listener to timezone select
+        timezoneSelect.addEventListener('change', updateCountryCode);
+
+        // Set initial country code based on current selection
+        updateCountryCode();
     }
 }
 

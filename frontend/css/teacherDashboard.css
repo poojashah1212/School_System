@@ -2279,6 +2279,12 @@
     transform: translateX(4px);
 }
 
+.quiz-item.clickable:hover {
+    background: #e3f2fd;
+    transform: translateX(6px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
 .quiz-icon {
     width: 40px;
     height: 40px;
@@ -2412,6 +2418,12 @@
 .holiday-item:hover {
     border-color: #dbeafe;
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+}
+
+.holiday-item.clickable:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
 }
 
 .holiday-icon {
@@ -2617,6 +2629,26 @@
 
 .btn-delete:hover {
     background: #bfdbfe;
+}
+
+.holiday-item .btn-delete {
+    background-color: #e0f2fe;
+    color: #3b82f6;
+    border: none;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    padding: 0;
+}
+
+.holiday-item .btn-delete:hover {
+    background-color: #bfdbfe;
+    color: #1e40af;
 }
 
 /* Enhanced Quiz Card Styles */

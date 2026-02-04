@@ -221,6 +221,20 @@ class StudentDashboard {
         this.loadDashboardData();
     }
 
+    formatDuration(duration) {
+        const minutes = parseInt(duration);
+        if (minutes >= 60) {
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            if (remainingMinutes === 0) {
+                return `${hours} hour${hours > 1 ? 's' : ''}`;
+            } else {
+                return `${hours} hour${hours > 1 ? 's' : ''} ${remainingMinutes} min`;
+            }
+        }
+        return `${minutes} minutes`;
+    }
+
     async loadMySessions() {
         try {
             const data = await window.apiService.get('/sessions/mysessions');
@@ -297,7 +311,7 @@ class StudentDashboard {
 
         console.log('Booked Slots:', bookedSlots); // Debug booked slots
 
-        const sessionsHtml = await Promise.all(data.sessions.map(async (session) => {
+        const sessionCardsHtml = await Promise.all(data.sessions.map(async (session) => {
             console.log('Current Session:', session); // Debug current session
             // Backend returns dates in Asia/Kolkata timezone, convert to student's timezone
             let displayDate = session.date || 'Date not specified';
@@ -343,108 +357,122 @@ class StudentDashboard {
             console.log('Final booked slot times set:', Array.from(bookedSlotTimes));
             console.log('Available slots from backend:', session.availableSlots);
 
-            // Preserve order: start from backend-provided available slots (already filtered for common sessions)
-            // Then convert the *existing* slot to green if it's booked by the logged-in student.
-            const slotsToRender = (session.availableSlots || []).map(slot => {
+            // Get all slots (both available and booked) and maintain original backend order
+            const allSlots = [];
+            
+            // First, add all available slots in their original order
+            (session.availableSlots || []).forEach(slot => {
                 const start = this.formatSlotTime(slot.startTime, session);
                 const end = this.formatSlotTime(slot.endTime, session);
-                return {
-                    startTime: start,
-                    endTime: end,
-                    isBookedByMe: bookedSlotTimes.has(start)
-                };
-            }).filter(s => s.startTime && s.startTime !== 'Time not specified');
-
-            console.log('Slots to render after initial mapping:', slotsToRender);
-
-            // If the booked slot is no longer present in availableSlots (because it's booked), insert it back
-            // in the correct chronological position (still no duplicates).
-            const compareHHmm = (a, b) => {
-                const [ah, am] = String(a).split(':').map(Number);
-                const [bh, bm] = String(b).split(':').map(Number);
-                return (ah * 60 + am) - (bh * 60 + bm);
-            };
-
-            myBookedSlotsByTime.forEach((slot, start) => {
-                const exists = slotsToRender.some(s => s.startTime === start);
-                console.log('Checking booked slot:', start, 'exists in available slots:', exists);
-                
-                if (exists) return;
-
-                console.log('Inserting booked slot back:', start);
-                const toInsert = {
-                    startTime: start,
-                    endTime: slot.endTime,
-                    isBookedByMe: true
-                };
-
-                let insertIndex = slotsToRender.length;
-                for (let i = 0; i < slotsToRender.length; i++) {
-                    if (compareHHmm(start, slotsToRender[i].startTime) < 0) {
-                        insertIndex = i;
-                        break;
-                    }
+                if (start && start !== 'Time not specified') {
+                    allSlots.push({
+                        startTime: start,
+                        endTime: end,
+                        isBookedByMe: bookedSlotTimes.has(start)
+                    });
                 }
-
-                slotsToRender.splice(insertIndex, 0, toInsert);
-                console.log('Slot inserted. Total slots now:', slotsToRender.length);
             });
-            
-            console.log('My booked slots by time map:', Array.from(myBookedSlotsByTime.entries()));
-            console.log('Final slots to render:', slotsToRender);
+
+            // Then, add any booked slots that aren't already in the list (maintaining original order)
+            myBookedSlotsByTime.forEach((slot, start) => {
+                const exists = allSlots.some(s => s.startTime === start);
+                if (!exists) {
+                    allSlots.push({
+                        startTime: start,
+                        endTime: slot.endTime,
+                        isBookedByMe: true
+                    });
+                }
+            });
+
+            console.log('Final slots to render (maintaining original order):', allSlots);
             
             return `
-            <div class="session-card ${session.type === 'personal' ? 'personal-session' : 'common-session'}">
-                <div class="session-header">
-                    <div class="session-title-section">
-                        <h3>${session.title}</h3>
-                        <span class="session-type-badge ${session.type}">
-                            ${session.type === 'personal' ? '<i class="fas fa-user"></i> Personal Session' : '<i class="fas fa-users"></i> Common Session'}
+            <div class="session-card" data-session-id="${session.sessionId || session._id}" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: fit-content;">
+                <!-- Session Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e3f2fd;">
+                    <div>
+                        <h3 style="margin: 0; color: #1976d2; font-size: 18px; font-weight: 500;">${session.title}</h3>
+                        <p style="margin: 4px 0 0 0; color: #546e7a; font-size: 14px;">${displayDate}</p>
+                        <p style="margin: 4px 0 0 0; color: #4caf50; font-size: 13px; font-weight: 500;">
+                            <span style="background: #e8f5e8; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                ${session.type === 'personal' ? '<i class="fas fa-user"></i> Personal Session' : '<i class="fas fa-users"></i> Common Session'}
+                            </span>
+                        </p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="background: #1976d2; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500; text-transform: uppercase;">
+                            Available
                         </span>
                     </div>
                 </div>
-                <div class="session-details">
-                    <div class="session-info">
-                        <i class="fas fa-clock"></i>
-                        <span>Duration: ${session.sessionDuration || '60'} minutes</span>
+                
+                <!-- Session Stats -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #e3f2fd; margin-bottom: 16px; border-radius: 4px; overflow: hidden;">
+                    <div style="background: white; padding: 12px; text-align: center;">
+                        <div class="stat-total" style="font-size: 20px; font-weight: 600; color: #1976d2;">${allSlots.length}</div>
+                        <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
                     </div>
-                    <div class="session-info">
-                        <i class="fas fa-calendar"></i>
-                        <span>${displayDate}</span>
+                    <div style="background: white; padding: 12px; text-align: center;">
+                        <div class="stat-available" style="font-size: 20px; font-weight: 600; color: #4caf50;">${allSlots.filter(s => !s.isBookedByMe).length}</div>
+                        <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Available</div>
+                    </div>
+                    <div style="background: white; padding: 12px; text-align: center;">
+                        <div class="stat-booked" style="font-size: 20px; font-weight: 600; color: #ff9800;">${allSlots.filter(s => s.isBookedByMe).length}</div>
+                        <div style="font-size: 11px; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px;">Booked</div>
                     </div>
                 </div>
-                <div class="available-slots">
-                    <h4>Available Slots (${slotsToRender.filter(s => !s.isBookedByMe).length})</h4>
-                    <div class="slots-grid">
-                        ${slotsToRender.length > 0 ? slotsToRender.map(slot => {
+                
+                <!-- Session Info -->
+                <div style="display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; color: #546e7a;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span style="color: #1976d2;">⏱</span> ${this.formatDuration(session.sessionDuration || '60')}
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span style="color: #1976d2;">☕</span> ${session.breakDuration || 5} min break
+                    </span>
+                </div>
+                
+                <!-- Available Slots -->
+                <div style="margin-bottom: 16px;">
+                    <h4 class="available-slots-header" style="margin: 0 0 12px 0; color: #1976d2; font-size: 14px; font-weight: 500;">Available Slots (${allSlots.filter(s => !s.isBookedByMe).length})</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${allSlots.length > 0 ? allSlots.map(slot => {
                             const startTime = slot.startTime;
                             const endTime = slot.endTime;
-
-                            // Only show green for the logged-in student's booked slot
                             const isBookedByMe = slot.isBookedByMe === true;
-
-                            console.log('Checking slot:', startTime, '- isBookedByMe:', isBookedByMe);
 
                             if (isBookedByMe) {
                                 return `
-                                <button class="slot-btn booked" disabled data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}">
-                                    <div class="slot-time">${startTime} - ${endTime}</div>
-                                    <div class="booked-indicator">Your Booking</div>
-                                </button>
+                                <span class="slot-badge booked" data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}" 
+                                      style="background: #e8f5e8; color: #2e7d32; border: 1px solid #4caf50; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: default;">
+                                    <i class="fas fa-check"></i> ${startTime} - ${endTime}
+                                </span>
                             `;
                             } else {
                                 return `
-                                <button class="slot-btn" onclick="studentDashboard.bookSession('${session.sessionId || session._id}', '${startTime}', '${normalizedDate}')" data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}">
-                                    <div class="slot-time">${startTime} - ${endTime}</div>
-                                </button>
+                                <span class="slot-badge" onclick="studentDashboard.bookSession('${session.sessionId || session._id}', '${startTime}', '${normalizedDate}')" 
+                                      data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}"
+                                      style="background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;"
+                                      onmouseover="this.style.background='#bbdefb'; this.style.borderColor='#90caf9';" 
+                                      onmouseout="this.style.background='#e3f2fd'; this.style.borderColor='#bbdefb';">
+                                    <i class="fas fa-plus"></i> ${startTime} - ${endTime}
+                                </span>
                             `;
                             }
-                        }).join('') : '<p class="no-slots">No available slots</p>'}
+                        }).join('') : '<p style="color: #9e9e9e; font-size: 13px; margin: 0;">No available slots</p>'}
                     </div>
                 </div>
             </div>
         `;
         }));
+
+        // Create grid container with responsive layout similar to teacher dashboard
+        const sessionsGridHtml = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                ${sessionCardsHtml.join('')}
+            </div>
+        `;
 
         mainContent.innerHTML = `
             <div class="sessions-container">
@@ -462,9 +490,7 @@ class StudentDashboard {
                         </div>
                     </div>
                 </div>
-                <div class="sessions-grid">
-                    ${sessionsHtml.join('')}
-                </div>
+                ${sessionsGridHtml}
                 ${data.pagination ? `
                 <div class="pagination-info">
                     <p>Page ${data.pagination.page} of ${data.pagination.pages} (Total: ${data.pagination.total} sessions)</p>
@@ -474,15 +500,15 @@ class StudentDashboard {
     }
 
     async bookSession(sessionId, startTime, sessionDate) {
-        const button = event.target.closest('.slot-btn');
-        const originalContent = button.innerHTML;
+        const badge = event.target.closest('.slot-badge');
+        const originalContent = badge.innerHTML;
         
         // Store booking data for modal confirmation
         this.pendingBookingData = {
             sessionId: sessionId,
             startTime: startTime,
             sessionDate: sessionDate,
-            button: button,
+            badge: badge,
             originalContent: originalContent
         };
         
@@ -538,26 +564,161 @@ class StudentDashboard {
                 availableSessionsElement.textContent = totalSlots;
             }
 
-            // Update recent activity with sessions
-            const activityList = document.querySelector('.activity-list');
-            if (activityList && sessions.success && sessions.sessions && sessions.sessions.length > 0) {
-                const recentSessions = sessions.sessions.slice(0, 3);
-                const activityHtml = recentSessions.map(session => `
-                    <div class="activity-item">
-                        <div class="activity-icon">
-                            <i class="fas fa-calendar-plus"></i>
-                        </div>
-                        <div class="activity-details">
-                            <h4>New Session: ${session.title}</h4>
-                            <p class="activity-time">${session.date} - ${session.availableSlots ? session.availableSlots.length : 0} slots available</p>
-                        </div>
-                    </div>
-                `).join('');
-                activityList.innerHTML = activityHtml;
-            }
+            // Update recent sessions with enhanced UI
+            this.updateRecentSessions(sessions);
         } catch (error) {
             console.error('Error updating sessions data:', error);
         }
+    }
+
+    updateRecentSessions(sessions) {
+        const recentSessionsList = document.getElementById('recent-sessions-list');
+        if (!recentSessionsList) return;
+
+        if (!sessions.success || !sessions.sessions || sessions.sessions.length === 0) {
+            recentSessionsList.innerHTML = `
+                <div class="no-sessions">
+                    <i class="fas fa-calendar-alt"></i>
+                    <p>No recent sessions available</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Get recent sessions (first 3)
+        const recentSessions = sessions.sessions.slice(0, 3);
+        
+        const recentSessionsHtml = recentSessions.map(session => {
+            const sessionTitle = session.title || 'Untitled Session';
+            const sessionDate = session.date || 'Date not specified';
+            const availableSlots = session.availableSlots ? session.availableSlots.length : 0;
+            const sessionType = session.type || 'common';
+            
+            // Get subject icon based on title
+            const subjectIcon = this.getSubjectIcon(sessionTitle);
+            const subjectClass = this.getSubjectClass(sessionTitle);
+            
+            // Determine status
+            let status = 'available';
+            let statusText = 'Available';
+            
+            if (availableSlots === 0) {
+                status = 'completed';
+                statusText = 'Completed';
+            } else if (this.hasBookedSlot(session)) {
+                status = 'booked';
+                statusText = 'Booked';
+            }
+
+            return `
+                <div class="recent-session-item" onclick="studentDashboard.navigateToPage('sessions')">
+                    <div class="recent-session-icon ${subjectClass}">
+                        <i class="fas ${subjectIcon}"></i>
+                    </div>
+                    <div class="recent-session-details">
+                        <div class="recent-session-title">${sessionTitle}</div>
+                        <div class="recent-session-meta">
+                            <div class="recent-session-date">
+                                <i class="fas fa-calendar"></i>
+                                <span>${sessionDate}</span>
+                            </div>
+                            <div class="recent-session-slots">
+                                <i class="fas fa-clock"></i>
+                                <span>${availableSlots} slots</span>
+                            </div>
+                            <div class="recent-session-status ${status}">
+                                ${statusText}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        recentSessionsList.innerHTML = recentSessionsHtml;
+    }
+
+    getSubjectIcon(title) {
+        const titleLower = title.toLowerCase();
+        if (titleLower.includes('math')) return 'fa-calculator';
+        if (titleLower.includes('science')) return 'fa-flask';
+        if (titleLower.includes('english')) return 'fa-book';
+        if (titleLower.includes('history')) return 'fa-landmark';
+        if (titleLower.includes('physics')) return 'fa-atom';
+        if (titleLower.includes('chemistry')) return 'fa-vial';
+        if (titleLower.includes('biology')) return 'fa-dna';
+        if (titleLower.includes('geography')) return 'fa-globe';
+        if (titleLower.includes('computer')) return 'fa-laptop-code';
+        return 'fa-graduation-cap';
+    }
+
+    getSubjectClass(title) {
+        const titleLower = title.toLowerCase();
+        if (titleLower.includes('math')) return 'math';
+        if (titleLower.includes('science')) return 'science';
+        if (titleLower.includes('english')) return 'english';
+        if (titleLower.includes('history')) return 'history';
+        return 'default';
+    }
+
+    hasBookedSlot(session) {
+        // Check if student has any booked slots in this session
+        // This would need to be implemented based on your booked sessions data
+        return false; // Placeholder
+    }
+
+    renderTimeSlots(slots, targetElementId, selectedSlots = []) {
+        const targetElement = document.getElementById(targetElementId);
+        if (!targetElement) {
+            console.error(`Target element with ID ${targetElementId} not found.`);
+            return;
+        }
+
+        targetElement.innerHTML = ''; // Clear previous slots
+
+        if (!slots || slots.length === 0) {
+            targetElement.innerHTML = '<p>No slots available.</p>';
+            return;
+        }
+
+        // Maintain original order - render slots in the same sequence regardless of selection
+        slots.forEach(slot => {
+            const isSelected = selectedSlots.includes(slot.id); // Check if slot is selected
+            const buttonClass = isSelected ? 'time-slot-button selected' : 'time-slot-button';
+            const icon = isSelected ? '<i class="fas fa-check"></i>' : '<i class="fas fa-plus"></i>';
+
+            const button = document.createElement('button');
+            button.className = buttonClass;
+            button.innerHTML = `${icon} ${slot.time}`;
+            button.setAttribute('data-slot-id', slot.id); // Add data attribute for identification
+            button.onclick = () => this.toggleSlotSelection(slot.id, targetElementId);
+            targetElement.appendChild(button);
+        });
+    }
+
+    toggleSlotSelection(slotId, targetElementId) {
+        // Get current slots data to maintain order
+        const targetElement = document.getElementById(targetElementId);
+        if (!targetElement) return;
+
+        // Extract slot data from existing buttons to maintain order
+        const slotButtons = targetElement.querySelectorAll('.time-slot-button');
+        const currentSlots = Array.from(slotButtons).map(button => ({
+            id: button.getAttribute('data-slot-id'),
+            time: button.textContent.trim().replace(/^[✓➕]\s*/, '') // Remove icon and get time
+        }));
+
+        // Get current selected slots from button classes
+        const selectedSlots = Array.from(targetElement.querySelectorAll('.time-slot-button.selected'))
+            .map(button => button.getAttribute('data-slot-id'));
+
+        // Toggle selection
+        const newSelectedSlots = selectedSlots.includes(slotId) 
+            ? selectedSlots.filter(id => id !== slotId) // Remove from selected
+            : [...selectedSlots, slotId]; // Add to selected
+
+        // Re-render slots maintaining original order
+        this.renderTimeSlots(currentSlots, targetElementId, newSelectedSlots);
     }
 
     updateConfirmedSessionsData(confirmedSessions) {
@@ -1363,13 +1524,48 @@ class StudentDashboard {
         this.pendingBookingData = null;
     }
 
+    updateSessionStatsInstant(sessionId, action) {
+        try {
+            // Find the session card and update its stats
+            const sessionCard = document.querySelector(`[data-session-id="${sessionId}"]`);
+            if (!sessionCard) return;
+
+            // Get current stats from the session card using the new CSS classes
+            const totalElement = sessionCard.querySelector('.stat-total');
+            const availableElement = sessionCard.querySelector('.stat-available');
+            const bookedElement = sessionCard.querySelector('.stat-booked');
+
+            if (totalElement && availableElement && bookedElement) {
+                const total = parseInt(totalElement.textContent) || 0;
+                const available = parseInt(availableElement.textContent) || 0;
+                const booked = parseInt(bookedElement.textContent) || 0;
+
+                if (action === 'booked') {
+                    // Update counts: total stays same, available decreases, booked increases
+                    availableElement.textContent = Math.max(0, available - 1);
+                    bookedElement.textContent = booked + 1;
+                }
+            }
+
+            // Update the "Available Slots" count text
+            const availableSlotsHeader = sessionCard.querySelector('.available-slots-header');
+            if (availableSlotsHeader) {
+                const currentAvailable = parseInt(availableElement?.textContent) || 0;
+                availableSlotsHeader.textContent = `Available Slots (${currentAvailable})`;
+            }
+
+        } catch (error) {
+            console.error('Error updating session stats:', error);
+        }
+    }
+
     async confirmBooking() {
         if (!this.pendingBookingData) {
             console.error('No pending booking data');
             return;
         }
 
-        const { sessionId, startTime, sessionDate, button, originalContent } = this.pendingBookingData;
+        const { sessionId, startTime, sessionDate, badge, originalContent } = this.pendingBookingData;
         
         // Send the time in student's timezone (as displayed to student)
         const startTimeForBackend = startTime;
@@ -1382,8 +1578,8 @@ class StudentDashboard {
         
         try {
             // Show loading state
-            button.disabled = true;
-            button.innerHTML = '<div class="slot-time"><i class="fas fa-spinner fa-spin"></i> Booking...</div>';
+            badge.style.pointerEvents = 'none';
+            badge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Booking...';
             
             // Hide modal while processing
             this.hideBookingModal();
@@ -1411,22 +1607,30 @@ class StudentDashboard {
 
             const data = await response.json();
             
-            // Convert the same existing slot button to green (no duplicates, no reorder)
-            button.disabled = true;
-            button.classList.add('booked');
-            button.removeAttribute('onclick');
+            // Instant visual feedback - convert the same existing slot badge to green (no duplicates, no reorder)
+            badge.style.pointerEvents = 'none';
+            badge.classList.add('booked');
+            badge.removeAttribute('onclick');
+            
+            // Smooth transition to green state
+            badge.style.transition = 'all 0.3s ease';
+            badge.style.background = '#e8f5e8';
+            badge.style.color = '#2e7d32';
+            badge.style.borderColor = '#4caf50';
 
-            // Display times directly from booking response (already in student's timezone)
+            // Update content with check icon
             const bookedStart = data?.booking?.startTime;
             const bookedEnd = data?.booking?.endTime;
             if (bookedStart && bookedEnd) {
-                const timeEl = button.querySelector('.slot-time');
-                if (timeEl) {
-                    timeEl.textContent = `${bookedStart} - ${bookedEnd}`;
-                }
+                badge.innerHTML = `<i class="fas fa-check"></i> ${bookedStart} - ${bookedEnd}`;
             } else {
-                button.innerHTML = originalContent;
+                // Fallback to original content with check icon
+                const timeText = originalContent.replace(/<i class="fas fa-plus"><\/i>\s*/, '');
+                badge.innerHTML = `<i class="fas fa-check"></i> ${timeText}`;
             }
+
+            // Update session stats instantly
+            this.updateSessionStatsInstant(sessionId, 'booked');
 
             this.showNotification('Session slot booked successfully!', 'success');
 
@@ -1434,10 +1638,10 @@ class StudentDashboard {
             console.error('Error booking session:', error);
             this.showNotification(error.message || 'Failed to book session slot', 'error');
 
-            // Restore button state
-            if (button) {
-                button.disabled = false;
-                button.innerHTML = originalContent;
+            // Restore badge state
+            if (badge) {
+                badge.style.pointerEvents = 'auto';
+                badge.innerHTML = originalContent;
             }
         }
     }

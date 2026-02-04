@@ -4,21 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School System - Sign Up</title>
-    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/signup.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <div class="auth-container">
             <!-- Header -->
             <div class="auth-header">
-                <h1 class="auth-title">Teacher Registration</h1>
-                <p class="auth-subtitle">Create your teacher account</p>
+                <h1 class="auth-title">Create Account</h1>
+                <p class="auth-subtitle">Join our learning community</p>
             </div>
 
             <!-- Signup Form -->
             <div class="form-content">
                 <form class="auth-form" id="signup-form" enctype="multipart/form-data">
+                    <input type="hidden" id="signup-role" name="role" value="teacher">
+                    
                     <div class="form-row">
                         <div class="form-group">
                             <label for="signup-userId">User ID</label>
@@ -33,22 +36,85 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="signup-email">Email Address</label>
-                        <input type="email" id="signup-email" name="email" placeholder="Enter your email">
-                        <span class="error-message"></span>
-                    </div>
-                    
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="signup-email">Email Address</label>
+                            <input type="email" id="signup-email" name="email" placeholder="Enter your email">
+                            <span class="error-message"></span>
+                        </div>
+                        
                         <div class="form-group">
                             <label for="signup-password">Password</label>
                             <div class="password-input">
                                 <input type="password" id="signup-password" name="password" placeholder="Create a password">
                                 <button type="button" class="toggle-password" data-target="signup-password">
-                                    <span class="eye-icon">👁️</span>
+                                    <i class="fas fa-eye eye-icon"></i>
                                 </button>
                             </div>
-                            <small class="password-hint">Password must be at least 6 characters with uppercase, lowercase, and numbers</small>
+                            <span class="error-message"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="signup-timezone">Timezone</label>
+                            <select id="signup-timezone" name="timezone">
+                                <option value="">Select your timezone</option>
+                                <optgroup label="Asia">
+                                    <option value="Asia/Kolkata">India - Asia/Kolkata</option>
+                                    <option value="Asia/Tokyo">Japan - Asia/Tokyo</option>
+                                    <option value="Asia/Shanghai">China - Asia/Shanghai</option>
+                                    <option value="Asia/Hong_Kong">Hong Kong - Asia/Hong_Kong</option>
+                                    <option value="Asia/Singapore">Singapore - Asia/Singapore</option>
+                                    <option value="Asia/Dubai">UAE - Asia/Dubai</option>
+                                    <option value="Asia/Seoul">South Korea - Asia/Seoul</option>
+                                    <option value="Asia/Bangkok">Thailand - Asia/Bangkok</option>
+                                    <option value="Asia/Jakarta">Indonesia - Asia/Jakarta</option>
+                                </optgroup>
+                                <optgroup label="America">
+                                    <option value="America/New_York">USA East - America/New_York</option>
+                                    <option value="America/Los_Angeles">USA West - America/Los_Angeles</option>
+                                    <option value="America/Chicago">USA Central - America/Chicago</option>
+                                    <option value="America/Denver">USA Mountain - America/Denver</option>
+                                    <option value="America/Toronto">Canada - America/Toronto</option>
+                                    <option value="America/Vancouver">Canada West - America/Vancouver</option>
+                                    <option value="America/Mexico_City">Mexico - America/Mexico_City</option>
+                                    <option value="America/Sao_Paulo">Brazil - America/Sao_Paulo</option>
+                                </optgroup>
+                                <optgroup label="Europe">
+                                    <option value="Europe/London">UK - Europe/London</option>
+                                    <option value="Europe/Paris">France - Europe/Paris</option>
+                                    <option value="Europe/Berlin">Germany - Europe/Berlin</option>
+                                    <option value="Europe/Moscow">Russia - Europe/Moscow</option>
+                                    <option value="Europe/Rome">Italy - Europe/Rome</option>
+                                    <option value="Europe/Madrid">Spain - Europe/Madrid</option>
+                                </optgroup>
+                                <optgroup label="Africa">
+                                    <option value="Africa/Cairo">Egypt - Africa/Cairo</option>
+                                    <option value="Africa/Johannesburg">South Africa - Africa/Johannesburg</option>
+                                </optgroup>
+                                <optgroup label="Australia">
+                                    <option value="Australia/Sydney">Australia East - Australia/Sydney</option>
+                                    <option value="Australia/Melbourne">Australia - Australia/Melbourne</option>
+                                </optgroup>
+                                <optgroup label="Pacific">
+                                    <option value="Pacific/Auckland">New Zealand - Pacific/Auckland</option>
+                                </optgroup>
+                            </select>
+                            <span class="error-message"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signup-city">City</label>
+                            <input type="text" id="signup-city" name="city" placeholder="Your city">
+                            <span class="error-message"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="signup-state">State</label>
+                            <input type="text" id="signup-state" name="state" placeholder="Your state">
                             <span class="error-message"></span>
                         </div>
                         
@@ -62,50 +128,24 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="signup-mobileNo">Mobile Number</label>
-                            <input type="tel" id="signup-mobileNo" name="mobileNo" placeholder="10-digit mobile number" maxlength="10">
+                            <div class="mobile-input-container">
+                                <span class="country-code" id="country-code">+1</span>
+                                <input type="tel" id="signup-mobileNo" name="mobileNo" placeholder="Enter mobile number" maxlength="15">
+                            </div>
                             <span class="error-message"></span>
                         </div>
                         
                         <div class="form-group">
-                            <label for="signup-role">Role</label>
-                            <select id="signup-role" name="role">
-                                <option value="teacher">Teacher</option>
-                            </select>
+                            <label for="signup-profileImage">Profile Image (Optional)</label>
+                            <div class="file-upload">
+                                <input type="file" id="signup-profileImage" name="profileImage" accept="image/*">
+                                <label for="signup-profileImage" class="file-label">
+                                    <span class="upload-icon">📷</span>
+                                    <span class="upload-text">Choose Profile Image</span>
+                                </label>
+                            </div>
                             <span class="error-message"></span>
                         </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="signup-city">City</label>
-                            <input type="text" id="signup-city" name="city" placeholder="Your city">
-                            <span class="error-message"></span>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="signup-state">State</label>
-                            <input type="text" id="signup-state" name="state" placeholder="Your state">
-                            <span class="error-message"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group" id="class-group" style="display: none;">
-                        <label for="signup-class">Class</label>
-                        <input type="text" id="signup-class" name="class" placeholder="Your class (e.g., 10th Grade)">
-                        <span class="error-message"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="signup-profileImage">Profile Image (Optional)</label>
-                        <div class="file-upload">
-                            <input type="file" id="signup-profileImage" name="profileImage" accept="image/*">
-                            <label for="signup-profileImage" class="file-label">
-                                <span class="upload-icon">📷</span>
-                                <span class="upload-text">Choose Profile Image</span>
-                            </label>
-                        </div>
-                        <small class="file-hint">Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB</small>
-                        <span class="error-message"></span>
                     </div>
 
                     <button type="submit" class="auth-btn">Create Account</button>

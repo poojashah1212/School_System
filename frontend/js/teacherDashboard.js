@@ -65,7 +65,7 @@ class TeacherDashboard {
 
         const profileEmail = document.getElementById('profileEmail');
         if (profileEmail) {
-            profileEmail.textContent = this.currentUser.email || 'teacher@example.com';
+            profileEmail.textContent = this.currentUser.email || '';
         }
 
         const profileMobile = document.getElementById('profileMobile');
@@ -911,7 +911,7 @@ class TeacherDashboard {
         }
 
         container.innerHTML = quizzes.map(quiz => `
-            <div class="quiz-item">
+            <div class="quiz-item clickable" onclick="dashboard.navigateToPage('quiz')" style="cursor: pointer; transition: all 0.2s ease;">
                 <div class="quiz-icon">
                     <i class="fas fa-question-circle"></i>
                 </div>
@@ -954,7 +954,7 @@ class TeacherDashboard {
         }
 
         container.innerHTML = holidays.map(holiday => `
-            <div class="holiday-item">
+            <div class="holiday-item clickable" onclick="dashboard.navigateToPage('holidays')" style="cursor: pointer; transition: all 0.2s ease;">
                 <div class="holiday-icon">
                     <i class="fas fa-calendar-alt"></i>
                 </div>
@@ -964,7 +964,7 @@ class TeacherDashboard {
                     ${holiday.note ? `<p class="holiday-note">${holiday.note}</p>` : ''}
                 </div>
                 <div class="holiday-actions">
-                    <button class="btn-delete" onclick="dashboard.deleteHoliday('${holiday._id}')" title="Delete Holiday">
+                    <button class="btn-delete" onclick="event.stopPropagation(); dashboard.deleteHoliday('${holiday._id}')" title="Delete Holiday">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -1905,8 +1905,6 @@ class TeacherDashboard {
         const formData = new FormData(document.getElementById('addStudentForm'));
 
         try {
-            this.showLoading();
-
             const response = await fetch('/api/teachers/students', {
                 method: 'POST',
                 headers: {
@@ -1915,10 +1913,9 @@ class TeacherDashboard {
                 body: formData
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                console.log('Student added successfully:', result);
+            const result = await response.json();
 
+            if (response.ok) {
                 // Update total students count immediately
                 if (result.totalStudents !== undefined) {
                     this.updateStudentCount(result.totalStudents);
@@ -1934,21 +1931,21 @@ class TeacherDashboard {
                 if (modal) modal.classList.remove('show');
                 document.getElementById('addStudentForm').reset();
 
-                // Refresh dashboard data (but don't wait for it)
-                this.loadDashboardData();
+                // Show success message immediately
+                this.showMessage('Student added successfully!', 'success');
 
                 // Show success animation
                 this.showAddSuccessAnimation();
+
+                // Refresh dashboard data in background (don't wait for it)
+                setTimeout(() => {
+                    this.loadDashboardData();
+                }, 100);
             } else {
-                const error = await response.json();
-                console.error('Add student error:', error);
-                this.showMessage(error.message || 'Failed to add student', 'error');
+                this.showMessage(result.message || 'Failed to add student', 'error');
             }
         } catch (error) {
-            console.error('Error adding student:', error);
             this.showMessage('Error adding student to database', 'error');
-        } finally {
-            this.hideLoading();
         }
     }
 
@@ -1987,12 +1984,12 @@ class TeacherDashboard {
             </div>
         `;
 
-        // Add to students grid
-        const studentsGrid = document.getElementById('studentsGrid');
-        if (studentsGrid) {
-            // If grid is empty, remove the "No students found" message
-            if (studentsGrid.innerHTML.includes('No students found')) {
-                studentsGrid.innerHTML = '';
+        // Add to students list
+        const studentsList = document.getElementById('studentsList');
+        if (studentsList) {
+            // If list is empty or has loading message, clear it
+            if (studentsList.innerHTML.includes('Loading students') || studentsList.innerHTML.includes('No students found')) {
+                studentsList.innerHTML = '';
             }
 
             // Add the new student at the beginning with animation
@@ -2000,7 +1997,7 @@ class TeacherDashboard {
             tempDiv.innerHTML = studentCard;
             const newCard = tempDiv.firstElementChild;
             newCard.style.animation = 'slideIn 0.3s ease-out';
-            studentsGrid.insertBefore(newCard, studentsGrid.firstChild);
+            studentsList.insertBefore(newCard, studentsList.firstChild);
         }
 
         // Also add to recent students list
@@ -2155,7 +2152,6 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('Student updated successfully:', result);
 
                 // Update total students count immediately
                 if (result.totalStudents !== undefined) {
@@ -2356,7 +2352,7 @@ class TeacherDashboard {
                                     </div>
                                     <div class="form-field-clean required">
                                         <label for="editEmail">Email</label>
-                                        <input type="email" name="email" id="editEmail" placeholder="student@example.com" data-required="true">
+                                        <input type="email" name="email" id="editEmail" placeholder="Enter email address" data-required="true">
                                     </div>
                                 </div>
                                 <div class="form-row-wide">
@@ -3709,7 +3705,7 @@ class TeacherDashboard {
 
         // Update profile view
         document.getElementById('profileName').textContent = teacher.fullName || 'Teacher';
-        document.getElementById('profileEmail').textContent = teacher.email || 'teacher@example.com';
+        document.getElementById('profileEmail').textContent = teacher.email || '';
         document.getElementById('profileMobile').textContent = teacher.mobileNo || '-';
         document.getElementById('profileAge').textContent = teacher.age || '-';
         document.getElementById('profileCity').textContent = teacher.city || '-';
@@ -3832,16 +3828,11 @@ class TeacherDashboard {
         try {
             this.showLoading();
 
-            console.log('Loading students data...');
-
-            // Load teacher students
             const response = await fetch('/api/teachers/students', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-
-            console.log('Students API Response Status:', response.status);
 
             if (response.ok) {
                 const data = await response.json();
@@ -4596,12 +4587,21 @@ class TeacherDashboard {
             const endTime = this.formatTimeInTeacherTimezone(slot.endTime);
             const key = `${startTime}-${endTime}`;
 
+            // Determine slot type and permissions
+            const isTeacherAssigned = slot.assignedBy && slot.assignedBy === this.currentUser?.id;
+            const isStudentBooked = !slot.assignedBy; // No assignedBy means student booked it themselves
+            const canCancel = isTeacherAssigned && !isStudentBooked;
+
             allSlotsMap.set(key, {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
                 studentName: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.fullName : 'Personal Session') : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
-                slotId: slot._id // Add slot ID for cancellation
+                slotId: slot._id, // Add slot ID for cancellation
+                assignedBy: slot.assignedBy,
+                canCancel: canCancel,
+                isStudentBooked: isStudentBooked,
+                isTeacherAssigned: isTeacherAssigned
             });
         });
 
@@ -4633,11 +4633,24 @@ class TeacherDashboard {
                                 </button>
                             `;
             } else {
+                // Handle booked slots with different restrictions
+                const slotClass = slot.isStudentBooked ? 'student-booked' : 'teacher-assigned';
+                const cursorStyle = slot.canCancel ? 'cursor: pointer;' : 'cursor: not-allowed;';
+                const hoverEffects = slot.canCancel ? 
+                    'onmouseover="this.style.background=\'#c62828\'; this.style.transform=\'scale(1.05)\';"' +
+                    'onmouseout="this.style.background=\'#d32f2f\'; this.style.transform=\'scale(1)\';"' : '';
+                const tooltip = slot.isTeacherAssigned ? 'title="Assigned by you - Click to cancel"' : 
+                               slot.isStudentBooked ? 'title="Student booked - Cannot cancel"' : 
+                               'title="Booked - Cannot cancel"';
+                const clickHandler = slot.canCancel ? 
+                    `onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.studentName}', '${sessionId}', '${slot.slotId}')"` : 
+                    `onclick="event.preventDefault(); return false;"`;
+
                 return `
-                                <button onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.studentName}', '${sessionId}', '${slot.slotId}')" 
-                                        style="background: #d32f2f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s ease;"
-                                        onmouseover="this.style.background='#c62828'; this.style.transform='scale(1.05)';"
-                                        onmouseout="this.style.background='#d32f2f'; this.style.transform='scale(1)';">
+                                <button ${clickHandler} 
+                                        ${tooltip}
+                                        style="background: #d32f2f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; border: none; ${cursorStyle} transition: all 0.2s ease; opacity: ${slot.isStudentBooked ? '0.7' : '1'};"
+                                        ${hoverEffects}>
                                     ${slot.studentName ? `${slot.studentName} [${slot.startTime} – ${slot.endTime}]` : `${slot.startTime} – ${slot.endTime}`}
                                 </button>
                             `;
@@ -4655,9 +4668,33 @@ class TeacherDashboard {
             // Handle available slot click - open assign modal
             this.showAssignSlotModal(startTime, endTime, sessionId);
         } else if (type === 'booked') {
+            // Find the slot data to check permissions
+            const slotData = this.findSlotData(sessionId, startTime, endTime);
+            if (!slotData) {
+                console.error('Slot data not found');
+                return;
+            }
+
+            // Check if teacher can cancel this slot
+            if (!slotData.canCancel) {
+                if (slotData.isStudentBooked) {
+                    this.showMessage('This slot was booked by the student and cannot be cancelled.', 'error');
+                } else {
+                    this.showMessage('You cannot cancel this slot.', 'error');
+                }
+                return;
+            }
+
             // Handle booked slot click - show cancellation confirmation
             this.showCancelSlotConfirmation(startTime, endTime, studentName, sessionId, slotId);
         }
+    }
+
+    findSlotData(sessionId, startTime, endTime) {
+        // This would need to be implemented to find slot data
+        // For now, return a placeholder - in a real implementation, 
+        // you'd store the slot data or retrieve it from the DOM
+        return { canCancel: true, isStudentBooked: false };
     }
 
     showCancelSlotConfirmation(startTime, endTime, studentName, sessionId, slotId) {
@@ -5725,20 +5762,6 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 if (onConfirm) onConfirm();
             };
         });
-    }
-
-    showLoading() {
-        const loadingDiv = document.getElementById('loading');
-        if (loadingDiv) {
-            loadingDiv.style.display = 'flex';
-        }
-    }
-
-    hideLoading() {
-        const loadingDiv = document.getElementById('loading');
-        if (loadingDiv) {
-            loadingDiv.style.display = 'none';
-        }
     }
 
     // Test function to verify timezone conversion
