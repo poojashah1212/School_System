@@ -18,34 +18,23 @@ const sendEmail = async ({ to, subject, html }) => {
       subject,
       html,
     });
-
-    console.log("Email sent successfully:", info.messageId);
-    return {
-      success: true,
-      messageId: info.messageId,
-      response: info.response
-    };
+    console.log("Email sent:", info.messageId);
+    return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("Error sending email:", error);
-    return {
-      success: false,
-      error: error.message
-    };
+    console.error("Email error:", error);
+    return { success: false, error: error.message };
   }
 };
 
 const verifyEmailConnection = async () => {
   try {
     await transporter.verify();
-    console.log("Email server connection verified successfully");
+    console.log("Email connection verified");
     return true;
   } catch (error) {
-    console.error("Email server connection failed:", error);
+    console.error("Connection failed:", error);
     return false;
   }
 };
 
-module.exports = {
-  sendEmail,
-  verifyEmailConnection
-};
+module.exports = { sendEmail, verifyEmailConnection };

@@ -367,7 +367,7 @@ class AuthSystem {
         // Function to update country code based on selected timezone
         const updateCountryCode = () => {
             const selectedTimezone = timezoneSelect.value;
-            const countryCode = timezoneCountryCodeMap[selectedTimezone] || '+1';
+            const countryCode = timezoneCountryCodeMap[selectedTimezone] || '+91';
             countryCodeElement.textContent = countryCode;
         };
 

@@ -428,7 +428,7 @@
             <form id="uploadCsvForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Choose CSV File</label>
-                    <input type="file" name="file" accept=".csv" required>
+                    <input type="file" name="file" accept=".csv">
                     <small>Upload a CSV file to add student data</small>
                 </div>
                 <div class="form-actions">
@@ -682,38 +682,38 @@
             <form id="assignSlotForm" novalidate>
                 <!-- Selected Slot Section -->
                 <div class="form-group">
-                    <label style="font-weight: 600; color: #374151; margin-bottom: 8px; display: block;">Selected Slot</label>
-                    <div id="selectedSlotInfo" style="background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 16px;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                            <i class="fas fa-clock" style="color: #6b7280;"></i>
-                            <div id="slotTimeDisplay" style="font-weight: 500; color: #111827;"></div>
+                    <label>Selected Slot</label>
+                    <div id="selectedSlotInfo">
+                        <div>
+                            <i class="fas fa-clock"></i>
+                            <div id="slotTimeDisplay"></div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                            <i class="fas fa-calendar" style="color: #6b7280;"></i>
-                            <div id="slotDateDisplay" style="color: #6b7280;"></div>
+                        <div>
+                            <i class="fas fa-calendar"></i>
+                            <div id="slotDateDisplay"></div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-tag" style="color: #6b7280;"></i>
-                            <div id="sessionTypeDisplay" style="color: #6b7280;"></div>
+                        <div>
+                            <i class="fas fa-tag"></i>
+                            <div id="sessionTypeDisplay"></div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Select Student Section -->
                 <div class="form-group">
-                    <label for="studentSelect" style="font-weight: 600; color: #374151; margin-bottom: 8px; display: block;">Select Student</label>
-                    <select name="studentId" id="studentSelect" required style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: white;">
+                    <label for="studentSelect">Select Student</label>
+                    <select name="studentId" id="studentSelect" required>
                         <option value="">Select a student...</option>
                     </select>
-                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                    <span class="error-message" style="display: none;"></span>
                 </div>
                 
                 <input type="hidden" id="assignSessionId" name="sessionId">
                 <input type="hidden" id="assignStartTime" name="startTime">
                 
-                <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-                    <button type="button" class="btn-secondary" id="cancelAssignBtn" style="padding: 10px 20px; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 6px; cursor: pointer; font-weight: 500;">Cancel</button>
-                    <button type="submit" class="btn-primary" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Assign Slot</button>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelAssignBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Assign Slot</button>
                 </div>
             </form>
         </div>

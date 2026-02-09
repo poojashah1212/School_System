@@ -8,7 +8,7 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
                 url('https://img.freepik.com/premium-vector/empty-school-class-background-video-conferencing_23-2148710313.jpg?w=360') center/cover no-repeat;
     backdrop-filter: blur(2px);

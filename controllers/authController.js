@@ -1,8 +1,8 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const { createToken } = require("../services/tokenService");
-const { sendEmail } = require("../utils/emailService");
-const emailTemplates = require("../services/emailTemplates");
+// const { sendEmail } = require("../utils/emailService");
+// const emailTemplates = require("../services/emailTemplates");
 
 exports.signup = async (req, res) => {
   try {
@@ -49,23 +49,24 @@ exports.signup = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    if (user.role === "teacher") {
-      try {
-        const emailResult = await sendEmail({
-          to: user.email,
-          subject: emailTemplates.teacher_signup.subject,
-          html: emailTemplates.teacher_signup.html(user.fullName)
-        });
-        
-        if (emailResult.success) {
-          console.log(`Welcome email sent to teacher: ${user.email}`);
-        } else {
-          console.error(`Failed to send welcome email to teacher: ${emailResult.error}`);
-        }
-      } catch (emailError) {
-        console.error("Error sending teacher welcome email:", emailError);
-      }
-    }
+    // Email functionality commented out
+    // if (user.role === "teacher") {
+    //   try {
+    //     const emailResult = await sendEmail({
+    //       to: user.email,
+    //       subject: emailTemplates.teacher_signup.subject,
+    //       html: emailTemplates.teacher_signup.html(user.fullName)
+    //     });
+    //     
+    //     if (emailResult.success) {
+    //       console.log(`Welcome email sent to teacher: ${user.email}`);
+    //     } else {
+    //       console.error(`Failed to send welcome email to teacher: ${emailResult.error}`);
+    //     }
+    //   } catch (emailError) {
+    //     console.error("Error sending teacher welcome email:", emailError);
+    //   }
+    // }
 
     res.status(201).json({
       success: true,

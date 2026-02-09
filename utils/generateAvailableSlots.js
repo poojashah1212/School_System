@@ -26,7 +26,6 @@ const generateAvailableSlots = async ({
 
   const studentCached = await redisClient.get(studentRedisKey);
   if (studentCached) {
-    console.log("Student Cache HIT:", studentRedisKey);
     return JSON.parse(studentCached);
   }
 
@@ -35,7 +34,6 @@ const generateAvailableSlots = async ({
   if (!studentId) {
     const teacherCached = await redisClient.get(teacherRedisKey);
     if (teacherCached) {
-      console.log("Teacher Cache HIT:", teacherRedisKey);
       return JSON.parse(teacherCached);
     }
   }
@@ -55,10 +53,6 @@ const generateAvailableSlots = async ({
     teacherTimezone
   );
 
-  console.log('Teacher start time in teacher TZ:', teacherStartDateTime.format());
-  console.log('Teacher end time in teacher TZ:', teacherEndDateTime.format());
-  console.log('Teacher availability from DB - startTime:', availability.startTime, 'endTime:', availability.endTime);
-
   let current = teacherStartDateTime;
   const end = teacherEndDateTime;
 
@@ -70,8 +64,6 @@ const generateAvailableSlots = async ({
       .clone()
       .add(sessionDuration, "minutes");
 
-    console.log('Slot generation - Teacher time:', slotStartTeacherTZ.format(), '-', slotEndTeacherTZ.format());
-
     // Check for overlaps using teacher timezone times
     const isOverlapping = bookedSlots.some(b => {
       const bookedStartTeacherTZ = moment.tz(b.startTime, teacherTimezone);
@@ -81,30 +73,34 @@ const generateAvailableSlots = async ({
       );
     });
 
-    if (!isOverlapping) {
+    // Find the booked slot details if overlapping
+    const bookedSlotDetails = isOverlapping ? bookedSlots.find(b => {
+      const bookedStartTeacherTZ = moment.tz(b.startTime, teacherTimezone);
+      const bookedEndTeacherTZ = moment.tz(b.endTime, teacherTimezone);
+      return (
+        slotStartTeacherTZ.isBefore(bookedEndTeacherTZ) && slotEndTeacherTZ.isAfter(bookedStartTeacherTZ)
+      );
+    }) : null;
+
+    // Include slot if it's not overlapping OR if it's booked by the logged-in student
+    const shouldIncludeSlot = !isOverlapping || (studentId && bookedSlotDetails && bookedSlotDetails.bookedBy.toString() === studentId.toString());
+
+    if (shouldIncludeSlot) {
       // Generate and display slots strictly in teacher's timezone
       // No UTC conversions for teacher requests - use teacher availability directly
       let displayStartTime, displayEndTime;
       
       if (studentId) {
         // Student request - convert to student timezone
-        console.log('  STUDENT REQUEST - Converting to student timezone:', studentTimezone);
-        console.log('  Teacher time before conversion:', slotStartTeacherTZ.format(), '-', slotEndTeacherTZ.format());
-        
         const slotStartStudentTZ = slotStartTeacherTZ.tz(studentTimezone);
         const slotEndStudentTZ = slotEndTeacherTZ.tz(studentTimezone);
         
         displayStartTime = slotStartStudentTZ.format("HH:mm");
         displayEndTime = slotEndStudentTZ.format("HH:mm");
-        
-        console.log('  Student display time:', displayStartTime, '-', displayEndTime);
-        console.log('  Converted student times:', slotStartStudentTZ.format(), '-', slotEndStudentTZ.format());
       } else {
         // Teacher request - display exactly as per teacher availability, no UTC conversion
         displayStartTime = slotStartTeacherTZ.format("HH:mm");
         displayEndTime = slotEndTeacherTZ.format("HH:mm");
-        
-        console.log('  Teacher display time (direct from availability):', displayStartTime, '-', displayEndTime);
       }
 
       slots.push({
@@ -112,7 +108,11 @@ const generateAvailableSlots = async ({
         endTime: displayEndTime,
         // Store teacher timezone times directly for consistency
         teacherStart: slotStartTeacherTZ.toDate(),
-        teacherEnd: slotEndTeacherTZ.toDate()
+        teacherEnd: slotEndTeacherTZ.toDate(),
+        // Add status information
+        status: isOverlapping ? 'booked' : 'available',
+        bookedBy: bookedSlotDetails ? bookedSlotDetails.bookedBy : null,
+        bookedAt: bookedSlotDetails ? bookedSlotDetails.bookedAt : null
       });
     }
 

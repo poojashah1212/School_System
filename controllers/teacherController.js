@@ -2,8 +2,8 @@ const User = require("../models/user");
 const fs = require("fs");
 const csv = require("csv-parser");
 const bcrypt = require("bcryptjs");
-const { sendEmail } = require("../utils/emailService");
-const emailTemplates = require("../services/emailTemplates");
+// const { sendEmail } = require("../utils/emailService");
+// const emailTemplates = require("../services/emailTemplates");
 
 exports.getStudentById = async (req, res) => {
   try {
@@ -50,14 +50,7 @@ exports.getMyStudents = async (req, res) => {
       teacherId: req.user.id
     }).select("-password");
 
-    console.log('Students fetched from DB:', students.map(s => ({ 
-      name: s.fullName, 
-      profileImage: s.profileImage,
-      userId: s.userId,
-      _id: s._id 
-    })));
-
-    res.json(students);
+    res.status(200).json({students});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -65,9 +58,6 @@ exports.getMyStudents = async (req, res) => {
 };
 
 exports.createStudent = async (req, res) => {
-  console.log("REQ BODY:", req.body);
-  console.log("REQ FILE:", req.file);
-  console.log("REQ USER:", req.user);
   try {
     const {
       userId,
@@ -108,42 +98,43 @@ exports.createStudent = async (req, res) => {
       teacherId: req.user.id
     });
 
-    try {
-      const teacher = await User.findById(req.user.id).select('fullName email');
-      console.log('Teacher found for email:', teacher ? teacher.email : 'NOT FOUND');
-      
-      if (teacher) {
-        try {
-          console.log('Sending student welcome email to:', student.email);
-          const studentEmailResult = await sendEmail({
-            to: student.email,
-            subject: emailTemplates.student_welcome.subject,
-            html: emailTemplates.student_welcome.html(student.fullName, teacher.fullName, teacher.email, student.email, password)
-          });
-          console.log('Student email sent successfully to:', student.email);
-          
-          // Add delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (studentEmailError) {
-          console.error('Student email failed:', studentEmailError);
-        }
-        
-        try {
-          console.log('Sending teacher notification email to:', teacher.email);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const teacherEmailResult = await sendEmail({
-            to: teacher.email,
-            subject: emailTemplates.student_added.subject,
-            html: emailTemplates.student_added.html(teacher.fullName, student.fullName, student.email)
-          });
-          console.log('Teacher email sent successfully to:', teacher.email);
-        } catch (teacherEmailError) {
-          console.error('Teacher email failed:', teacherEmailError);
-        }
-      }
-    } catch (emailError) {
-      console.error('Email sending process failed:', emailError);
-    }
+    // Email functionality commented out
+    // try {
+    //   const teacher = await User.findById(req.user.id).select('fullName email');
+    //   console.log('Teacher found for email:', teacher ? teacher.email : 'NOT FOUND');
+    //   
+    //   if (teacher) {
+    //     try {
+    //       console.log('Sending student welcome email to:', student.email);
+    //       const studentEmailResult = await sendEmail({
+    //         to: student.email,
+    //         subject: emailTemplates.student_welcome.subject,
+    //         html: emailTemplates.student_welcome.html(student.fullName, teacher.fullName, teacher.email, student.email, password)
+    //       });
+    //       console.log('Student email sent successfully to:', student.email);
+    //       
+    //       // Add delay to avoid rate limiting
+    //       await new Promise(resolve => setTimeout(resolve, 1000));
+    //     } catch (studentEmailError) {
+    //       console.error('Student email failed:', studentEmailError);
+    //     }
+    //     
+    //     try {
+    //       console.log('Sending teacher notification email to:', teacher.email);
+    //       await new Promise(resolve => setTimeout(resolve, 500));
+    //       const teacherEmailResult = await sendEmail({
+    //         to: teacher.email,
+    //         subject: emailTemplates.student_added.subject,
+    //         html: emailTemplates.student_added.html(teacher.fullName, student.fullName, student.email)
+    //       });
+    //       console.log('Teacher email sent successfully to:', teacher.email);
+    //     } catch (teacherEmailError) {
+    //       console.error('Teacher email failed:', teacherEmailError);
+    //     }
+    //   }
+    // } catch (emailError) {
+    //   console.error('Email sending process failed:', emailError);
+    // }
 
     res.status(201).json({
       message: "Student created successfully",
@@ -486,34 +477,34 @@ exports.uploadStudentsCSV = async (req, res) => {
         timezone: timezone || "Asia/Kolkata"
       });
 
-      // Send welcome email to student with credentials (PRIORITY)
-      try {
-        const teacher = await User.findById(teacherId).select('fullName email');
-        
-        if (teacher) {
-          const studentEmailResult = await sendEmail({
-            to: student.email,
-            subject: emailTemplates.student_welcome.subject,
-            html: emailTemplates.student_welcome.html(student.fullName, teacher.fullName, teacher.email, student.email, password)
-          });
-          
-          // Add delay to avoid rate limiting (1 second delay between students)
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Also send notification to teacher for CSV uploads
-          try {
-            const teacherEmailResult = await sendEmail({
-              to: teacher.email,
-              subject: emailTemplates.student_added.subject,
-              html: emailTemplates.student_added.html(teacher.fullName, student.fullName, student.email)
-            });
-          } catch (teacherEmailError) {
-            // Continue even if teacher email fails
-          }
-        }
-      } catch (emailError) {
-        // Email errors should not affect student creation
-      }
+      // Email functionality commented out for CSV upload
+      // try {
+      //   const teacher = await User.findById(teacherId).select('fullName email');
+      //   
+      //   if (teacher) {
+      //     const studentEmailResult = await sendEmail({
+      //       to: student.email,
+      //       subject: emailTemplates.student_welcome.subject,
+      //       html: emailTemplates.student_welcome.html(student.fullName, teacher.fullName, teacher.email, student.email, password)
+      //     });
+      //     
+      //     // Add delay to avoid rate limiting (1 second delay between students)
+      //     await new Promise(resolve => setTimeout(resolve, 1000));
+      //     
+      //     // Also send notification to teacher for CSV uploads
+      //     try {
+      //       const teacherEmailResult = await sendEmail({
+      //         to: teacher.email,
+      //         subject: emailTemplates.student_added.subject,
+      //         html: emailTemplates.student_added.html(teacher.fullName, student.fullName, student.email)
+      //       });
+      //     } catch (teacherEmailError) {
+      //       // Continue even if teacher email fails
+      //     }
+      //   }
+      // } catch (emailError) {
+      //   // Email errors should not affect student creation
+      // }
 
       inserted++;
     } catch (err) {

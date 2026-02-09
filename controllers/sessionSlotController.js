@@ -4,6 +4,8 @@ const SessionSlot = require("../models/sessionSlot");
 const User = require("../models/user");
 const { redisClient } = require("../config/redis");
 const generateAvailableSlots = require("../utils/generateAvailableSlots");
+// const { sendEmail } = require("../utils/emailService");
+// const emailTemplates = require("../services/emailTemplates");
 
 const normalizeTimezone = (tz) => {
   if (!tz || typeof tz !== 'string') return "Asia/Kolkata";
@@ -86,6 +88,42 @@ exports.createSessionSlots = async (req, res) => {
       allowedStudentId
     });
 
+    // Email functionality commented out
+    // if (allowedStudentId) {
+    //   try {
+    //     // Get student and teacher details
+    //     const student = await User.findById(allowedStudentId);
+    //     const teacher = await User.findById(teacherId);
+    //     
+    //     if (student && student.email && teacher) {
+    //       // Format session details for email
+    //       const studentTimezone = student.timezone || "Asia/Kolkata";
+    //       const sessionDate = moment(parsedDate).tz(studentTimezone).format("DD-MM-YYYY");
+    //       
+    //       // Send email to student
+    //       const emailResult = await sendEmail({
+    //         to: student.email,
+    //         subject: emailTemplates.session_created.subject,
+    //         html: emailTemplates.session_created.html(
+    //           student.fullName || student.name,
+    //           teacher.fullName || teacher.name,
+    //           title,
+    //           sessionDate
+    //         )
+    //       });
+    //       
+    //       if (emailResult.success) {
+    //         console.log(`Session notification email sent to student: ${student.email}`);
+    //       } else {
+    //         console.error(`Failed to send session notification email: ${emailResult.error}`);
+    //       }
+    //     }
+    //   } catch (emailError) {
+    //     console.error("Error sending session notification email:", emailError);
+    //     // Don't fail the session creation if email fails
+    //   }
+    // }
+
     console.log('createSessionSlots - teacherTimezone:', teacherTimezone);
     console.log('createSessionSlots - studentTimezone (using teacher):', teacherTimezone);
 
@@ -118,7 +156,7 @@ exports.createSessionSlots = async (req, res) => {
 
 exports.getMySessionSlots = async (req, res) => {
   try {
-    // Get student with populated teacher info
+    // Get student with populated teacher info7
     const student = await User.findById(req.user.id).populate('teacherId', 'fullName email timezone');
 
     if (!student) {
@@ -139,10 +177,6 @@ exports.getMySessionSlots = async (req, res) => {
     const teacher = student.teacherId;
     const studentTimezone = normalizeTimezone(student.timezone);
     const teacherTimezone = teacher.timezone || "Asia/Kolkata";
-
-    console.log('getMySessionSlots - studentTimezone:', studentTimezone);
-    console.log('getMySessionSlots - teacherTimezone:', teacherTimezone);
-    console.log('getMySessionSlots - student.timezone:', student.timezone);
 
     // Pagination
     const page = parseInt(req.query.page) || 1;
@@ -206,14 +240,8 @@ exports.getMySessionSlots = async (req, res) => {
         studentTimezone
       });
 
-      // Filter out already booked slots
-      const availableSlotsFiltered = availableSlots.filter(slot => {
-        return !session.bookedSlots.some(bookedSlot => {
-          // Convert booked slot time to student timezone for comparison
-          const bookedStartInStudentTZ = moment.utc(bookedSlot.startTime).tz(studentTimezone).format("HH:mm");
-          return bookedStartInStudentTZ === slot.startTime;
-        });
-      });
+      // No need to filter here anymore - generateAvailableSlots handles it
+      // and includes status information for each slot
 
       response.push({
         sessionId: session._id,
@@ -221,7 +249,7 @@ exports.getMySessionSlots = async (req, res) => {
         date: moment(session.date).tz(teacherTimezone).format("DD-MM-YYYY/dddd"),
         day: dayName,
         sessionDuration: session.sessionDuration,
-        availableSlots: availableSlotsFiltered,
+        availableSlots: availableSlots,
         allowedStudents: session.allowedStudentId ? [session.allowedStudentId] : null,
         type: session.allowedStudentId ? "personal" : "common", // Add session type
         isAccessible: true
@@ -566,9 +594,6 @@ exports.getTeacherSessions = async (req, res) => {
     const name = req.user.name;
     const teacherTimezone = req.user.timezone || "Asia/Kolkata";
 
-    console.log('Teacher sessions - teacherTimezone:', teacherTimezone);
-    console.log('Teacher sessions - req.user.timezone:', req.user.timezone);
-
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
@@ -851,7 +876,7 @@ exports.assignSlotToStudent = async (req, res) => {
     // If no slots in cache or cache miss, generate them dynamically
     if (availableSlots.length === 0) {
       console.log("Generating available slots dynamically for assignment");
-      
+
       // Get teacher availability to generate slots
       const availability = await TeacherAvailability.findOne({ teacherId });
       if (!availability) {
@@ -959,6 +984,42 @@ exports.assignSlotToStudent = async (req, res) => {
     } catch (cacheErr) {
       console.log("Cache clearing error:", cacheErr.message);
     }
+
+    // Email functionality commented out
+    // try {
+    //   const teacher = await User.findById(teacherId);
+    //   
+    //   if (teacher && student && student.email) {
+    //     // Format session details for email
+    //     const studentTimezone = student.timezone || "Asia/Kolkata";
+    //     const sessionDate = moment(session.date).tz(studentTimezone).format("DD-MM-YYYY");
+    //     const sessionStartTime = moment.utc(matchingSlot.teacherStart).tz(studentTimezone).format("HH:mm");
+    //     const sessionEndTime = moment.utc(matchingSlot.teacherEnd).tz(studentTimezone).format("HH:mm");
+    //     
+    //     // Send email to student
+    //     const emailResult = await sendEmail({
+    //       to: student.email,
+    //       subject: emailTemplates.slot_assigned.subject,
+    //       html: emailTemplates.slot_assigned.html(
+    //         student.fullName || student.name,
+    //         teacher.fullName || teacher.name,
+    //         session.title,
+    //         sessionDate,
+    //         sessionStartTime,
+    //         sessionEndTime
+    //       )
+    //     });
+    //     
+    //     if (emailResult.success) {
+    //       console.log(`Slot assignment email sent to student: ${student.email}`);
+    //     } else {
+    //       console.error(`Failed to send slot assignment email: ${emailResult.error}`);
+    //     }
+    //   }
+    // } catch (emailError) {
+    //   console.error("Error sending slot assignment email:", emailError);
+    //   // Don't fail the slot assignment if email fails
+    // }
 
     res.json({
       success: true,

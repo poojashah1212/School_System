@@ -782,7 +782,11 @@ class TeacherDashboard {
             this.showLoading();
 
             // Load students count from database
-            const students = await window.apiService.get('/teachers/students');
+            const studentsResponse = await window.apiService.get('/teachers/students');
+            console.log('Dashboard students API Response:', studentsResponse);
+            
+            // Handle different response formats (same as loadStudentsData)
+            const students = Array.isArray(studentsResponse) ? studentsResponse : (studentsResponse.students || []);
             const totalStudents = students.length || 0;
 
             // Update dashboard with real database count
@@ -2058,7 +2062,26 @@ class TeacherDashboard {
     }
 
     async uploadCsv() {
-        const formData = new FormData(document.getElementById('uploadCsvForm'));
+        const form = document.getElementById('uploadCsvForm');
+        const fileInput = form.querySelector('input[type="file"]');
+        const file = fileInput.files[0];
+
+        // Clear previous errors
+        this.clearCsvFieldError(fileInput);
+
+        // Validate file selection
+        if (!file) {
+            this.showCsvFieldError(fileInput, 'Please select a CSV file before uploading.');
+            return;
+        }
+
+        // Validate file type
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            this.showCsvFieldError(fileInput, 'Please select a CSV file');
+            return;
+        }
+
+        const formData = new FormData(form);
 
         try {
             const response = await fetch('/api/teachers/students/upload-csv', {
@@ -2084,6 +2107,33 @@ class TeacherDashboard {
         } catch (error) {
             console.error('Error uploading CSV:', error);
             this.showMessage('Error uploading CSV', 'error');
+        }
+    }
+
+    showCsvFieldError(input, message) {
+        input.classList.add('error');
+        
+        // Remove existing error message
+        const existingError = input.parentNode.querySelector('.csv-error');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Add new error message
+        const errorElement = document.createElement('div');
+        errorElement.className = 'csv-error';
+        errorElement.textContent = message;
+        errorElement.style.cssText = 'color: #e74c3c; font-size: 12px; margin-top: 5px;';
+        input.parentNode.appendChild(errorElement);
+    }
+
+    clearCsvFieldError(input) {
+        input.classList.remove('error');
+        
+        // Remove error message
+        const errorElement = input.parentNode.querySelector('.csv-error');
+        if (errorElement) {
+            errorElement.remove();
         }
     }
 
@@ -4596,7 +4646,8 @@ class TeacherDashboard {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
-                studentName: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.fullName : 'Personal Session') : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
+                studentName: sessionType === 'personal' ? null : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
+                actualStudentName: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.fullName : null) : (slot.bookedBy ? slot.bookedBy.fullName : null),
                 slotId: slot._id, // Add slot ID for cancellation
                 assignedBy: slot.assignedBy,
                 canCancel: canCancel,
@@ -4643,7 +4694,7 @@ class TeacherDashboard {
                                slot.isStudentBooked ? 'title="Student booked - Cannot cancel"' : 
                                'title="Booked - Cannot cancel"';
                 const clickHandler = slot.canCancel ? 
-                    `onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.studentName}', '${sessionId}', '${slot.slotId}')"` : 
+                    `onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.actualStudentName || slot.studentName}', '${sessionId}', '${slot.slotId}')"` : 
                     `onclick="event.preventDefault(); return false;"`;
 
                 return `
@@ -4796,7 +4847,8 @@ class TeacherDashboard {
                 startTime: startTime,
                 endTime: endTime,
                 type: 'booked',
-                studentName: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.fullName : 'Personal Session') : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
+                studentName: sessionType === 'personal' ? null : (slot.bookedBy ? slot.bookedBy.fullName : 'Booked'),
+                actualStudentName: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.fullName : null) : (slot.bookedBy ? slot.bookedBy.fullName : null),
                 studentEmail: sessionType === 'personal' ? (allowedStudentId ? allowedStudentId.email : '') : (slot.bookedBy ? slot.bookedBy.email : '')
             });
         });
@@ -5283,7 +5335,8 @@ class TeacherDashboard {
             });
 
             if (response.ok) {
-                const students = await response.json();
+                const data = await response.json();
+                const students = data.students || [];
                 const particularStudentSelect = document.getElementById('particularStudentSelect');
 
                 // Populate the particular student dropdown
@@ -5911,7 +5964,8 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             });
 
             if (response.ok) {
-                const students = await response.json();
+                const result = await response.json();
+                const students = result.students || [];
                 const selectElement = document.getElementById('studentSelect');
 
                 if (selectElement) {
@@ -5920,7 +5974,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                     students.forEach(student => {
                         const option = document.createElement('option');
                         option.value = student._id;
-                        option.textContent = `${student.fullName} (${student.email})`;
+                        option.textContent = student.fullName;
                         selectElement.appendChild(option);
                     });
                 }
