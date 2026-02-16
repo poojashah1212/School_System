@@ -25,7 +25,16 @@ const quizSchema = new mongoose.Schema(
 
     questions: [questionSchema],
 
-    totalMarks: { type: Number },
+    totalMarks: { type: Number, required: true },
+    startTime: { type: Date, required: false },
+    endTime: { type: Date, required: false },
+    duration: { type: Number, required: false }, // in minutes
+
+    status: {
+      type: String,
+      enum: ["draft", "published"],
+      default: "published"
+    },
 
     teacherId: {
       type: mongoose.Schema.Types.ObjectId,

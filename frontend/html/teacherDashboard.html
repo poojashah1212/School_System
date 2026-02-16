@@ -105,14 +105,271 @@
                 <div class="page" id="quiz-page">
                     <div class="page-header">
                         <h2>Manage Quiz</h2>
-                        <button class="btn-primary" id="createQuizBtn">
-                            <i class="fas fa-plus"></i>
-                            Create Quiz
-                        </button>
+                        <div class="header-actions">
+                            <div class="csv-upload-container">
+                                <button class="btn-secondary" id="uploadQuestionsBtn">
+                                    <i class="fas fa-file-csv"></i>
+                                    Upload Questions
+                                </button>
+                                <div class="csv-dropdown" id="csvDropdown" style="display: none;">
+                                    <button class="dropdown-item" id="downloadQuizSampleCsvBtn">
+                                        <i class="fas fa-download"></i>
+                                        Download Sample CSV
+                                    </button>
+                                    <label for="csvFileInput" class="dropdown-item">
+                                        <i class="fas fa-upload"></i>
+                                        Choose CSV File
+                                    </label>
+                                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                                </div>
+                            </div>
+                            <button class="btn-primary" id="createQuizBtn">
+                                <i class="fas fa-plus"></i>
+                                Create Quiz
+                            </button>
+                        </div>
                     </div>
 
                     <div class="quiz-list" id="quizList">
                         <p class="empty">No quizes created yet</p>
+                    </div>
+                </div>
+
+                <!-- Create Quiz Page -->
+                <div class="page" id="create-quiz-page">
+                    <div class="page-header">
+                        <h2>Create New Quiz</h2>
+                        <div class="header-actions">
+                            <button class="btn-secondary" id="backToQuizListBtn">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Quiz List
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <form id="createQuizForm" novalidate>
+                            <div class="form-section">
+                                <h4 class="section-title">Quiz Information</h4>
+
+                                <div class="form-group">
+                                    <label for="quizTitle">Quiz Title *</label>
+                                    <input type="text" name="title" id="quizTitle" placeholder="Enter quiz title"
+                                        required>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="quizClass">Class *</label>
+                                        <select name="class" id="quizClass" required>
+                                            <option value="">Select Class</option>
+                                            <option value="1st">1st</option>
+                                            <option value="2nd">2nd</option>
+                                            <option value="3rd">3rd</option>
+                                            <option value="4th">4th</option>
+                                            <option value="5th">5th</option>
+                                            <option value="6th">6th</option>
+                                            <option value="7th">7th</option>
+                                            <option value="8th">8th</option>
+                                            <option value="9th">9th</option>
+                                            <option value="10th">10th</option>
+                                            <option value="11th">11th</option>
+                                            <option value="12th">12th</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="quizSubject">Subject *</label>
+                                        <input type="text" name="subject" id="quizSubject"
+                                            placeholder="e.g., Mathematics" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4 class="section-title">Schedule Settings</h4>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="quizStartTime">Start Time *</label>
+                                        <input type="datetime-local" name="startTime" id="quizStartTime" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="quizEndTime">End Time *</label>
+                                        <input type="datetime-local" name="endTime" id="quizEndTime" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="quizDuration">Duration (minutes) *</label>
+                                        <input type="number" name="duration" id="quizDuration" placeholder="e.g., 60"
+                                            min="1" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4 class="section-title">Questions</h4>
+
+                                <div id="questionsContainer">
+                                    <div class="question-item">
+                                        <div class="question-header">
+                                            <span class="question-number">Question 1</span>
+                                            <button type="button" class="btn-remove-question"
+                                                onclick="dashboard.showDeleteQuestionModal(this.closest('.question-item'))">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <div class="question-field">
+                                            <input type="text" name="questions[]" placeholder="Enter question text"
+                                                required>
+                                        </div>
+                                        <div class="options-grid">
+                                            <div class="option-item">
+                                                <label>A</label>
+                                                <input type="text" name="options1[]" placeholder="Option A" required>
+                                            </div>
+                                            <div class="option-item">
+                                                <label>B</label>
+                                                <input type="text" name="options1[]" placeholder="Option B" required>
+                                            </div>
+                                            <div class="option-item">
+                                                <label>C</label>
+                                                <input type="text" name="options1[]" placeholder="Option C" required>
+                                            </div>
+                                            <div class="option-item">
+                                                <label>D</label>
+                                                <input type="text" name="options1[]" placeholder="Option D" required>
+                                            </div>
+                                        </div>
+                                        <div class="answer-field">
+                                            <label>Correct Answer</label>
+                                            <select name="answers[]">
+                                                <option value="">Select correct answer</option>
+                                                <option value="A">A</option>
+                                                <option value="B">B</option>
+                                                <option value="C">C</option>
+                                                <option value="D">D</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="addQuestionBtn">
+                                    <i class="fas fa-plus"></i>
+                                    Add Question
+                                </button>
+                                <button type="button" class="btn-secondary" id="saveQuizBtn">
+                                    <i class="fas fa-save"></i>
+                                    Save
+                                </button>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Publish
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Edit Quiz Page -->
+                <div class="page" id="edit-quiz-page">
+                    <div class="page-header">
+                        <h2>Edit Quiz</h2>
+                        <div class="header-actions">
+                            <button class="btn-secondary" id="backToQuizListFromEditBtn">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Quiz List
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <form id="editQuizForm" novalidate>
+                            <input type="hidden" name="quizId" id="editQuizId">
+                            <div class="form-section">
+                                <h4 class="section-title">Quiz Information</h4>
+
+                                <div class="form-group">
+                                    <label for="editQuizTitle">Quiz Title *</label>
+                                    <input type="text" name="title" id="editQuizTitle" placeholder="Enter quiz title"
+                                        required>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editQuizClass">Class *</label>
+                                        <select name="class" id="editQuizClass" required>
+                                            <option value="">Select Class</option>
+                                            <option value="1st">1st</option>
+                                            <option value="2nd">2nd</option>
+                                            <option value="3rd">3rd</option>
+                                            <option value="4th">4th</option>
+                                            <option value="5th">5th</option>
+                                            <option value="6th">6th</option>
+                                            <option value="7th">7th</option>
+                                            <option value="8th">8th</option>
+                                            <option value="9th">9th</option>
+                                            <option value="10th">10th</option>
+                                            <option value="11th">11th</option>
+                                            <option value="12th">12th</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editQuizSubject">Subject *</label>
+                                        <input type="text" name="subject" id="editQuizSubject"
+                                            placeholder="e.g., Mathematics" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4 class="section-title">Schedule Settings</h4>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editQuizStartTime">Start Time *</label>
+                                        <input type="datetime-local" name="startTime" id="editQuizStartTime" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editQuizEndTime">End Time *</label>
+                                        <input type="datetime-local" name="endTime" id="editQuizEndTime" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editQuizDuration">Duration (minutes) *</label>
+                                        <input type="number" name="duration" id="editQuizDuration"
+                                            placeholder="e.g., 60" min="1" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4 class="section-title">Questions</h4>
+
+                                <div id="editQuestionsContainer">
+                                    <!-- Questions will be dynamically populated here -->
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="addEditQuestionBtn">
+                                    <i class="fas fa-plus"></i>
+                                    Add Question
+                                </button>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Update Quiz
+                                </button>
+                                <button type="button" class="btn-draft" id="saveToDraftBtn" style="display: none;">
+                                    <i class="fas fa-file-alt"></i>
+                                    Save to Draft
+                                </button>
+                                <button type="button" class="btn-publish" id="publishQuizBtn" style="display: none;">
+                                    <i class="fas fa-rocket"></i>
+                                    Publish Quiz
+                                    <span class="publish-badge">Ready to Publish</span>
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -188,7 +445,7 @@
                     </div>
                 </div>
 
-                
+
                 <!-- Sessions Page -->
                 <div class="page" id="sessions-page">
                     <div class="page-header">
@@ -246,107 +503,291 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
 
-    <!-- Add Student Modal -->
-    <div class="modal" id="addStudentModal">
-        <div class="modal-content modal-wide">
-            <div class="modal-header-clean">
-                <h3>Add New Student</h3>
-                <button class="modal-close-clean" id="closeStudentModal">&times;</button>
-            </div>
+                <!-- Add Student Modal -->
+                <div class="modal" id="addStudentModal">
+                    <div class="modal-content modal-wide">
+                        <div class="modal-header-clean">
+                            <h3>Add New Student</h3>
+                            <button class="modal-close-clean" id="closeStudentModal">&times;</button>
+                        </div>
 
-            <form id="addStudentForm" enctype="multipart/form-data" novalidate>
-                <div class="form-wide-grid">
-                    <!-- Basic Info Section -->
-                    <div class="form-section">
-                        <h4 class="section-title-clean">Basic Info</h4>
-                        <div class="form-row-wide">
-                            <div class="form-field-clean required">
-                                <label for="userId">User ID</label>
-                                <input type="text" name="userId" id="userId" placeholder="Enter user ID"
-                                    data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                        <form id="addStudentForm" enctype="multipart/form-data" novalidate>
+                            <div class="form-wide-grid">
+                                <!-- Basic Info Section -->
+                                <div class="form-section">
+                                    <h4 class="section-title-clean">Basic Info</h4>
+                                    <div class="form-row-wide">
+                                        <div class="form-field-clean required">
+                                            <label for="userId">User ID</label>
+                                            <input type="text" name="userId" id="userId" placeholder="Enter user ID"
+                                                data-required="true">
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                        <div class="form-field-clean required">
+                                            <label for="fullName">Full Name</label>
+                                            <input type="text" name="fullName" id="fullName"
+                                                placeholder="Enter full name" data-required="true">
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                        <div class="form-field-clean required">
+                                            <label for="email">Email</label>
+                                            <input type="email" name="email" id="email"
+                                                placeholder="Enter email address" data-required="true">
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row-wide">
+                                        <div class="form-field-clean required">
+                                            <label for="password">Password</label>
+                                            <input type="password" name="password" id="password"
+                                                placeholder="Create password" data-required="true">
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                        <div class="form-field-clean required">
+                                            <label for="age">Age</label>
+                                            <input type="number" name="age" id="age" placeholder="Age" min="1" max="120"
+                                                data-required="true">
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                        <div class="form-field-clean">
+                                            <!-- Empty field for balance -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Contact Info Section -->
+                                <div class="form-section">
+                                    <h4 class="section-title-clean">Contact Info</h4>
+                                    <div class="form-row-wide">
+                                        <div class="form-field-clean required">
+                                            <label for="mobileNo">Mobile</label>
+                                            <input type="tel" name="mobileNo" id="mobileNo"
+                                                placeholder="10-digit number" maxlength="10" data-required="true">
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                        <div class="form-field-clean required">
+                                            <label for="city">City</label>
+                                            <input type="text" name="city" id="city" placeholder="City"
+                                                data-required="true">
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                        <div class="form-field-clean required">
+                                            <label for="state">State</label>
+                                            <input type="text" name="state" id="state" placeholder="State"
+                                                data-required="true">
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Academic Info Section -->
+                                <div class="form-section">
+                                    <h4 class="section-title-clean">Academic Info</h4>
+                                    <div class="form-row-wide">
+                                        <div class="form-field-clean required">
+                                            <label for="class">Class</label>
+                                            <select name="class" id="class" data-required="true">
+                                                <option value="">Select Class</option>
+                                                <option value="1st">1st</option>
+                                                <option value="2nd">2nd</option>
+                                                <option value="3rd">3rd</option>
+                                                <option value="4th">4th</option>
+                                                <option value="5th">5th</option>
+                                                <option value="6th">6th</option>
+                                                <option value="7th">7th</option>
+                                                <option value="8th">8th</option>
+                                                <option value="9th">9th</option>
+                                                <option value="10th">10th</option>
+                                                <option value="11th">11th</option>
+                                                <option value="12th">12th</option>
+                                            </select>
+                                            <span class="error-message"
+                                                style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                        </div>
+                                        <div class="form-field-clean">
+                                            <label for="timezone">Timezone</label>
+                                            <select name="timezone" id="timezone">
+                                                <option value="">Select Timezone</option>
+                                                <option value="Asia/Kolkata">India - Asia/Kolkata</option>
+                                                <option value="America/New_York">USA East - America/New_York</option>
+                                                <option value="America/Los_Angeles">USA West - America/Los_Angeles
+                                                </option>
+                                                <option value="America/Chicago">USA Central - America/Chicago</option>
+                                                <option value="America/Denver">USA Mountain - America/Denver</option>
+                                                <option value="Europe/London">UK - Europe/London</option>
+                                                <option value="Europe/Paris">France - Europe/Paris</option>
+                                                <option value="Europe/Berlin">Germany - Europe/Berlin</option>
+                                                <option value="Europe/Moscow">Russia - Europe/Moscow</option>
+                                                <option value="Asia/Tokyo">Japan - Asia/Tokyo</option>
+                                                <option value="Asia/Shanghai">China - Asia/Shanghai</option>
+                                                <option value="Asia/Hong_Kong">Hong Kong - Asia/Hong_Kong</option>
+                                                <option value="Asia/Singapore">Singapore - Asia/Singapore</option>
+                                                <option value="Asia/Dubai">UAE - Asia/Dubai</option>
+                                                <option value="Australia/Sydney">Australia East - Australia/Sydney
+                                                </option>
+                                                <option value="Australia/Melbourne">Australia - Australia/Melbourne
+                                                </option>
+                                                <option value="Australia/Perth">Australia West - Australia/Perth
+                                                </option>
+                                                <option value="Pacific/Auckland">New Zealand - Pacific/Auckland</option>
+                                                <option value="America/Toronto">Canada - America/Toronto</option>
+                                                <option value="America/Vancouver">Canada West - America/Vancouver
+                                                </option>
+                                                <option value="America/Mexico_City">Mexico - America/Mexico_City
+                                                </option>
+                                                <option value="America/Sao_Paulo">Brazil - America/Sao_Paulo</option>
+                                                <option value="Europe/Rome">Italy - Europe/Rome</option>
+                                                <option value="Europe/Madrid">Spain - Europe/Madrid</option>
+                                                <option value="Asia/Seoul">South Korea - Asia/Seoul</option>
+                                                <option value="Asia/Bangkok">Thailand - Asia/Bangkok</option>
+                                                <option value="Asia/Jakarta">Indonesia - Asia/Jakarta</option>
+                                                <option value="Africa/Cairo">Egypt - Africa/Cairo</option>
+                                                <option value="Africa/Johannesburg">South Africa - Africa/Johannesburg
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="form-field-clean">
+                                            <!-- Empty field for balance -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Profile Image Section -->
+                                <div class="form-section">
+                                    <h4 class="section-title-clean">Profile Image</h4>
+                                    <div class="form-row-wide">
+                                        <div class="form-field-clean">
+                                            <label>Profile Image</label>
+                                            <div class="profile-upload-compact">
+                                                <img src="" alt="Profile" class="profile-image-circle"
+                                                    id="addProfilePreview">
+                                                <div class="upload-icon-overlay"
+                                                    onclick="document.getElementById('addProfileImageInput').click()">
+                                                    <i class="fas fa-upload"></i>
+                                                </div>
+                                                <input type="file" name="image" id="addProfileImageInput"
+                                                    accept="image/*">
+                                            </div>
+                                        </div>
+                                        <div class="form-field-clean">
+                                            <!-- Empty field for balance -->
+                                        </div>
+                                        <div class="form-field-clean">
+                                            <!-- Empty field for balance -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-field-clean required">
-                                <label for="fullName">Full Name</label>
-                                <input type="text" name="fullName" id="fullName" placeholder="Enter full name"
-                                    data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+
+                            <!-- Actions -->
+                            <div class="form-actions-clean">
+                                <button type="button" class="btn btn-outline" id="cancelStudentBtn">Cancel</button>
+                                <button type="submit" class="btn btn-primary-clean">Add Student</button>
                             </div>
-                            <div class="form-field-clean required">
-                                <label for="email">Email</label>
-                                <input type="email" name="email" id="email" placeholder="Enter email address"
-                                    data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                            </div>
-                        </div>
-                        <div class="form-row-wide">
-                            <div class="form-field-clean required">
-                                <label for="password">Password</label>
-                                <input type="password" name="password" id="password" placeholder="Create password"
-                                    data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                            </div>
-                            <div class="form-field-clean required">
-                                <label for="age">Age</label>
-                                <input type="number" name="age" id="age" placeholder="Age" min="1" max="120"
-                                    data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                            </div>
-                            <div class="form-field-clean">
-                                <!-- Empty field for balance -->
-                            </div>
-                        </div>
+                        </form>
                     </div>
+                </div>
 
-                    <!-- Contact Info Section -->
-                    <div class="form-section">
-                        <h4 class="section-title-clean">Contact Info</h4>
-                        <div class="form-row-wide">
-                            <div class="form-field-clean required">
-                                <label for="mobileNo">Mobile</label>
-                                <input type="tel" name="mobileNo" id="mobileNo" placeholder="10-digit number"
-                                    maxlength="10" data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                <div class="modal" id="uploadCsvModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Upload Students CSV</h3>
+                            <button class="modal-close" id="closeCsvModal">&times;</button>
+                        </div>
+                        <form id="uploadCsvForm" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label>Choose CSV File</label>
+                                <input type="file" name="file" accept=".csv">
+                                <small>Upload a CSV file to add student data</small>
                             </div>
-                            <div class="form-field-clean required">
-                                <label for="city">City</label>
-                                <input type="text" name="city" id="city" placeholder="City" data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="downloadStudentSampleCsvBtn">Download
+                                    Sample CSV</button>
+                                <button type="submit" class="btn-primary">Upload CSV</button>
                             </div>
-                            <div class="form-field-clean required">
-                                <label for="state">State</label>
-                                <input type="text" name="state" id="state" placeholder="State" data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Teacher Profile Modal -->
+                <div class="modal" id="teacherProfileModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>My Profile</h3>
+                            <button class="modal-close" id="closeProfileModal">&times;</button>
+                        </div>
+                        <div class="profile-view" id="profileView">
+                            <div class="profile-avatar-section">
+                                <img id="profileAvatar" src="" alt="Profile" class="profile-avatar-large">
+                                <div class="profile-info-display">
+                                    <h4 id="profileName"></h4>
+                                    <p id="profileEmail"></p>
+                                    <p><strong>Mobile:</strong> <span id="profileMobile"></span></p>
+                                    <p><strong>Age:</strong> <span id="profileAge"></span></p>
+                                    <p><strong>City:</strong> <span id="profileCity"></span></p>
+                                    <p><strong>State:</strong> <span id="profileState"></span></p>
+                                    <p><strong>Timezone:</strong> <span id="profileTimezone"></span></p>
+                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button type="button" class="btn-primary" id="editProfileBtn">Edit Profile</button>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Academic Info Section -->
-                    <div class="form-section">
-                        <h4 class="section-title-clean">Academic Info</h4>
-                        <div class="form-row-wide">
-                            <div class="form-field-clean required">
-                                <label for="class">Class</label>
-                                <input type="text" name="class" id="class" placeholder="e.g., 10th Grade"
-                                    data-required="true">
-                                <span class="error-message"
-                                    style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                        <form id="editProfileForm" class="profile-edit" style="display: none;">
+                            <div class="profile-avatar-section">
+                                <img id="profileAvatarEdit" src="" alt="Profile" class="profile-avatar-large">
+                                <div class="form-group">
+                                    <label>Profile Image</label>
+                                    <input type="file" name="profileImage" accept="image/*" id="profileImageInput">
+                                </div>
                             </div>
-                            <div class="form-field-clean">
-                                <label for="timezone">Timezone</label>
-                                <select name="timezone" id="timezone">
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Full Name</label>
+                                    <input type="text" name="fullName" id="editFullName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" name="email" id="editEmail" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Mobile Number</label>
+                                    <input type="tel" name="mobileNo" id="editMobileNo" maxlength="10" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Age</label>
+                                    <input type="number" name="age" id="editAge" min="1" max="120" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>City</label>
+                                    <input type="text" name="city" id="editCity" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>State</label>
+                                    <input type="text" name="state" id="editState" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Timezone</label>
+                                <select name="timezone" id="editTimezone">
                                     <option value="">Select Timezone</option>
                                     <option value="Asia/Kolkata">India - Asia/Kolkata</option>
                                     <option value="America/New_York">USA East - America/New_York</option>
@@ -379,387 +820,220 @@
                                     <option value="Africa/Johannesburg">South Africa - Africa/Johannesburg</option>
                                 </select>
                             </div>
-                            <div class="form-field-clean">
-                                <!-- Empty field for balance -->
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Profile Image Section -->
-                    <div class="form-section">
-                        <h4 class="section-title-clean">Profile Image</h4>
-                        <div class="form-row-wide">
-                            <div class="form-field-clean">
-                                <label>Profile Image</label>
-                                <div class="profile-upload-compact">
-                                    <img src="" alt="Profile" class="profile-image-circle" id="addProfilePreview">
-                                    <div class="upload-icon-overlay"
-                                        onclick="document.getElementById('addProfileImageInput').click()">
-                                        <i class="fas fa-upload"></i>
-                                    </div>
-                                    <input type="file" name="image" id="addProfileImageInput" accept="image/*">
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
+                                <button type="submit" class="btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Create Session Modal -->
+                <div class="modal" id="createSessionModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Create Session Slots</h3>
+                            <button class="modal-close" id="closeSessionModal">&times;</button>
+                        </div>
+                        <form id="createSessionForm" novalidate>
+                            <div id="sessionFormError" class="form-alert alert-error" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 0.375rem; color: #dc2626; font-size: 0.875rem;">
+                            </div>
+                            <div class="form-group">
+                                <label for="sessionTitle">Session Title *</label>
+                                <input type="text" name="title" id="sessionTitle"
+                                    placeholder="e.g., Mathematics Tutoring"
+                                    title="Enter a descriptive title for the session (e.g., Mathematics Tutoring, Science Lab)"
+                                    required>
+                                <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="sessionDate">Date *</label>
+                                    <input type="date" name="date" id="sessionDate"
+                                        title="Select the date when the session will be held" required>
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sessionDuration">Session Duration (minutes) *</label>
+                                    <select name="sessionDuration" id="sessionDuration"
+                                        title="Duration of each session slot" required>
+                                        <option value="">Select duration</option>
+                                        <option value="30">30 minutes</option>
+                                        <option value="45">45 minutes</option>
+                                        <option value="60">60 minutes</option>
+                                        <option value="120">120 minutes</option>
+                                    </select>
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
                                 </div>
                             </div>
-                            <div class="form-field-clean">
-                                <!-- Empty field for balance -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="breakDuration">Break Duration (minutes) *</label>
+                                    <select name="breakDuration" id="breakDuration"
+                                        title="Break time between consecutive sessions" required>
+                                        <option value="">Select break duration</option>
+                                        <option value="5">5 minutes</option>
+                                        <option value="10">10 minutes</option>
+                                        <option value="15">15 minutes</option>
+                                        <option value="20">20 minutes</option>
+                                    </select>
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="studentType">Session Type</label>
+                                    <select name="studentType" id="studentType"
+                                        onchange="dashboard.handleStudentTypeChange(this.value)"
+                                        title="Choose whether this session is for all students or a specific student">
+                                        <option value=" ">select type</option>
+                                        <option value="all">All Students</option>
+                                        <option value="particular">Particular Student</option>
+                                    </select>
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                                </div>
+                                <div class="form-group student-dropdown-container" id="particularStudentGroup">
+                                    <label for="particularStudentSelect">Select Student</label>
+                                    <select name="student_id" id="particularStudentSelect"
+                                        title="Select a specific student for the session">
+                                        <option value="">Select a student</option>
+                                    </select>
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                </div>
                             </div>
-                            <div class="form-field-clean">
-                                <!-- Empty field for balance -->
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="cancelSessionBtn">Cancel</button>
+                                <button type="submit" class="btn-primary">Create Session Slots</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Assign Slot Modal -->
+                <div class="modal" id="assignSlotModal">
+                    <div class="modal-content modal-wide">
+                        <div class="modal-header-clean">
+                            <h3>Assign Slot to Student</h3>
+                            <button class="modal-close-clean" id="closeAssignSlotModal">&times;</button>
+                        </div>
+                        <form id="assignSlotForm" novalidate>
+                            <!-- Selected Slot Section -->
+                            <div class="form-section">
+                                <h4 class="section-title-clean">Selected Slot Details</h4>
+                                <div class="slot-info-grid">
+                                    <div class="slot-info-item">
+                                        <div class="slot-info-icon">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div class="slot-info-content">
+                                            <label>Time</label>
+                                            <div id="slotTimeDisplay" class="slot-info-value">--:--</div>
+                                        </div>
+                                    </div>
+                                    <div class="slot-info-item">
+                                        <div class="slot-info-icon">
+                                            <i class="fas fa-calendar"></i>
+                                        </div>
+                                        <div class="slot-info-content">
+                                            <label>Date</label>
+                                            <div id="slotDateDisplay" class="slot-info-value">----/--/--</div>
+                                        </div>
+                                    </div>
+                                    <div class="slot-info-item">
+                                        <div class="slot-info-icon">
+                                            <i class="fas fa-tag"></i>
+                                        </div>
+                                        <div class="slot-info-content">
+                                            <label>Session Type</label>
+                                            <div id="sessionTypeDisplay" class="slot-info-value">---</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Select Student Section -->
+                            <div class="form-section">
+                                <h4 class="section-title-clean">Student Assignment</h4>
+                                <div class="form-field-clean required">
+                                    <label for="studentSelect">Select Student *</label>
+                                    <select name="studentId" id="studentSelect" required data-required="true">
+                                        <option value="">Select a student...</option>
+                                    </select>
+                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="assignSessionId" name="sessionId">
+                            <input type="hidden" id="assignStartTime" name="startTime">
+
+                            <div class="form-actions-clean">
+                                <button type="button" class="btn-secondary-clean" id="cancelAssignBtn">
+                                    <i class="fas fa-times"></i>
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn-primary-clean">
+                                    <i class="fas fa-user-plus"></i>
+                                    Assign Slot
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Cancel Slot Confirmation Modal -->
+                <div class="modal" id="cancelSlotModal">
+                    <div class="modal-content modal-small">
+                        <div class="modal-header-danger">
+                            <div class="danger-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <h3>Cancel Slot Assignment</h3>
+                        </div>
+                        <div class="modal-body-danger">
+                            <p class="danger-message">Are you sure you want to cancel this slot assignment?</p>
+                            <p class="danger-warning">This action will make the slot available again for booking.</p>
+                            <div class="cancel-slot-details" id="cancelSlotDetails">
+                                <!-- Slot details will be populated here -->
+                            </div>
+                        </div>
+                        <div class="modal-footer-danger">
+                            <button type="button" class="btn-outline" id="cancelSlotBtnCancel">
+                                <i class="fas fa-times"></i>
+                                No, Keep Slot
+                            </button>
+                            <button type="button" class="btn-danger" id="cancelSlotBtnConfirm">
+                                <i class="fas fa-trash"></i>
+                                Yes, Cancel Slot
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading Overlay -->
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                    </div>
+
+                    <!-- Delete Question Confirmation Modal -->
+                    <div class="modal" id="deleteQuestionModal">
+                        <div class="modal-content modal-sm">
+                            <div class="modal-header">
+                                <h3>Delete Question?</h3>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to remove this question?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn-secondary" id="cancelDeleteQuestion">Cancel</button>
+                                <button type="button" class="btn-danger" id="confirmDeleteQuestion">Delete</button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Actions -->
-                <div class="form-actions-clean">
-                    <button type="button" class="btn btn-outline" id="cancelStudentBtn">Cancel</button>
-                    <button type="submit" class="btn btn-primary-clean">Add Student</button>
-                </div>
-            </form>
-        </div>
-    </div>
+                    <!-- Messages Container -->
+                    <div class="messages" id="messages"></div>
 
-    <div class="modal" id="uploadCsvModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Upload Students CSV</h3>
-                <button class="modal-close" id="closeCsvModal">&times;</button>
-            </div>
-            <form id="uploadCsvForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>Choose CSV File</label>
-                    <input type="file" name="file" accept=".csv">
-                    <small>Upload a CSV file to add student data</small>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="downloadSampleCsvBtn">Download Sample CSV</button>
-                    <button type="submit" class="btn-primary">Upload CSV</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal" id="createQuizModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Create New Quiz</h3>
-                <button class="modal-close" id="closeQuizModal">&times;</button>
-            </div>
-            <form id="createQuizForm" novalidate>
-                <div class="form-group">
-                    <label>Quiz Title</label>
-                    <input type="text" name="title" placeholder="Enter quiz title" required>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Class</label>
-                        <input type="text" name="class" placeholder="e.g., 10th Grade" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Subject</label>
-                        <input type="text" name="subject" placeholder="e.g., Mathematics" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Total Marks</label>
-                    <input type="number" name="totalMarks" placeholder="Enter total marks" min="1" required>
-                </div>
-                <div id="questionsContainer">
-                    <h4>Questions</h4>
-                    <div class="question-item">
-                        <input type="text" name="questions[]" placeholder="Question 1" required>
-                        <input type="text" name="options1[]" placeholder="Option A" required>
-                        <input type="text" name="options1[]" placeholder="Option B" required>
-                        <input type="text" name="options1[]" placeholder="Option C" required>
-                        <input type="text" name="options1[]" placeholder="Option D" required>
-                        <select name="answers[]">
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                        </select>
-                    </div>
-                </div>
-                <button type="button" class="btn-secondary" id="addQuestionBtn">Add Question</button>
-                <button type="submit" class="btn-primary">Create Quiz</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Teacher Profile Modal -->
-    <div class="modal" id="teacherProfileModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>My Profile</h3>
-                <button class="modal-close" id="closeProfileModal">&times;</button>
-            </div>
-            <div class="profile-view" id="profileView">
-                <div class="profile-avatar-section">
-                    <img id="profileAvatar" src="" alt="Profile"
-                        class="profile-avatar-large">
-                    <div class="profile-info-display">
-                        <h4 id="profileName"></h4>
-                        <p id="profileEmail"></p>
-                        <p><strong>Mobile:</strong> <span id="profileMobile"></span></p>
-                        <p><strong>Age:</strong> <span id="profileAge"></span></p>
-                        <p><strong>City:</strong> <span id="profileCity"></span></p>
-                        <p><strong>State:</strong> <span id="profileState"></span></p>
-                        <p><strong>Timezone:</strong> <span id="profileTimezone"></span></p>
-                    </div>
-                </div>
-                <div class="profile-actions">
-                    <button type="button" class="btn-primary" id="editProfileBtn">Edit Profile</button>
-                </div>
-            </div>
-
-            <form id="editProfileForm" class="profile-edit" style="display: none;">
-                <div class="profile-avatar-section">
-                    <img id="profileAvatarEdit" src="" alt="Profile"
-                        class="profile-avatar-large">
-                    <div class="form-group">
-                        <label>Profile Image</label>
-                        <input type="file" name="profileImage" accept="image/*" id="profileImageInput">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" name="fullName" id="editFullName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" id="editEmail" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Mobile Number</label>
-                        <input type="tel" name="mobileNo" id="editMobileNo" maxlength="10" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Age</label>
-                        <input type="number" name="age" id="editAge" min="1" max="120" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>City</label>
-                        <input type="text" name="city" id="editCity" required>
-                    </div>
-                    <div class="form-group">
-                        <label>State</label>
-                        <input type="text" name="state" id="editState" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Timezone</label>
-                    <select name="timezone" id="editTimezone">
-                        <option value="">Select Timezone</option>
-                        <option value="Asia/Kolkata">India - Asia/Kolkata</option>
-                        <option value="America/New_York">USA East - America/New_York</option>
-                        <option value="America/Los_Angeles">USA West - America/Los_Angeles</option>
-                        <option value="America/Chicago">USA Central - America/Chicago</option>
-                        <option value="America/Denver">USA Mountain - America/Denver</option>
-                        <option value="Europe/London">UK - Europe/London</option>
-                        <option value="Europe/Paris">France - Europe/Paris</option>
-                        <option value="Europe/Berlin">Germany - Europe/Berlin</option>
-                        <option value="Europe/Moscow">Russia - Europe/Moscow</option>
-                        <option value="Asia/Tokyo">Japan - Asia/Tokyo</option>
-                        <option value="Asia/Shanghai">China - Asia/Shanghai</option>
-                        <option value="Asia/Hong_Kong">Hong Kong - Asia/Hong_Kong</option>
-                        <option value="Asia/Singapore">Singapore - Asia/Singapore</option>
-                        <option value="Asia/Dubai">UAE - Asia/Dubai</option>
-                        <option value="Australia/Sydney">Australia East - Australia/Sydney</option>
-                        <option value="Australia/Melbourne">Australia - Australia/Melbourne</option>
-                        <option value="Australia/Perth">Australia West - Australia/Perth</option>
-                        <option value="Pacific/Auckland">New Zealand - Pacific/Auckland</option>
-                        <option value="America/Toronto">Canada - America/Toronto</option>
-                        <option value="America/Vancouver">Canada West - America/Vancouver</option>
-                        <option value="America/Mexico_City">Mexico - America/Mexico_City</option>
-                        <option value="America/Sao_Paulo">Brazil - America/Sao_Paulo</option>
-                        <option value="Europe/Rome">Italy - Europe/Rome</option>
-                        <option value="Europe/Madrid">Spain - Europe/Madrid</option>
-                        <option value="Asia/Seoul">South Korea - Asia/Seoul</option>
-                        <option value="Asia/Bangkok">Thailand - Asia/Bangkok</option>
-                        <option value="Asia/Jakarta">Indonesia - Asia/Jakarta</option>
-                        <option value="Africa/Cairo">Egypt - Africa/Cairo</option>
-                        <option value="Africa/Johannesburg">South Africa - Africa/Johannesburg</option>
-                    </select>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Create Session Modal -->
-    <div class="modal" id="createSessionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Create Session Slots</h3>
-                <button class="modal-close" id="closeSessionModal">&times;</button>
-            </div>
-            <form id="createSessionForm" novalidate>
-                <div class="form-group">
-                    <label for="sessionTitle">Session Title *</label>
-                    <input type="text" name="title" id="sessionTitle" placeholder="e.g., Mathematics Tutoring" 
-                           title="Enter a descriptive title for the session (e.g., Mathematics Tutoring, Science Lab)" required>
-                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="sessionDate">Date *</label>
-                        <input type="date" name="date" id="sessionDate" 
-                               title="Select the date when the session will be held" required>
-                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="sessionDuration">Session Duration (minutes) *</label>
-                        <select name="sessionDuration" id="sessionDuration" 
-                                title="Duration of each session slot" required>
-                            <option value="">Select duration</option>
-                            <option value="30">30 minutes</option>
-                            <option value="45">45 minutes</option>
-                            <option value="60">60 minutes</option>
-                            <option value="120">120 minutes</option>
-                        </select>
-                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="breakDuration">Break Duration (minutes) *</label>
-                        <select name="breakDuration" id="breakDuration" 
-                                title="Break time between consecutive sessions" required>
-                            <option value="">Select break duration</option>
-                            <option value="5">5 minutes</option>
-                            <option value="10">10 minutes</option>
-                            <option value="15">15 minutes</option>
-                            <option value="20">20 minutes</option>
-                        </select>
-                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="studentType">Session Type</label>
-                        <select name="studentType" id="studentType" onchange="dashboard.handleStudentTypeChange(this.value)"
-                                title="Choose whether this session is for all students or a specific student">
-                            <option value=" ">select type</option>   
-                            <option value="all">All Students</option>
-                            <option value="particular">Particular Student</option>
-                        </select>
-                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                    </div>
-                    <div class="form-group student-dropdown-container" id="particularStudentGroup">
-                        <label for="particularStudentSelect">Select Student</label>
-                        <select name="student_id" id="particularStudentSelect" title="Select a specific student for the session">
-                            <option value="">Select a student</option>
-                        </select>
-                        <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelSessionBtn">Cancel</button>
-                    <button type="submit" class="btn-primary">Create Session Slots</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Assign Slot Modal -->
-    <div class="modal" id="assignSlotModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Assign Slot to Student</h3>
-                <button class="modal-close" id="closeAssignSlotModal">&times;</button>
-            </div>
-            <form id="assignSlotForm" novalidate>
-                <!-- Selected Slot Section -->
-                <div class="form-group">
-                    <label>Selected Slot</label>
-                    <div id="selectedSlotInfo">
-                        <div>
-                            <i class="fas fa-clock"></i>
-                            <div id="slotTimeDisplay"></div>
-                        </div>
-                        <div>
-                            <i class="fas fa-calendar"></i>
-                            <div id="slotDateDisplay"></div>
-                        </div>
-                        <div>
-                            <i class="fas fa-tag"></i>
-                            <div id="sessionTypeDisplay"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Select Student Section -->
-                <div class="form-group">
-                    <label for="studentSelect">Select Student</label>
-                    <select name="studentId" id="studentSelect" required>
-                        <option value="">Select a student...</option>
-                    </select>
-                    <span class="error-message" style="display: none;"></span>
-                </div>
-                
-                <input type="hidden" id="assignSessionId" name="sessionId">
-                <input type="hidden" id="assignStartTime" name="startTime">
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelAssignBtn">Cancel</button>
-                    <button type="submit" class="btn-primary">Assign Slot</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Cancel Slot Confirmation Modal -->
-    <div class="modal" id="cancelSlotModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Cancel Slot</h3>
-                <button class="modal-close" id="closeCancelSlotModal">&times;</button>
-            </div>
-            <div class="cancel-slot-content">
-                <div class="cancel-slot-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <div class="cancel-slot-message">
-                    <h4>Are you sure you want to cancel this slot?</h4>
-                    <p>This action will make the slot available again for booking.</p>
-                </div>
-                <div class="cancel-slot-details" id="cancelSlotDetails">
-                    <!-- Slot details will be populated here -->
-                </div>
-                <div class="cancel-slot-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelSlotBtnCancel">
-                        <i class="fas fa-times"></i> No, Keep Slot
-                    </button>
-                    <button type="button" class="btn btn-danger" id="cancelSlotBtnConfirm">
-                        <i class="fas fa-trash"></i> Yes, Cancel Slot
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- Messages Container -->
-    <div class="messages" id="messages"></div>
-
-    <script src="../js/componentLoader.js"></script>
-    <script src="../js/apiService.js"></script>
-    <script src="../js/teacherDashboard.js"></script>
+                    <script src="../js/componentLoader.js"></script>
+                    <script src="../js/apiService.js"></script>
+                    <script src="../js/teacherDashboard.js"></script>
 </body>
 
 </html>

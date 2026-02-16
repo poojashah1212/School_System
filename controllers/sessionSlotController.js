@@ -28,22 +28,56 @@ exports.createSessionSlots = async (req, res) => {
     const teacherId = req.user.id;
     const teacherTimezone = req.user.timezone || "Asia/Kolkata";
 
+    // Validate required fields
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: "Session title is required" });
+    }
+
+    if (!date) {
+      return res.status(400).json({ message: "Session date is required" });
+    }
+
     // Default to 120 minutes (2 hours) if not specified, for better slot display
     const finalSessionDuration = sessionDuration || 120;
     const finalBreakDuration = breakDuration || 10;
 
+    // Validate session duration
+    if (finalSessionDuration < 15 || finalSessionDuration > 240) {
+      return res.status(400).json({ message: "Session duration must be between 15 and 240 minutes" });
+    }
+
+    // Validate break duration
+    if (finalBreakDuration < 0 || finalBreakDuration > 120) {
+      return res.status(400).json({ message: "Break duration must be between 0 and 120 minutes" });
+    }
+
     const parsedDate = moment(date, "DD-MM-YYYY").startOf("day").toDate();
+
+    // Validate date format and future date
+    if (!moment(date, "DD-MM-YYYY", true).isValid()) {
+      return res.status(400).json({ message: "Date must be in DD-MM-YYYY format" });
+    }
+
+    if (parsedDate < moment().startOf("day").toDate()) {
+      return res.status(400).json({ message: "Session date must be today or in the future" });
+    }
 
     const availability = await TeacherAvailability.findOne({ teacherId });
     if (!availability) {
-      return res.status(400).json({ message: "Teacher availability not set" });
+      return res.status(400).json({ message: "Teacher availability not set for this date" });
     }
 
-    const isHoliday = availability.holidays.some(
+    // Check for holidays with detailed message
+    const holiday = availability.holidays.find(
       h => parsedDate >= h.startDate && parsedDate <= h.endDate
     );
-    if (isHoliday) {
-      return res.status(400).json({ message: "Session date is a holiday" });
+    if (holiday) {
+      const startDate = moment(holiday.startDate).format("DD-MM-YYYY");
+      const endDate = moment(holiday.endDate).format("DD-MM-YYYY");
+      const dateRange = startDate === endDate ? startDate : `${startDate} to ${endDate}`;
+      return res.status(400).json({ 
+        message: `Teacher is on holiday: ${holiday.reason} from ${dateRange}` 
+      });
     }
 
     const day = moment(parsedDate).format("dddd").toLowerCase();
@@ -54,16 +88,32 @@ exports.createSessionSlots = async (req, res) => {
     if (!dayAvailability) {
       return res
         .status(400)
-        .json({ message: "Teacher is not available on this day" });
+        .json({ message: `Teacher is not available on ${day}` });
+    }
+
+    // Validate that the session time fits within availability
+    const [startHour, startMin] = dayAvailability.startTime.split(":").map(Number);
+    const [endHour, endMin] = dayAvailability.endTime.split(":").map(Number);
+    const availableMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    
+    if (finalSessionDuration > availableMinutes) {
+      return res.status(400).json({ 
+        message: `Session duration (${finalSessionDuration} minutes) exceeds available time (${availableMinutes} minutes)` 
+      });
     }
 
     let allowedStudentId = null;
     if (student_id) {
+      // Validate student ID format
+      if (!student_id.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ message: "Invalid student ID format" });
+      }
+
       const student = await User.findOne({ _id: student_id, teacherId });
       if (!student) {
         return res
           .status(403)
-          .json({ message: "Invalid student for this teacher" });
+          .json({ message: "Student not found or not assigned to this teacher" });
       }
       allowedStudentId = student._id;
     }

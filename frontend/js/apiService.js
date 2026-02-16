@@ -70,8 +70,13 @@ class ApiService {
                 
                 try {
                     const errorData = await response.json();
-                    errorMessage = errorData.message || errorMessage;
+                    console.log('API Error Data:', errorData); // Debug log
+                    // Safely access error message with fallback
+                    if (errorData && typeof errorData === 'object' && errorData.message) {
+                        errorMessage = errorData.message;
+                    }
                 } catch (e) {
+                    console.log('Failed to parse error response as JSON:', e);
                     // If response is not JSON, use default error message
                 }
                 

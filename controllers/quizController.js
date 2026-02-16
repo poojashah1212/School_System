@@ -1,14 +1,20 @@
 const Quiz = require("../models/quiz");
 const User = require("../models/user");
-const Marks = require("../models/marks"); // Import the new model
+const Marks = require("../models/marks");
 
 exports.getQuizzes = async (req, res) => {
   try {
     const teacherId = req.user.id;
-    
-    const quizzes = await Quiz.find({ teacherId })
+    const { status } = req.query;
+
+    const query = { teacherId };
+    if (status && ['draft', 'published'].includes(status)) {
+      query.status = status;
+    }
+
+    const quizzes = await Quiz.find(query)
       .sort({ createdAt: -1 });
-    
+
     res.json({ quizzes });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -17,23 +23,53 @@ exports.getQuizzes = async (req, res) => {
 
 exports.createQuiz = async (req, res) => {
   try {
-    const { title, class: className, subject, questions, totalMarks } = req.body;
+    const { title, class: className, subject, questions, totalMarks, startTime, endTime, duration, status } = req.body;
 
-    if (!title || !className || !subject || !questions?.length || !totalMarks) {
-      return res.status(400).json({ message: "All fields required" });
+    if (status === 'draft') {
+      if (!title) {
+        return res.status(400).json({ message: "Quiz title is required for draft" });
+      }
+    } else {
+      // For published mode, all fields are required
+      if (!title || !className || !subject || !questions?.length || !startTime || !endTime || !duration) {
+        return res.status(400).json({ message: "All fields required" });
+      }
+
+      const startDate = new Date(startTime);
+      const endDate = new Date(endTime);
+      const durationNum = parseInt(duration);
+
+      if (endDate <= startDate) {
+        return res.status(400).json({ message: "End time must be after start time" });
+      }
+
+      if (durationNum < 1) {
+        return res.status(400).json({ message: "Duration must be at least 1 minute" });
+      }
     }
+
+    // Calculate totalMarks from number of questions if not provided
+    const calculatedTotalMarks = totalMarks || questions?.length || 0;
 
     const quiz = await Quiz.create({
       title,
-      class: className,
-      subject,
-      questions,
-      totalMarks,
+      class: className || '',
+      subject: subject || '',
+      questions: questions || [],
+      totalMarks: calculatedTotalMarks,
+      startTime: status === 'draft' ? null : new Date(startTime),
+      endTime: status === 'draft' ? null : new Date(endTime),
+      duration: status === 'draft' ? null : parseInt(duration) || null,
+      status: status || 'published',
       teacherId: req.user.id
     });
 
+    const message = status === 'draft' ? 
+      "Quiz saved as draft successfully" : 
+      "Quiz created successfully";
+
     res.status(201).json({
-      message: "Quiz created successfully",
+      message,
       quiz
     });
 
@@ -53,7 +89,7 @@ exports.updateQuiz = async (req, res) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    const { title, class: className, subject, questions, totalMarks } = req.body;
+    const { title, class: className, subject, questions, totalMarks, startTime, endTime, duration, status } = req.body;
 
     if (title) quiz.title = title;
     if (className) quiz.class = className;
@@ -62,9 +98,41 @@ exports.updateQuiz = async (req, res) => {
     if (questions) {
       quiz.questions = questions;
     }
-    
+
     if (totalMarks !== undefined) {
       quiz.totalMarks = totalMarks;
+    }
+
+    if (startTime) {
+      const startDate = new Date(startTime);
+      quiz.startTime = startDate;
+    }
+
+    if (endTime) {
+      const endDate = new Date(endTime);
+
+      if (quiz.startTime && endDate <= quiz.startTime) {
+        return res.status(400).json({ message: "End time must be after start time" });
+      }
+      quiz.endTime = endDate;
+    }
+
+    if (duration !== undefined) {
+      const durationNum = parseInt(duration);
+      if (durationNum < 1) {
+        return res.status(400).json({ message: "Duration must be at least 1 minute" });
+      }
+      quiz.duration = durationNum;
+    }
+
+    // Handle status update
+    if (status !== undefined) {
+      quiz.status = status;
+    }
+
+    // Final validation if both start and end times are present
+    if (quiz.startTime && quiz.endTime && quiz.endTime <= quiz.startTime) {
+      return res.status(400).json({ message: "End time must be after start time" });
     }
 
     await quiz.save();
@@ -78,7 +146,6 @@ exports.updateQuiz = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 exports.updateSingleQuestion = async (req, res) => {
   try {
@@ -98,7 +165,6 @@ exports.updateSingleQuestion = async (req, res) => {
       return res.status(400).json({ message: "Invalid question index" });
     }
 
-   
     quiz.questions[index].question = question;
     quiz.questions[index].options = options;
     quiz.questions[index].correctOption = correctOption;
@@ -117,76 +183,155 @@ exports.updateSingleQuestion = async (req, res) => {
 
 exports.submitQuiz = async (req, res) => {
   try {
-    const studentId = req.user.id;
-    const answers = req.body;
-    const quiz = req.quiz;
-
-    const student = await User.findById(studentId);
-    if (!student || !student.teacherId) {
-      return res.status(403).json({
-        message: "Student not linked to teacher"
+    const { quizId, studentId, answers, timeTaken, timeTakenSeconds, submittedAt, studentName, teacherId } = req.body;
+    
+    // Validate required fields
+    if (!quizId || !studentId || !answers) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: quizId, studentId, or answers"
       });
     }
 
-    
-    if (quiz.teacherId.toString() !== student.teacherId.toString()) {
+    // Get quiz details
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: "Quiz not found"
+      });
+    }
+
+    // Get student details
+    const student = await User.findById(studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found"
+      });
+    }
+
+    // Check if student is linked to teacher (use provided teacherId or fallback to student.teacherId)
+    const assignedTeacherId = teacherId || student.teacherId;
+    if (!assignedTeacherId) {
       return res.status(403).json({
+        success: false,
+        message: "Student not linked to any teacher. Please contact your administrator."
+      });
+    }
+
+    // Verify student can attempt this quiz
+    if (quiz.teacherId.toString() !== assignedTeacherId.toString()) {
+      return res.status(403).json({
+        success: false,
         message: "You cannot attempt another teacher's quiz"
       });
     }
 
-
+    // Check if already attempted
     const alreadyAttempted = await Marks.findOne({
       studentId,
       quizId: quiz._id
     });
 
     if (alreadyAttempted) {
-      return res.status(400).json({
-        message: "Quiz already attempted"
+      return res.status(409).json({
+        success: false,
+        message: "You have already submitted this quiz",
+        data: {
+          totalQuestions: quiz.questions.length,
+          correctAnswers: alreadyAttempted.score,
+          wrongAnswers: quiz.questions.length - alreadyAttempted.score,
+          scorePercentage: Math.round((alreadyAttempted.score / quiz.questions.length) * 100),
+          status: alreadyAttempted.score >= Math.ceil(quiz.questions.length * 0.5) ? 'Pass' : 'Fail'
+        }
       });
     }
 
-    let score = 0;
-    quiz.questions.forEach((q, index) => {
-      if (answers[index] === q.correctOption) {
-        score++;
+    // Calculate Score Properly
+    let correctAnswers = 0;
+    let wrongAnswers = 0;
+    
+    quiz.questions.forEach((question, index) => {
+      const userAnswer = answers[index];
+      const correctOption = question.correctOption;
+      
+      // Simple comparison: convert both to same format
+      let isCorrect = false;
+      
+      // If userAnswer is a number (0,1,2,3), convert to letter
+      const userAnswerLetter = typeof userAnswer === 'number' ? 
+        String.fromCharCode(65 + userAnswer) : userAnswer;
+      
+      // If correctOption is a number (0,1,2,3), convert to letter  
+      const correctOptionLetter = typeof correctOption === 'number' ? 
+        String.fromCharCode(65 + correctOption) : correctOption;
+      
+      // Compare letters
+      isCorrect = userAnswerLetter === correctOptionLetter;
+      
+      console.log(`Question ${index + 1}: User=${userAnswerLetter}, Correct=${correctOptionLetter}, Match=${isCorrect}`);
+      
+      if (isCorrect) {
+        correctAnswers++;
+      } else {
+        wrongAnswers++;
       }
     });
 
+    const totalQuestions = quiz.questions.length;
+    const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100);
+    const status = scorePercentage >= 50 ? 'Pass' : 'Fail';
+
+    // Save results in database
     const result = await Marks.create({
       studentId,
       quizId: quiz._id,
       teacherId: quiz.teacherId,
-      score,
-      totalMarks: quiz.totalMarks
+      score: correctAnswers,
+      totalMarks: quiz.totalMarks || totalQuestions,
+      percentage: scorePercentage,
+      timeTaken,
+      submittedAt: new Date()
     });
 
+    // Return result data in exact format requested
     return res.status(201).json({
-      message: "Quiz attempted successfully",
-      data: result
+      success: true,
+      message: "Quiz submitted successfully!",
+      data: {
+        totalQuestions,
+        correctAnswers,
+        wrongAnswers,
+        scorePercentage,
+        status
+      }
     });
 
   } catch (err) {
+    console.error('Quiz submission error:', err);
     return res.status(500).json({
-      message: err.message
+      success: false,
+      message: "Internal server error during quiz submission",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 };
+
 exports.deleteQuiz = async (req, res) => {
   try {
     const quizId = req.params.id;
     const teacherId = req.user.id;
-    
+
     const quiz = await Quiz.findOneAndDelete({
       _id: quizId,
       teacherId: teacherId
     });
-    
+
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }
-    
+
     res.json({ message: "Quiz deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -201,27 +346,34 @@ exports.getQuizForStudent = async (req, res) => {
     // Get student and verify teacher assignment
     const student = await User.findById(studentId);
     if (!student || !student.teacherId) {
-      return res.status(403).json({ 
-        message: "Student not linked to any teacher" 
+      return res.status(403).json({
+        message: "Student not linked to any teacher"
       });
     }
 
     // Get quiz and verify it exists
     const quiz = await Quiz.findById(quizId).select('-questions.correctOption');
     if (!quiz) {
-      return res.status(404).json({ 
-        message: "Quiz not found" 
+      return res.status(404).json({
+        message: "Quiz not found"
+      });
+    }
+
+    // Verify quiz has questions
+    if (!quiz.questions || quiz.questions.length === 0) {
+      return res.status(404).json({
+        message: "Quiz has no questions available"
       });
     }
 
     // CRITICAL: Verify student can only access their teacher's quiz
     if (quiz.teacherId.toString() !== student.teacherId.toString()) {
-      return res.status(403).json({ 
-        message: "You can only access quizzes from your assigned teacher" 
+      return res.status(403).json({
+        message: "You can only access quizzes from your assigned teacher"
       });
     }
 
-    res.json({ quiz }); 
+    res.json({ quiz });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -231,16 +383,16 @@ exports.getQuizById = async (req, res) => {
   try {
     const quizId = req.params.id;
     const teacherId = req.user.id;
-    
+
     const quiz = await Quiz.findOne({
       _id: quizId,
       teacherId: teacherId
     });
-    
+
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }
-    
+
     res.json({ quiz });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -250,24 +402,35 @@ exports.getQuizById = async (req, res) => {
 exports.getAvailableQuizzesForStudent = async (req, res) => {
   try {
     const student = await User.findById(req.user.id);
+
     if (!student || !student.teacherId) {
-      return res.status(403).json({ message: "Student not linked to teacher" });
+      return res.json({ quizzes: [] });
     }
 
-    const quizzes = await Quiz.find({ 
+    const quizzes = await Quiz.find({
       teacherId: student.teacherId,
-      class: student.class 
-    }).select('-questions.correctOption').sort({ createdAt: -1 });
+      class: student.class
+    })
+      .select('title subject class duration totalMarks questions createdAt startTime endTime')
+      .sort({ createdAt: -1 });
 
     // Get attempted quiz IDs
-    const attemptedQuizzes = await Marks.find({ 
-      studentId: req.user.id 
+    const attemptedQuizzes = await Marks.find({
+      studentId: req.user.id
     }).distinct('quizId');
 
-    // Filter out already attempted quizzes
-    const availableQuizzes = quizzes.filter(quiz => 
-      !attemptedQuizzes.includes(quiz._id.toString())
-    );
+    // Format response and include all quizzes (attempted and unattempted)
+    const availableQuizzes = quizzes.map(quiz => ({
+      _id: quiz._id,
+      title: quiz.title,
+      subject: quiz.subject,
+      class: quiz.class,
+      totalQuestions: quiz.questions ? quiz.questions.length : 0,
+      duration: quiz.duration,
+      startDate: quiz.startTime,
+      endDate: quiz.endTime,
+      alreadySubmitted: attemptedQuizzes.includes(quiz._id.toString())
+    }));
 
     res.json({ quizzes: availableQuizzes });
   } catch (err) {
@@ -275,24 +438,93 @@ exports.getAvailableQuizzesForStudent = async (req, res) => {
   }
 };
 
+exports.checkQuizAttemptStatus = async (req, res) => {
+  try {
+    const quizId = req.params.id;
+    const studentId = req.user.id;
+
+    // Check if student has already submitted this quiz
+    const existingAttempt = await Marks.findOne({
+      studentId: studentId,
+      quizId: quizId
+    });
+
+    res.json({ 
+      alreadySubmitted: !!existingAttempt,
+      attemptDate: existingAttempt?.createdAt
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.getStudentResults = async (req, res) => {
   try {
-    console.log('=== DEBUG: getStudentResults called for user:', req.user?.id);
-    
-    const results = await Marks.find({ 
-      studentId: req.user.id 
+    const results = await Marks.find({
+      studentId: req.user.id
     })
-    .populate('quizId', 'title subject')
-    .sort({ createdAt: -1 });
-    
-    console.log('=== DEBUG: Found results:', results?.length || 0);
-    console.log('=== DEBUG: Results sample:', results?.[0]);
-    
+      .populate('quizId', 'title subject')
+      .sort({ createdAt: -1 });
+
     res.json({ results });
   } catch (err) {
-    console.error('=== DEBUG: Error in getStudentResults:', err);
-    res.status(500).json({ 
-      message: "Failed to fetch quiz results: " + err.message 
+    res.status(500).json({
+      message: "Failed to fetch quiz results: " + err.message
+    });
+  }
+};
+
+exports.uploadQuizCsv = async (req, res) => {
+  try {
+    const { title, class: className, subject, totalMarks, startTime, endTime, duration } = req.body;
+    const questions = req.validatedQuestions;
+
+    if (!title || !className || !subject || !startTime || !endTime || !duration) {
+      return res.status(400).json({
+        message: "Quiz title, class, subject, start time, end time, and duration are required"
+      });
+    }
+
+    const startDate = new Date(startTime);
+    const endDate = new Date(endTime);
+    const durationNum = parseInt(duration);
+
+    if (endDate <= startDate) {
+      return res.status(400).json({ message: "End time must be after start time" });
+    }
+
+    const calculatedTotalMarks = totalMarks || questions.length;
+
+    const quiz = new Quiz({
+      title,
+      class: className,
+      subject,
+      questions,
+      totalMarks: calculatedTotalMarks,
+      startTime: startDate,
+      endTime: endDate,
+      duration: durationNum,
+      teacherId: req.user.id
+    });
+
+    await quiz.save();
+
+    res.status(201).json({
+      message: "Quiz created successfully from CSV",
+      quiz: {
+        id: quiz._id,
+        title: quiz.title,
+        class: quiz.class,
+        subject: quiz.subject,
+        totalQuestions: questions.length,
+        totalMarks: quiz.totalMarks
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in uploadQuizCsv:', error);
+    res.status(500).json({
+      message: "Failed to create quiz from CSV: " + error.message
     });
   }
 };

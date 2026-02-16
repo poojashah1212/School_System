@@ -26,6 +26,7 @@ app.use("/api/users", require("./routes/users"));
 app.use("/api/teachers", require("./routes/teacherRoutes"));
 app.use("/api/teacher-availability", require("./routes/teacherAvailabilityRoutes"));
 app.use("/api/sessions", require("./routes/sessionRoutes"));
+app.use("/api/quizzes", require("./routes/quizRoutes"));
 
 // Fallback route for frontend - serve appropriate HTML file for non-API routes
 app.use((req, res, next) => {

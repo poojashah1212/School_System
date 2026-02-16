@@ -7,8 +7,9 @@ const upload = require("../middleware/upload");
 const uploadCsv = require("../middleware/uploadCsv"); 
 const authMiddleware = require("../middleware/authMiddleware");
 const { createQuizValidation } = require("../middleware/validation/quizValidation");
-const { createQuiz, updateQuiz, updateSingleQuestion, getQuizzes, deleteQuiz, getQuizById } = require("../controllers/quizController");
+const { createQuiz, updateQuiz, updateSingleQuestion, getQuizzes, deleteQuiz, getQuizById, uploadQuizCsv } = require("../controllers/quizController");
 const { quizSingleQuestionValidation } = require("../middleware/validation/quizValidation");
+const { quizCsvUploadValidation } = require("../middleware/validation/quizCsvValidation");
 
 const {
   studentCreate,
@@ -75,6 +76,13 @@ router.post(
 );
 
 router.post("/quiz", createQuizValidation, runValidation, createQuiz);
+
+router.post(
+  "/quiz/upload-csv",
+  uploadCsv.single("file"),
+  quizCsvUploadValidation,
+  uploadQuizCsv
+);
 
 router.get("/quiz", getQuizzes);
 

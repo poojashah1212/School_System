@@ -39,9 +39,22 @@ exports.createQuizValidation = [
     .isIn(["A", "B", "C", "D"])
     .withMessage("Correct option must be A, B, C or D"),
 
-  body("totalMarks")
+  // Schedule field validations
+  body("startTime")
+    .notEmpty()
+    .withMessage("Start time is required")
+    .isISO8601()
+    .withMessage("Start time must be a valid date"),
+
+  body("endTime")
+    .notEmpty()
+    .withMessage("End time is required")
+    .isISO8601()
+    .withMessage("End time must be a valid date"),
+
+  body("duration")
     .isInt({ min: 1 })
-    .withMessage("Total marks must be a positive integer")
+    .withMessage("Duration must be at least 1 minute")
 ];
 
 exports.quizSingleQuestionValidation = [

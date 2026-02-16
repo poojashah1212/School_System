@@ -17,6 +17,7 @@ class TeacherDashboard {
     init() {
         this.checkAuth();
         this.setupEventListeners();
+        this.setupFormResetHandlers();
         this.loadTeacherData();
     }
 
@@ -161,6 +162,65 @@ class TeacherDashboard {
         }
     }
 
+    // Delete Question Modal Functions
+    showDeleteQuestionModal(questionElement) {
+        // Check if the question has any content
+        const questionInput = questionElement.querySelector('input[name^="questions"]');
+        
+        if (questionInput && questionInput.value.trim() !== '') {
+            // If question has content, show confirmation
+            this.showConfirmDialog(
+                'Are you sure you want to delete this question? Any unsaved changes will be lost.',
+                'Delete Question',
+                () => {
+                    questionElement.remove();
+                    this.updateQuestionNumbers();
+                }
+            );
+        } else {
+            // If question is empty, just remove it
+            questionElement.remove();
+            this.updateQuestionNumbers();
+        }
+    }
+
+    hideDeleteQuestionModal() {
+        this.hideModal('deleteQuestionModal');
+        this.questionToDelete = null;
+    }
+
+    validateQuestionField(input) {
+        const questionItem = input.closest('.question-item');
+        if (!questionItem) return;
+        
+        const errorElement = questionItem.querySelector('.question-error') || 
+            (() => {
+                const error = document.createElement('div');
+                error.className = 'question-error text-danger mt-1';
+                input.parentNode.insertAdjacentElement('afterend', error);
+                return error;
+            })();
+        
+        if (input.value.trim() === '') {
+            errorElement.textContent = 'Question cannot be empty';
+            input.classList.add('is-invalid');
+            return false;
+        } else {
+            errorElement.textContent = '';
+            input.classList.remove('is-invalid');
+            return true;
+        }
+    }
+
+    confirmDeleteQuestion() {
+        if (this.questionToDelete) {
+            this.questionToDelete.remove();
+            this.questionToDelete = null;
+            this.updateQuestionNumbers();
+        }
+        this.hideDeleteQuestionModal();
+    }
+
     setupEventListeners() {
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -247,14 +307,21 @@ class TeacherDashboard {
         // Student management
         const addStudentBtn = document.getElementById('addStudentBtn');
         if (addStudentBtn) {
-            addStudentBtn.addEventListener('click', () => {
+            addStudentBtn.addEventListener('click', (e) => {
+                console.log('Add Student button clicked'); // Debug log
+                e.preventDefault();
                 const modal = document.getElementById('addStudentModal');
                 if (modal) {
+                    console.log('Modal found, showing modal'); // Debug log
                     // Reset form to clean state before opening
                     this.resetAddStudentForm();
                     modal.classList.add('show');
+                } else {
+                    console.error('Add Student modal not found'); // Debug log
                 }
             });
+        } else {
+            console.error('Add Student button not found'); // Debug log
         }
 
         const uploadCsvBtn = document.getElementById('uploadCsvBtn');
@@ -270,6 +337,22 @@ class TeacherDashboard {
         if (downloadSampleCsvBtn) {
             downloadSampleCsvBtn.addEventListener('click', () => {
                 this.downloadSampleCsv();
+            });
+        }
+
+        // Download student sample CSV functionality
+        const downloadStudentSampleCsvBtn = document.getElementById('downloadStudentSampleCsvBtn');
+        if (downloadStudentSampleCsvBtn) {
+            downloadStudentSampleCsvBtn.addEventListener('click', () => {
+                this.downloadStudentSampleCsv();
+            });
+        }
+
+        // Download quiz sample CSV functionality
+        const downloadQuizSampleCsvBtn = document.getElementById('downloadQuizSampleCsvBtn');
+        if (downloadQuizSampleCsvBtn) {
+            downloadQuizSampleCsvBtn.addEventListener('click', () => {
+                this.downloadQuizSampleCsv();
             });
         }
 
@@ -309,10 +392,31 @@ class TeacherDashboard {
         const createQuizBtn = document.getElementById('createQuizBtn');
         if (createQuizBtn) {
             createQuizBtn.addEventListener('click', () => {
-                const modal = document.getElementById('createQuizModal');
-                if (modal) modal.classList.add('show');
+                this.navigateToCreateQuizPage();
             });
         }
+
+        // CSV Upload functionality
+        const uploadQuestionsBtn = document.getElementById('uploadQuestionsBtn');
+        if (uploadQuestionsBtn) {
+            uploadQuestionsBtn.addEventListener('click', () => {
+                this.toggleCsvDropdown();
+            });
+        }
+
+        const csvFileInput = document.getElementById('csvFileInput');
+        if (csvFileInput) {
+            csvFileInput.addEventListener('change', (e) => {
+                this.handleCsvFileUpload(e);
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.csv-upload-container')) {
+                this.closeCsvDropdown();
+            }
+        });
 
         // Holiday management
         const addHolidayBtn = document.getElementById('addHolidayBtn');
@@ -330,11 +434,95 @@ class TeacherDashboard {
             });
         }
 
-        const closeQuizModal = document.getElementById('closeQuizModal');
-        if (closeQuizModal) {
-            closeQuizModal.addEventListener('click', () => {
-                const modal = document.getElementById('createQuizModal');
-                if (modal) modal.classList.remove('show');
+        // Quiz management navigation
+        const backToQuizListBtn = document.getElementById('backToQuizListBtn');
+        if (backToQuizListBtn) {
+            backToQuizListBtn.addEventListener('click', () => {
+                this.resetCreateQuizForm();
+                this.resetQuestionsToDefault();
+                this.navigateToQuizPage();
+            });
+        }
+
+        const backToQuizListFromEditBtn = document.getElementById('backToQuizListFromEditBtn');
+        if (backToQuizListFromEditBtn) {
+            backToQuizListFromEditBtn.addEventListener('click', () => {
+                this.resetEditQuizForm();
+                this.navigateToQuizPage();
+            });
+        }
+
+        const editQuizForm = document.getElementById('editQuizForm');
+        if (editQuizForm) {
+            editQuizForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.updateQuiz();
+            });
+
+            // Add event listeners to clear errors when fields are corrected
+            const editFormFields = editQuizForm.querySelectorAll('input, select, textarea');
+            editFormFields.forEach(field => {
+                // Clear error on input/change
+                field.addEventListener('input', () => {
+                    this.clearFieldError(field);
+                });
+                
+                field.addEventListener('change', () => {
+                    this.clearFieldError(field);
+                });
+            });
+        }
+
+        const addEditQuestionBtn = document.getElementById('addEditQuestionBtn');
+        if (addEditQuestionBtn) {
+            addEditQuestionBtn.addEventListener('click', () => {
+                this.addEditQuestionField();
+            });
+        }
+
+        // Single event handler for publish button (works for both create and edit forms)
+        const publishQuizBtn = document.getElementById('publishQuizBtn');
+        if (publishQuizBtn) {
+            // Remove any existing click event listeners to prevent duplicates
+            const newPublishBtn = publishQuizBtn.cloneNode(true);
+            publishQuizBtn.parentNode.replaceChild(newPublishBtn, publishQuizBtn);
+            
+            // Add single click handler
+            newPublishBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Check if we're in edit mode by looking for the edit form
+                const isEditMode = !!document.getElementById('editQuizForm');
+                
+                // For edit form, use validateEditQuizForm, otherwise use validateQuizForm
+                const isValid = isEditMode ? 
+                    this.validateEditQuizForm() : 
+                    this.validateQuizForm();
+                
+                if (!isValid) {
+                    // Scroll to first error
+                    const firstError = document.querySelector('.field-error, .question-error, .option-error, .general-error');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+                
+                // Call publishQuiz directly - it will handle its own confirmation
+                this.publishQuiz();
+            });
+        }
+
+        // Save to Draft button event handler
+        const saveToDraftBtn = document.getElementById('saveToDraftBtn');
+        if (saveToDraftBtn) {
+            saveToDraftBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Call saveToDraft function
+                this.saveToDraft();
             });
         }
 
@@ -345,11 +533,38 @@ class TeacherDashboard {
             });
         }
 
+        // Delete Question Modal
+        const cancelDeleteQuestion = document.getElementById('cancelDeleteQuestion');
+        if (cancelDeleteQuestion) {
+            cancelDeleteQuestion.addEventListener('click', () => {
+                this.hideDeleteQuestionModal();
+            });
+        }
+
+        const confirmDeleteQuestion = document.getElementById('confirmDeleteQuestion');
+        if (confirmDeleteQuestion) {
+            confirmDeleteQuestion.addEventListener('click', () => {
+                this.confirmDeleteQuestion();
+            });
+        }
+
         // Forms
         const addStudentForm = document.getElementById('addStudentForm');
         if (addStudentForm) {
+            // Also add click event listener to the submit button as backup
+            const submitBtn = addStudentForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', (e) => {
+                    console.log('Submit button clicked'); // Debug log
+                    e.preventDefault();
+                    this.addStudent();
+                });
+            }
+
             addStudentForm.addEventListener('submit', (e) => {
+                console.log('Form submit event triggered'); // Debug log
                 e.preventDefault();
+                console.log('Calling addStudent function'); // Debug log
                 this.addStudent();
             });
 
@@ -372,11 +587,26 @@ class TeacherDashboard {
             });
         }
 
+        const uploadQuizCsvForm = document.getElementById('uploadQuizCsvForm');
+        if (uploadQuizCsvForm) {
+            uploadQuizCsvForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.uploadQuizCsv();
+            });
+        }
+
         const createQuizForm = document.getElementById('createQuizForm');
         if (createQuizForm) {
             createQuizForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.createQuiz();
+            });
+        }
+
+        const saveQuizBtn = document.getElementById('saveQuizBtn');
+        if (saveQuizBtn) {
+            saveQuizBtn.addEventListener('click', () => {
+                this.saveQuizAsDraft();
             });
         }
 
@@ -720,6 +950,17 @@ class TeacherDashboard {
     }
 
     navigateToPage(page) {
+        // Reset Create Quiz form when navigating away from create-quiz page
+        if (this.currentPage === 'create-quiz' && page !== 'create-quiz') {
+            this.resetCreateQuizForm();
+            this.resetQuestionsToDefault();
+        }
+
+        // Reset Edit Quiz form when navigating away from edit-quiz page
+        if (this.currentPage === 'edit-quiz' && page !== 'edit-quiz') {
+            this.resetEditQuizForm();
+        }
+
         // Update navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
@@ -735,12 +976,11 @@ class TeacherDashboard {
         // Update page title
         const titles = {
             dashboard: 'Teacher Dashboard',
-            students: 'Students Management',
-            quiz: 'Quiz Management',
-            availability: 'Availability',
-            holidays: 'Holiday Management',
-            marks: 'Marks',
-            sessions: 'Session Management'
+            students: 'Enrolled Students',
+            quiz: 'Quiz Center',
+            availability: 'Schedule',
+            holidays: 'Academic Holidays',
+            sessions: 'Learning Sessions'
         };
         const headerTitle = document.querySelector('.header h1');
         if (headerTitle) {
@@ -749,6 +989,415 @@ class TeacherDashboard {
 
         this.currentPage = page;
         this.loadPageData(page);
+    }
+
+    setupFormResetHandlers() {
+        // Reset form when user navigates away or closes the page
+        const handleBeforeUnload = () => {
+            this.resetCreateQuizForm();
+        };
+
+        // Add beforeunload event listener
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Add visibility change listener to handle tab switching
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.currentPage === 'create-quiz') {
+                this.resetCreateQuizForm();
+            }
+        });
+
+        // Store the handler reference for potential cleanup
+        this._formResetHandlers = {
+            beforeUnload: handleBeforeUnload
+        };
+    }
+
+    resetCreateQuizForm() {
+        const form = document.getElementById('createQuizForm');
+        if (!form) return;
+
+        // Clear all validation errors first
+        this.clearCreateQuizFormValidation();
+
+        // Reset all form fields to initial state
+        form.reset();
+
+        // Clear any remaining field values manually (ensures complete reset)
+        const titleInput = form.querySelector('input[name="title"]');
+        const descriptionInput = form.querySelector('textarea[name="description"]');
+        const classSelect = form.querySelector('select[name="class"]');
+        const subjectSelect = form.querySelector('select[name="subject"]');
+        const durationInput = form.querySelector('input[name="duration"]');
+        const startTimeInput = form.querySelector('input[name="startTime"]');
+        const endTimeInput = form.querySelector('input[name="endTime"]');
+
+        // Ensure all fields are completely cleared
+        if (titleInput) titleInput.value = '';
+        if (descriptionInput) descriptionInput.value = '';
+        if (classSelect) classSelect.selectedIndex = 0;
+        if (subjectSelect) subjectSelect.selectedIndex = 0;
+        if (durationInput) durationInput.value = '';
+        if (startTimeInput) startTimeInput.value = '';
+        if (endTimeInput) endTimeInput.value = '';
+
+        // Remove any remaining error styling, classes, and attributes
+        form.querySelectorAll('input, select, textarea').forEach(field => {
+            field.style.borderColor = '';
+            field.classList.remove('error');
+            field.removeAttribute('aria-invalid');
+        });
+
+        // Remove error styling from question containers
+        form.querySelectorAll('.question-item').forEach(question => {
+            question.style.borderColor = '';
+            question.classList.remove('error');
+        });
+    }
+
+    resetEditQuizForm() {
+        const form = document.getElementById('editQuizForm');
+        if (!form) return;
+
+        // Clear all validation errors first
+        this.clearEditQuizFormValidation();
+
+        // Reset all form fields to initial state
+        form.reset();
+
+        // Clear any remaining field values manually (ensures complete reset)
+        const titleInput = form.querySelector('#editQuizTitle');
+        const classSelect = form.querySelector('#editQuizClass');
+        const subjectInput = form.querySelector('#editQuizSubject');
+        const durationInput = form.querySelector('#editQuizDuration');
+        const startTimeInput = form.querySelector('#editQuizStartTime');
+        const endTimeInput = form.querySelector('#editQuizEndTime');
+
+        // Ensure all fields are completely cleared
+        if (titleInput) titleInput.value = '';
+        if (classSelect) classSelect.selectedIndex = 0;
+        if (subjectInput) subjectInput.value = '';
+        if (durationInput) durationInput.value = '';
+        if (startTimeInput) startTimeInput.value = '';
+        if (endTimeInput) endTimeInput.value = '';
+
+        // Clear hidden quiz ID
+        const quizIdInput = form.querySelector('#editQuizId');
+        if (quizIdInput) quizIdInput.value = '';
+
+        // Remove any remaining error styling, classes, and attributes
+        form.querySelectorAll('input, select, textarea').forEach(field => {
+            field.style.borderColor = '';
+            field.classList.remove('error');
+            field.removeAttribute('aria-invalid');
+        });
+
+        // Remove error styling from question containers
+        form.querySelectorAll('.question-item').forEach(question => {
+            question.style.borderColor = '';
+            question.classList.remove('error');
+        });
+
+        // Reset edit questions container to empty
+        const editQuestionsContainer = form.querySelector('#editQuestionsContainer');
+        if (editQuestionsContainer) {
+            editQuestionsContainer.innerHTML = '';
+        }
+    }
+
+    clearEditQuizFormValidation() {
+        const form = document.getElementById('editQuizForm');
+        if (!form) return;
+
+        // Clear all validation error messages by type
+        form.querySelectorAll('.validation-error').forEach(error => {
+            error.remove();
+        });
+
+        form.querySelectorAll('.field-error').forEach(error => {
+            error.remove();
+        });
+
+        form.querySelectorAll('.question-error').forEach(error => {
+            error.remove();
+        });
+
+        form.querySelectorAll('.option-error').forEach(error => {
+            error.remove();
+        });
+
+        form.querySelectorAll('.general-error').forEach(error => {
+            error.remove();
+        });
+
+        // Remove error styling and classes from all form fields
+        form.querySelectorAll('input, select, textarea').forEach(field => {
+            field.style.borderColor = '';
+            field.classList.remove('error');
+            field.removeAttribute('aria-invalid');
+        });
+
+        // Remove error styling from question containers
+        form.querySelectorAll('.question-item').forEach(question => {
+            question.style.borderColor = '';
+            question.classList.remove('error');
+        });
+    }
+
+    navigateToCreateQuizPage() {
+        // Hide all pages
+        document.querySelectorAll('.page').forEach(p => {
+            p.classList.remove('active');
+        });
+
+        // Show create quiz page
+        const createQuizPage = document.getElementById('create-quiz-page');
+        if (createQuizPage) {
+            createQuizPage.classList.add('active');
+        }
+
+        // Always reset form to initial state when opening Create Quiz form
+        this.resetCreateQuizForm();
+
+        // Reset questions to default single question
+        this.resetQuestionsToDefault();
+
+        // Set minimum date for date inputs
+        this.setMinDateForQuizInputs();
+
+        // Update page title
+        const headerTitle = document.querySelector('.header h1');
+        if (headerTitle) {
+            headerTitle.textContent = 'Quiz Center';
+        }
+
+        this.currentPage = 'create-quiz';
+    }
+
+    navigateToEditQuizPage(quizId) {
+        // Hide all pages
+        document.querySelectorAll('.page').forEach(p => {
+            p.classList.remove('active');
+        });
+
+        // Show edit quiz page
+        const editQuizPage = document.getElementById('edit-quiz-page');
+        if (editQuizPage) {
+            editQuizPage.classList.add('active');
+        }
+
+        // Update page title
+        const headerTitle = document.querySelector('.header h1');
+        if (headerTitle) {
+            headerTitle.textContent = 'Quiz Center';
+        }
+
+        // Remove active state from navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // Set minimum date for date inputs
+        this.setMinDateForQuizInputs();
+
+        this.currentPage = 'edit-quiz';
+    }
+
+    resetQuestionsToDefault() {
+        const questionsContainer = document.getElementById('questionsContainer');
+        if (!questionsContainer) return;
+
+        // Clear all questions
+        questionsContainer.innerHTML = '';
+
+        // Add one default empty question
+        this.addQuestionField();
+    }
+
+    addQuestionField() {
+        const questionsContainer = document.getElementById('questionsContainer');
+        if (!questionsContainer) return;
+
+        const questionCount = questionsContainer.children.length + 1;
+        const questionHtml = `
+            <div class="question-item">
+                <div class="question-header">
+                    <span class="question-number">Question ${questionCount}</span>
+                    <button type="button" class="btn-remove-question" onclick="dashboard.deleteQuestion(this.closest('.question-item'))">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="question-field">
+                    <input type="text" name="questions[]" placeholder="Enter question text" required>
+                </div>
+                <div class="options-grid">
+                    <div class="option-item">
+                        <label>A</label>
+                        <input type="text" name="options${questionCount}[]" placeholder="Option A" required>
+                    </div>
+                    <div class="option-item">
+                        <label>B</label>
+                        <input type="text" name="options${questionCount}[]" placeholder="Option B" required>
+                    </div>
+                    <div class="option-item">
+                        <label>C</label>
+                        <input type="text" name="options${questionCount}[]" placeholder="Option C" required>
+                    </div>
+                    <div class="option-item">
+                        <label>D</label>
+                        <input type="text" name="options${questionCount}[]" placeholder="Option D" required>
+                    </div>
+                </div>
+                <div class="answer-field">
+                    <label>Correct Answer</label>
+                    <select name="answers[]" required>
+                        <option value="">Select correct answer</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+            </div>
+        `;
+
+        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+    }
+
+    deleteQuestion(questionElement) {
+        if (!questionElement) return;
+
+        const container = document.getElementById('questionsContainer');
+        if (container.children.length <= 1) {
+            this.showMessage('Quiz must have at least one question', 'error');
+            return;
+        }
+
+        questionElement.remove();
+        this.updateQuestionNumbers();
+    }
+
+    updateQuestionNumbers() {
+        const container = document.getElementById('questionsContainer');
+        if (!container) return;
+
+        const questions = container.querySelectorAll('.question-item');
+        questions.forEach((question, index) => {
+            // Update question number text
+            const numberSpan = question.querySelector('.question-number');
+            if (numberSpan) {
+                numberSpan.textContent = `Question ${index + 1}`;
+            }
+
+            // Update options names to ensure they are grouped correctly
+            const optionInputs = question.querySelectorAll('input[name^="options"]');
+            optionInputs.forEach(input => {
+                input.name = `options${index + 1}[]`;
+            });
+        });
+    }
+
+    getQuestionsFromForm() {
+        const form = document.getElementById('createQuizForm');
+        if (!form) return [];
+
+        // Collect questions from the form
+        const questions = [];
+        const questionElements = form.querySelectorAll('.question-item');
+
+        for (let i = 0; i < questionElements.length; i++) {
+            const questionEl = questionElements[i];
+            const questionText = questionEl.querySelector('input[name^="questions"]').value;
+            const options = Array.from(questionEl.querySelectorAll('input[name^="options"]')).map(input => input.value);
+            const correctOption = questionEl.querySelector('select').value;
+
+            if (questionText && options.length === 4 && correctOption) {
+                questions.push({
+                    question: questionText,
+                    options: options,
+                    correctOption: correctOption.toUpperCase()
+                });
+            }
+        }
+
+        return questions;
+    }
+
+    async saveQuizAsDraft() {
+        // First validate the form
+        if (!this.validateQuizForm()) {
+            // Show a toast message
+            this.showMessage('Please fill in all required fields before saving as draft', 'error');
+            
+            // Scroll to the first error
+            const firstError = document.querySelector('.field-error, .question-error, .option-error, .general-error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return; // Stop execution if validation fails
+        }
+
+        const form = document.getElementById('createQuizForm');
+        const formData = new FormData(form);
+
+        // Get basic quiz info
+        const quizData = {
+            title: formData.get('title'),
+            class: formData.get('class'),
+            subject: formData.get('subject'),
+            startTime: formData.get('startTime'),
+            endTime: formData.get('endTime'),
+            duration: formData.get('duration'),
+            questions: this.getQuestionsFromForm(),
+            status: 'draft'
+        };
+
+        try {
+            this.showLoading();
+
+            const response = await fetch('/api/quizzes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(quizData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                this.showMessage('Quiz saved as draft successfully', 'success');
+                this.navigateToQuizPage();
+            } else {
+                this.showMessage(result.message || 'Failed to save draft', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving draft:', error);
+            this.showMessage('Failed to save draft. Please try again.', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+
+    getSubjectClass(subject) {
+        if (!subject) return 'default';
+        const subjectLower = subject.toLowerCase();
+        if (subjectLower.includes('math')) return 'math';
+        if (subjectLower.includes('science')) return 'science';
+        if (subjectLower.includes('english')) return 'english';
+        if (subjectLower.includes('history')) return 'history';
+        if (subjectLower.includes('physics')) return 'science';
+        if (subjectLower.includes('chemistry')) return 'science';
+        if (subjectLower.includes('biology')) return 'science';
+        if (subjectLower.includes('geography')) return 'history';
+        if (subjectLower.includes('computer')) return 'math';
+        return 'default';
+    }
+
+    navigateToQuizPage() {
+        this.navigateToPage('quiz');
     }
 
     async loadPageData(page) {
@@ -784,7 +1433,7 @@ class TeacherDashboard {
             // Load students count from database
             const studentsResponse = await window.apiService.get('/teachers/students');
             console.log('Dashboard students API Response:', studentsResponse);
-            
+
             // Handle different response formats (same as loadStudentsData)
             const students = Array.isArray(studentsResponse) ? studentsResponse : (studentsResponse.students || []);
             const totalStudents = students.length || 0;
@@ -820,7 +1469,7 @@ class TeacherDashboard {
             document.getElementById('totalQuizzes').textContent = totalQuizzes;
 
             // Update recent quizzes
-            this.updateRecentQuizzes(quizzes.slice(0, 3));
+            this.updateRecentQuizzes(quizzes.slice(0, 4));
 
             // Load total sessions data
             await this.loadTotalSessionsForDashboard();
@@ -915,7 +1564,7 @@ class TeacherDashboard {
         }
 
         container.innerHTML = quizzes.map(quiz => `
-            <div class="quiz-item clickable" onclick="dashboard.navigateToPage('quiz')" style="cursor: pointer; transition: all 0.2s ease;">
+            <div class="quiz-item clickable" data-quiz-id="${quiz._id}" onclick="dashboard.navigateToPage('quiz')" style="cursor: pointer; transition: all 0.2s ease;">
                 <div class="quiz-icon">
                     <i class="fas fa-question-circle"></i>
                 </div>
@@ -926,6 +1575,9 @@ class TeacherDashboard {
                 <div class="quiz-stats">
                     <span class="quiz-questions">${quiz.questions?.length || 0} questions</span>
                     <span class="quiz-marks">${quiz.totalMarks || quiz.questions?.length || 0} marks</span>
+                </div>
+                <div class="quiz-status-badge">
+                    ${this.getQuizStatusBadge(quiz)}
                 </div>
             </div>
         `).join('');
@@ -1089,6 +1741,83 @@ class TeacherDashboard {
         });
     }
 
+    setMinDateForQuizInputs() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+
+        // Set minimum datetime to current time
+        const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+        // Set min datetime for both create and edit quiz forms
+        const quizStartTime = document.getElementById('quizStartTime');
+        const quizEndTime = document.getElementById('quizEndTime');
+        const editQuizStartTime = document.getElementById('editQuizStartTime');
+        const editQuizEndTime = document.getElementById('editQuizEndTime');
+
+        // Set min date for create quiz form
+        if (quizStartTime) {
+            quizStartTime.min = minDateTime;
+            quizStartTime.addEventListener('change', () => {
+                this.updateEndTimeMinimum();
+            });
+        }
+
+        if (quizEndTime) {
+            quizEndTime.min = minDateTime;
+        }
+
+        // Set min date for edit quiz form
+        if (editQuizStartTime) {
+            editQuizStartTime.min = minDateTime;
+            editQuizStartTime.addEventListener('change', () => {
+                this.updateEndTimeMinimum(true);
+            });
+        }
+
+        if (editQuizEndTime) {
+            editQuizEndTime.min = minDateTime;
+        }
+    }
+
+    updateEndTimeMinimum(isEditForm = false) {
+        const prefix = isEditForm ? 'edit' : '';
+        const quizStartTime = document.getElementById(`${prefix}QuizStartTime`);
+        const quizEndTime = document.getElementById(`${prefix}QuizEndTime`);
+
+        if (quizStartTime && quizEndTime) {
+            if (quizStartTime.value) {
+                // Set end time minimum to be at least 30 minutes after start time
+                const startDate = new Date(quizStartTime.value);
+                const minEndDate = new Date(startDate);
+                minEndDate.setMinutes(minEndDate.getMinutes() + 30);
+
+                // Format the minimum end time
+                const year = minEndDate.getFullYear();
+                const month = String(minEndDate.getMonth() + 1).padStart(2, '0');
+                const day = String(minEndDate.getDate()).padStart(2, '0');
+                const hours = String(minEndDate.getHours()).padStart(2, '0');
+                const minutes = String(minEndDate.getMinutes()).padStart(2, '0');
+
+                const minEndTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                
+                // Update the min attribute to prevent selecting invalid times
+                quizEndTime.min = minEndTime;
+                
+                // If end time is set and is before the new minimum, clear it
+                if (quizEndTime.value && new Date(quizEndTime.value) < minEndDate) {
+                    quizEndTime.value = '';
+                }
+            } else {
+                // If start time is cleared, also clear min attribute on end time
+                quizEndTime.min = '';
+            }
+        }
+    }
+
     setupHolidayValidation() {
         // Date validation for HTML5 date inputs
         const dateInputs = document.querySelectorAll('input[name="startDate"], input[name="endDate"], input[name="singleDate"]');
@@ -1247,6 +1976,7 @@ class TeacherDashboard {
         console.log('validateCreateSessionForm called');
         const form = document.getElementById('createSessionForm');
         let isValid = true;
+        let validationErrors = [];
 
         // Set submitted flag to true
         this.isSessionFormSubmitted = true;
@@ -1260,6 +1990,7 @@ class TeacherDashboard {
         console.log('Title input value:', titleInput.value);
         if (!titleInput.value.trim()) {
             this.showFieldError(titleInput, 'Session title is required');
+            validationErrors.push('Session title is required');
             isValid = false;
         }
 
@@ -1268,6 +1999,7 @@ class TeacherDashboard {
         console.log('Date input value:', dateInput.value);
         if (!dateInput.value) {
             this.showFieldError(dateInput, 'Date is required');
+            validationErrors.push('Date is required');
             isValid = false;
         }
 
@@ -1276,6 +2008,7 @@ class TeacherDashboard {
         console.log('Duration input value:', durationInput.value);
         if (!durationInput.value) {
             this.showFieldError(durationInput, 'Session duration is required');
+            validationErrors.push('Session duration is required');
             isValid = false;
         }
 
@@ -1284,7 +2017,13 @@ class TeacherDashboard {
         console.log('Break input value:', breakInput.value);
         if (!breakInput.value) {
             this.showFieldError(breakInput, 'Break duration is required');
+            validationErrors.push('Break duration is required');
             isValid = false;
+        }
+
+        // Show toast message for validation errors
+        if (!isValid) {
+            this.showMessage('Please fill all required fields', 'error');
         }
 
         console.log('Validation result:', isValid);
@@ -1292,36 +2031,29 @@ class TeacherDashboard {
     }
 
     showFieldError(field, message) {
-        console.log('showFieldError called for:', field.id, 'with message:', message);
-
-        // Only show errors if form has been submitted
-        if (!this.isSessionFormSubmitted) {
-            console.log('Form not submitted yet, skipping error display');
-            return;
-        }
-
-        // Add error class and show message only after submission
+        // Add error class and show message
         field.classList.add('error');
+        field.style.borderColor = '#dc2626';
 
         // Remove any existing error message for this field
-        const existingError = field.parentNode.querySelector('.error-message');
+        const existingError = field.parentNode.querySelector('.field-error');
         if (existingError) {
             existingError.remove();
         }
 
-        // Always create new error element
+        // Create error message
         const errorElement = document.createElement('div');
-        errorElement.className = 'error-message';
+        errorElement.className = 'field-error';
+        errorElement.style.cssText = `
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        `;
         errorElement.textContent = message;
-        errorElement.style.color = '#dc3545';
-        errorElement.style.fontSize = '12px';
-        errorElement.style.marginTop = '4px';
-        errorElement.style.fontWeight = '500';
-        errorElement.style.display = 'block';
 
         // Insert error message immediately after the field
         field.parentNode.insertBefore(errorElement, field.nextSibling);
-        console.log('Error message created and inserted');
     }
 
     isValidDate(dateString) {
@@ -1689,6 +2421,10 @@ class TeacherDashboard {
         // Clear previous errors
         form.querySelectorAll('.validation-error').forEach(error => error.remove());
         form.querySelectorAll('input.error').forEach(input => input.classList.remove('error'));
+        form.querySelectorAll('.error-message').forEach(errorMsg => {
+            errorMsg.style.display = 'none';
+            errorMsg.textContent = '';
+        });
 
         inputs.forEach(input => {
             const value = input.value.trim();
@@ -1734,33 +2470,63 @@ class TeacherDashboard {
     showFieldError(input, message) {
         input.classList.add('error');
 
-        // Remove existing error message for this field
-        const existingError = input.parentNode.querySelector('.validation-error');
-        if (existingError) {
-            existingError.remove();
+        // Use existing error-message span instead of creating new validation-error
+        const errorMessage = input.parentNode.querySelector('.error-message');
+        if (errorMessage) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        } else {
+            // Fallback: create validation-error if error-message doesn't exist
+            const existingError = input.parentNode.querySelector('.validation-error');
+            if (existingError) {
+                existingError.remove();
+            }
+            const errorElement = document.createElement('span');
+            errorElement.className = 'validation-error';
+            errorElement.textContent = message;
+            input.parentNode.appendChild(errorElement);
         }
+    }
 
-        // Add new error message
-        const errorElement = document.createElement('span');
-        errorElement.className = 'validation-error';
-        errorElement.textContent = message;
-        input.parentNode.appendChild(errorElement);
+    showBackendFieldError(fieldName, message) {
+        // Map backend field names to frontend form field IDs
+        const fieldMapping = {
+            'title': 'sessionTitle',
+            'date': 'sessionDate',
+            'sessionDuration': 'sessionDuration',
+            'breakDuration': 'breakDuration',
+            'student_id': 'student_id'
+        };
+
+        const fieldId = fieldMapping[fieldName] || fieldName;
+        const field = document.getElementById(fieldId);
+        
+        if (field) {
+            this.showFieldError(field, message);
+            // Scroll to the field with error
+            field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Focus on the field
+            field.focus();
+        } else {
+            // If field not found, show as toast message
+            this.showMessage(message, 'error');
+        }
     }
 
     clearFieldError(input) {
         input.classList.remove('error');
 
-        // Clear validation-error (for add student form)
-        const validationError = input.parentNode.querySelector('.validation-error');
-        if (validationError) {
-            validationError.remove();
-        }
-
-        // Hide error-message spans (for holiday form) - don't remove them
+        // Hide error-message span (for add student form)
         const errorMessage = input.parentNode.querySelector('.error-message');
         if (errorMessage) {
             errorMessage.style.display = 'none';
             errorMessage.textContent = '';
+        }
+
+        // Clear validation-error (fallback)
+        const validationError = input.parentNode.querySelector('.validation-error');
+        if (validationError) {
+            validationError.remove();
         }
 
         // Also check form-group for any remaining error messages
@@ -1901,14 +2667,19 @@ class TeacherDashboard {
     }
 
     async addStudent() {
+        console.log('addStudent function called'); // Debug log
+
         // Validate form first
         if (!this.validateAddStudentForm()) {
+            console.log('Validation failed'); // Debug log
             return;
         }
 
+        console.log('Validation passed, submitting form'); // Debug log
         const formData = new FormData(document.getElementById('addStudentForm'));
 
         try {
+            console.log('Sending request to server'); // Debug log
             const response = await fetch('/api/teachers/students', {
                 method: 'POST',
                 headers: {
@@ -1917,7 +2688,9 @@ class TeacherDashboard {
                 body: formData
             });
 
+            console.log('Response received:', response); // Debug log
             const result = await response.json();
+            console.log('Response data:', result); // Debug log
 
             if (response.ok) {
                 // Update total students count immediately
@@ -2110,15 +2883,92 @@ class TeacherDashboard {
         }
     }
 
+    async uploadQuizCsv() {
+        const form = document.getElementById('uploadQuizCsvForm');
+        const fileInput = form.querySelector('input[type="file"]');
+        const file = fileInput.files[0];
+
+        // Get quiz details from form
+        const title = form.querySelector('#quizTitle')?.value;
+        const className = form.querySelector('#quizClass')?.value;
+        const subject = form.querySelector('#quizSubject')?.value;
+        const totalMarks = form.querySelector('#totalMarks')?.value;
+        const startTime = form.querySelector('#quizStartTime')?.value;
+        const endTime = form.querySelector('#quizEndTime')?.value;
+        const duration = form.querySelector('#quizDuration')?.value;
+
+        // Clear previous errors
+        this.clearCsvFieldError(fileInput);
+
+        // Validate file selection
+        if (!file) {
+            this.showCsvFieldError(fileInput, 'Please select a CSV file before uploading.');
+            return;
+        }
+
+        // Validate file type
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            this.showCsvFieldError(fileInput, 'Please select a CSV file');
+            return;
+        }
+
+        // Validate required quiz fields
+        if (!title || !className || !subject || !startTime || !endTime || !duration) {
+            this.showMessage('Please fill in all quiz details (title, class, subject, start time, end time, duration)', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', title);
+        formData.append('class', className);
+        formData.append('subject', subject);
+        if (totalMarks) formData.append('totalMarks', totalMarks);
+        formData.append('startTime', startTime);
+        formData.append('endTime', endTime);
+        formData.append('duration', duration);
+
+        try {
+            const response = await fetch('/api/quizzes/upload-csv', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.showMessage(`Quiz created successfully from CSV! ${result.quiz.totalQuestions} questions imported.`, 'success');
+                const modal = document.getElementById('uploadQuizCsvModal');
+                if (modal) modal.classList.remove('show');
+                form.reset();
+                this.loadQuizzesData();
+                this.loadDashboardData();
+            } else {
+                const error = await response.json();
+                if (error.errors && error.errors.length > 0) {
+                    const errorMessages = error.errors.map(err => `Row ${err.row}: ${err.errors.join(', ')}`).join('\n');
+                    this.showMessage(`CSV validation failed:\n${errorMessages}`, 'error');
+                } else {
+                    this.showMessage(error.message || 'Failed to upload quiz CSV', 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Error uploading quiz CSV:', error);
+            this.showMessage('Error uploading quiz CSV', 'error');
+        }
+    }
+
     showCsvFieldError(input, message) {
         input.classList.add('error');
-        
+
         // Remove existing error message
         const existingError = input.parentNode.querySelector('.csv-error');
         if (existingError) {
             existingError.remove();
         }
-        
+
         // Add new error message
         const errorElement = document.createElement('div');
         errorElement.className = 'csv-error';
@@ -2129,7 +2979,7 @@ class TeacherDashboard {
 
     clearCsvFieldError(input) {
         input.classList.remove('error');
-        
+
         // Remove error message
         const errorElement = input.parentNode.querySelector('.csv-error');
         if (errorElement) {
@@ -2577,7 +3427,405 @@ class TeacherDashboard {
         }, 2000);
     }
 
+    setupQuizFormErrorClearing() {
+        const form = document.getElementById('createQuizForm');
+        if (!form) return;
+
+        // Clear errors for basic fields on input
+        const basicFields = form.querySelectorAll('#quizTitle, #quizClass, #quizSubject, #totalMarks, #quizStartTime, #quizEndTime, #quizDuration');
+        basicFields.forEach(field => {
+            field.addEventListener('input', () => {
+                this.clearFieldError(field);
+            });
+
+            field.addEventListener('change', () => {
+                this.clearFieldError(field);
+            });
+        });
+
+        // Clear errors for question fields on input
+        const observer = new MutationObserver(() => {
+            const questionInputs = form.querySelectorAll('.question-item input, .question-item select');
+            questionInputs.forEach(input => {
+                if (!input.hasAttribute('data-error-listener')) {
+                    input.setAttribute('data-error-listener', 'true');
+                    input.addEventListener('input', () => {
+                        this.clearFieldError(input);
+                    });
+
+                    input.addEventListener('change', () => {
+                        this.clearFieldError(input);
+                    });
+                }
+            });
+        });
+
+        // Start observing the questions container for dynamic question additions
+        const questionsContainer = form.querySelector('#questionsContainer');
+        if (questionsContainer) {
+            observer.observe(questionsContainer, {
+                childList: true,
+                subtree: true
+            });
+        }
+    }
+
+    clearFieldError(field) {
+        // Remove error styling from field
+        field.style.borderColor = '';
+
+        // Remove field-specific error message
+        const fieldError = field.parentNode.querySelector('.field-error, .option-error');
+        if (fieldError) {
+            fieldError.remove();
+        }
+
+        // Remove question-level error if all fields in that question are valid
+        const questionItem = field.closest('.question-item');
+        if (questionItem) {
+            const questionError = questionItem.querySelector('.question-error');
+            if (questionError) {
+                // Check if all fields in this question are now valid
+                const questionText = questionItem.querySelector('input[name^="questions"]').value.trim();
+                const options = questionItem.querySelectorAll('input[name^="options"]');
+                const correctAnswer = questionItem.querySelector('select').value;
+
+                let allValid = questionText && correctAnswer;
+                options.forEach(option => {
+                    if (!option.value.trim()) {
+                        allValid = false;
+                    }
+                });
+
+                if (allValid) {
+                    questionError.remove();
+                }
+            }
+        }
+    }
+
+    // Show field error for quiz form - handles CSS selectors
+    showFieldError(selector, message) {
+        // Handle both string selectors and DOM elements
+        const field = typeof selector === 'string' ? document.querySelector(selector) : selector;
+        if (!field) return;
+
+        // Add red border
+        field.style.borderColor = '#dc3545';
+        field.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
+
+        // Remove existing error message
+        const parent = field.parentElement;
+        const existingError = parent.querySelector('.field-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Create error message element
+        const errorElement = document.createElement('div');
+        errorElement.className = 'field-error';
+        errorElement.textContent = message;
+        errorElement.style.color = '#dc3545';
+        errorElement.style.fontSize = '12px';
+        errorElement.style.marginTop = '4px';
+        errorElement.style.fontWeight = '500';
+        errorElement.style.display = 'block';
+
+        // Insert after the field
+        field.parentNode.insertBefore(errorElement, field.nextSibling);
+    }
+
+    validateQuizForm() {
+        const form = document.getElementById('createQuizForm');
+
+        // Clear all previous error messages
+        this.clearAllErrorMessages();
+
+        let isValid = true;
+        const errors = [];
+
+        // Validate Quiz Title
+        const title = form.querySelector('#quizTitle').value.trim();
+        if (!title) {
+            this.showFieldError('#quizTitle', 'Title is required');
+            isValid = false;
+        }
+
+        // Validate Class
+        const className = form.querySelector('#quizClass').value;
+        if (!className) {
+            this.showFieldError('#quizClass', 'Class is required');
+            isValid = false;
+        }
+
+        // Validate Subject
+        const subject = form.querySelector('#quizSubject').value.trim();
+        if (!subject) {
+            this.showFieldError('#quizSubject', 'Subject is required');
+            isValid = false;
+        }
+
+        // Validate Start Time
+        const startTime = form.querySelector('#quizStartTime').value;
+        if (!startTime) {
+            this.showFieldError('#quizStartTime', 'Start time is required');
+            isValid = false;
+        }
+
+        // Validate End Time
+        const endTime = form.querySelector('#quizEndTime').value;
+        if (!endTime) {
+            this.showFieldError('#quizEndTime', 'End time is required');
+            isValid = false;
+        }
+
+        // Validate Duration
+        const duration = form.querySelector('#quizDuration').value;
+        if (!duration) {
+            this.showFieldError('#quizDuration', 'Duration is required');
+            isValid = false;
+        }
+
+        // Validate Questions
+        const questionElements = form.querySelectorAll('.question-item');
+        if (questionElements.length === 0) {
+            this.showGeneralError('Please add at least one question');
+            isValid = false;
+        } else {
+            questionElements.forEach((questionEl, index) => {
+                const questionNumber = index + 1;
+
+                // Validate question text
+                const questionText = questionEl.querySelector('input[name^="questions"]').value.trim();
+                if (!questionText) {
+                    this.showQuestionError(questionEl, `Question ${questionNumber} text is required`);
+                    isValid = false;
+                }
+
+                // Validate options
+                const options = questionEl.querySelectorAll('input[name^="options"]');
+                let allOptionsFilled = true;
+                options.forEach((option, optionIndex) => {
+                    if (!option.value.trim()) {
+                        this.showOptionError(option, `Option ${String.fromCharCode(65 + optionIndex)} is required`);
+                        allOptionsFilled = false;
+                    }
+                });
+
+                if (!allOptionsFilled) {
+                    isValid = false;
+                }
+
+                // Validate correct answer selection
+                const correctAnswer = questionEl.querySelector('select').value;
+                if (!correctAnswer) {
+                    this.showQuestionError(questionEl, `Please select correct answer for Question ${questionNumber}`);
+                    isValid = false;
+                }
+            });
+        }
+
+        return isValid;
+    }
+
+    showQuestionError(questionElement, message) {
+        // Remove existing error if any
+        const existingError = questionElement.querySelector('.question-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Create error message
+        const errorElement = document.createElement('div');
+        errorElement.className = 'question-error';
+        errorElement.style.cssText = `
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 0.375rem;
+        `;
+        errorElement.textContent = message;
+
+        // Add error after the question content
+        questionElement.appendChild(errorElement);
+
+        // Add error styling to question container
+        questionElement.style.borderColor = '#dc2626';
+        questionElement.style.borderWidth = '2px';
+        questionElement.style.borderStyle = 'solid';
+    }
+
+    showOptionError(optionField, message) {
+        // Remove existing error if any
+        const existingError = optionField.parentNode.querySelector('.option-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Create error message
+        const errorElement = document.createElement('div');
+        errorElement.className = 'option-error';
+        errorElement.style.cssText = `
+            color: #dc2626;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        `;
+        errorElement.textContent = message;
+
+        // Add error after the option field
+        optionField.parentNode.appendChild(errorElement);
+
+        // Add error styling to field
+        optionField.style.borderColor = '#dc2626';
+    }
+
+    showGeneralError(message) {
+        // Remove existing general error if any
+        const existingError = document.querySelector('#editQuizForm .general-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Create error message
+        const errorElement = document.createElement('div');
+        errorElement.className = 'general-error';
+        errorElement.style.cssText = `
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 0.375rem;
+        `;
+        errorElement.textContent = message;
+
+        // Add error at the top of the edit quiz form
+        const form = document.getElementById('editQuizForm');
+        if (form) {
+            form.insertBefore(errorElement, form.firstChild);
+        }
+    }
+
+    clearQuestionError(questionElement) {
+        // Remove error styling from question container
+        questionElement.style.borderColor = '';
+        questionElement.style.borderWidth = '';
+        questionElement.style.borderStyle = '';
+        
+        // Remove error message for this question
+        const errorElement = questionElement.querySelector('.question-error');
+        if (errorElement) {
+            errorElement.remove();
+        }
+        
+        // Clear general errors if this was the last question with an error
+        const remainingErrors = document.querySelectorAll('.field-error, .question-error, .general-error');
+        if (remainingErrors.length === 0) {
+            const generalError = document.querySelector('#editQuizForm .general-error');
+            if (generalError) {
+                generalError.remove();
+            }
+        }
+    }
+
+    clearFieldError(field) {
+        // Remove error styling from field
+        field.style.borderColor = '';
+        field.classList.remove('error');
+        
+        // Remove error message for this field
+        const errorElement = field.parentNode.querySelector('.field-error');
+        if (errorElement) {
+            errorElement.remove();
+        }
+        
+        // Clear general errors if this was the last field with an error
+        const remainingErrors = document.querySelectorAll('.field-error, .question-error, .general-error');
+        if (remainingErrors.length === 0) {
+            const generalError = document.querySelector('#editQuizForm .general-error');
+            if (generalError) {
+                generalError.remove();
+            }
+        }
+    }
+
+    clearAllErrorMessages() {
+        // Remove all error messages from both forms
+        document.querySelectorAll('.field-error, .question-error, .option-error, .general-error').forEach(error => {
+            error.remove();
+        });
+
+        // Remove error styling from all fields in both forms
+        document.querySelectorAll('#editQuizForm input, #editQuizForm select, #createQuizForm input, #createQuizForm select').forEach(field => {
+            field.style.borderColor = '';
+            field.classList.remove('error');
+        });
+
+        // Remove error styling from question containers
+        document.querySelectorAll('.question-item').forEach(question => {
+            question.style.borderColor = '';
+            question.style.borderWidth = '';
+            question.style.borderStyle = '';
+        });
+    }
+
+    clearCreateQuizFormValidation() {
+        const form = document.getElementById('createQuizForm');
+        if (!form) return;
+
+        // Clear all validation error messages by type
+        document.querySelectorAll('#createQuizForm .validation-error').forEach(error => {
+            error.remove();
+        });
+
+        document.querySelectorAll('#createQuizForm .field-error').forEach(error => {
+            error.remove();
+        });
+
+        document.querySelectorAll('#createQuizForm .question-error').forEach(error => {
+            error.remove();
+        });
+
+        document.querySelectorAll('#createQuizForm .option-error').forEach(error => {
+            error.remove();
+        });
+
+        document.querySelectorAll('#createQuizForm .general-error').forEach(error => {
+            error.remove();
+        });
+
+        // Remove error styling and classes from all form fields
+        form.querySelectorAll('input, select, textarea').forEach(field => {
+            field.style.borderColor = '';
+            field.classList.remove('error');
+            field.removeAttribute('aria-invalid');
+        });
+
+        // Remove error styling from question containers
+        form.querySelectorAll('.question-item').forEach(question => {
+            question.style.borderColor = '';
+            question.classList.remove('error');
+        });
+
+        // Reset form to clean state
+        form.reset();;
+    }
+
     async createQuiz() {
+        // First validate the form
+        if (!this.validateQuizForm()) {
+            // Scroll to the first error
+            const firstError = document.querySelector('.field-error, .question-error, .option-error, .general-error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return; // Stop execution if validation fails
+        }
+
         const form = document.getElementById('createQuizForm');
         const formData = new FormData(form);
 
@@ -2585,7 +3833,11 @@ class TeacherDashboard {
         const title = formData.get('title');
         const className = formData.get('class') || 'General';
         const subject = formData.get('subject') || 'General';
-        const totalMarks = parseInt(formData.get('totalMarks')) || 1;
+
+        // Get schedule information
+        const startTime = formData.get('startTime');
+        const endTime = formData.get('endTime');
+        const duration = parseInt(formData.get('duration')) || 60;
 
         // Collect questions from the form
         const questions = [];
@@ -2611,13 +3863,443 @@ class TeacherDashboard {
             class: className,
             subject,
             questions,
-            totalMarks
+            startTime,
+            endTime,
+            duration
         };
 
+        // Show confirmation dialog with quiz details
+        this.showQuizConfirmationDialog(quizData);
+    }
+
+    showQuizConfirmationDialog(quizData) {
+        // Create modal overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-overlay';
+        modalOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.className = 'quiz-confirmation-modal';
+        modalContent.style.cssText = `
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 900px;
+            width: 95%;
+            max-height: 95vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        `;
+
+        // Format dates for display
+        const formatDateTime = (dateTime) => {
+            if (!dateTime) return 'Not set';
+            const date = new Date(dateTime);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+
+        // Calculate total marks if not provided
+        const calculatedTotalMarks = quizData.totalMarks || quizData.questions.reduce((sum, q) => sum + (q.marks || 1), 0);
+
+        modalContent.innerHTML = `
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: #eff6ff; border-radius: 12px; margin-bottom: 1rem;">
+                    <i class="fas fa-question-circle" style="color: #2563eb; font-size: 20px;"></i>
+                </div>
+                <h3 style="margin: 0 0 0.5rem 0; color: #111827; font-size: 1.5rem; font-weight: 600;">
+                    Quiz Confirmation
+                </h3>
+                <p style="margin: 0; color: #6b7280; font-size: 0.95rem;">Please review your quiz details before creating</p>
+            </div>
+
+            <div style="background: #f9fafb; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Title</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.title}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Class</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.class}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Subject</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.subject}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Total Marks</div>
+                        <div style="color: #111827; font-weight: 500;">${calculatedTotalMarks}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Duration</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.duration} minutes</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Questions</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.questions.length} questions</div>
+                    </div>
+                </div>
+                
+
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Start Time</div>
+                        <div style="color: #111827; font-weight: 500;">${formatDateTime(quizData.startTime)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">End Time</div>
+                        <div style="color: #111827; font-weight: 500;">${formatDateTime(quizData.endTime)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fas fa-list" style="color: #2563eb; margin-right: 0.5rem;"></i>
+                        <h4 style="margin: 0; color: #111827; font-size: 1rem; font-weight: 600;">Questions Preview</h4>
+                    </div>
+                    <div style="color: #6b7280; font-size: 0.875rem;">
+                        ${quizData.questions.length} question${quizData.questions.length !== 1 ? 's' : ''}
+                    </div>
+                </div>
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; background: white;">
+                    ${quizData.questions.map((q, index) => `
+                        <div style="padding: 1rem; ${index < quizData.questions.length - 1 ? 'border-bottom: 1px solid #f3f4f6' : ''};">
+                            <div style="display: flex; align-items: flex-start; margin-bottom: 0.75rem;">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #eff6ff; color: #2563eb; border-radius: 50%; font-size: 0.75rem; font-weight: 600; margin-right: 0.75rem; flex-shrink: 0;">${index + 1}</span>
+                                <div style="color: #374151; font-weight: 500; line-height: 1.4; flex: 1;">${q.question}</div>
+                            </div>
+                            <div style="margin-left: 2.25rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+                                ${q.options.map((option, optIndex) => `
+                                    <div style="display: flex; align-items: center; padding: 0.25rem 0.5rem; border-radius: 4px; ${String.fromCharCode(65 + optIndex) === q.correctOption ? 'background: #dcfce7; color: #166534; font-weight: 600;' : 'background: #f9fafb; color: #6b7280;'}">
+                                        <span style="font-size: 0.75rem; font-weight: 600; margin-right: 0.5rem;">${String.fromCharCode(65 + optIndex)}:</span>
+                                        <span style="font-size: 0.875rem;">${option}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button id="cancelQuizBtn" style="
+                    padding: 0.625rem 1.25rem;
+                    background: white;
+                    color: #6b7280;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    transition: all 0.15s ease;
+                ">
+                    Cancel
+                </button>
+                <button id="confirmQuizBtn" style="
+                    padding: 0.625rem 1.25rem;
+                    background: #2563eb;
+                    color: white;
+                    border: 1px solid #2563eb;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    transition: all 0.15s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                ">
+                    <i class="fas fa-check" style="font-size: 0.75rem;"></i>
+                    Create Quiz
+                </button>
+            </div>
+        `;
+
+        modalOverlay.appendChild(modalContent);
+        document.body.appendChild(modalOverlay);
+
+        // Add event listeners
+        document.getElementById('cancelQuizBtn').addEventListener('click', () => {
+            document.body.removeChild(modalOverlay);
+        });
+
+        document.getElementById('confirmQuizBtn').addEventListener('click', () => {
+            document.body.removeChild(modalOverlay);
+            this.submitQuizData(quizData);
+        });
+
+        // Close on overlay click
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                document.body.removeChild(modalOverlay);
+            }
+        });
+
+        // Add hover effects
+        const buttons = modalContent.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                if (btn.id === 'confirmQuizBtn') {
+                    btn.style.background = '#1d4ed8';
+                    btn.style.transform = 'translateY(-1px)';
+                    btn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                } else {
+                    btn.style.background = '#f9fafb';
+                    btn.style.color = '#374151';
+                    btn.style.borderColor = '#9ca3af';
+                }
+            });
+            btn.addEventListener('mouseleave', () => {
+                if (btn.id === 'confirmQuizBtn') {
+                    btn.style.background = '#2563eb';
+                    btn.style.transform = 'translateY(0)';
+                    btn.style.boxShadow = 'none';
+                } else {
+                    btn.style.background = 'white';
+                    btn.style.color = '#6b7280';
+                    btn.style.borderColor = '#d1d5db';
+                }
+            });
+        });
+    }
+
+    showQuizPreviewDialog(quizData, quizId) {
+        // Create modal overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-overlay';
+        modalOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.className = 'quiz-preview-modal';
+        modalContent.style.cssText = `
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 900px;
+            width: 95%;
+            max-height: 95vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        `;
+
+        // Format dates for display
+        const formatDateTime = (dateTime) => {
+            if (!dateTime) return 'Not set';
+            const date = new Date(dateTime);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+
+        // Calculate total marks if not provided
+        const calculatedTotalMarks = quizData.totalMarks || quizData.questions.reduce((sum, q) => sum + (q.marks || 1), 0);
+
+        modalContent.innerHTML = `
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: #dcfce7; border-radius: 12px; margin-bottom: 1rem;">
+                    <i class="fas fa-eye" style="color: #16a34a; font-size: 20px;"></i>
+                </div>
+                <h3 style="margin: 0 0 0.5rem 0; color: #111827; font-size: 1.5rem; font-weight: 600;">
+                    Quiz Preview
+                </h3>
+                <p style="margin: 0; color: #6b7280; font-size: 0.95rem;">Review your quiz before publishing</p>
+            </div>
+
+            <div style="background: #f9fafb; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Title</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.title}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Class</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.class}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Subject</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.subject}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Total Marks</div>
+                        <div style="color: #111827; font-weight: 500;">${calculatedTotalMarks}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Duration</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.duration} minutes</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Questions</div>
+                        <div style="color: #111827; font-weight: 500;">${quizData.questions.length} questions</div>
+                    </div>
+                </div>
+                
+
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Start Time</div>
+                        <div style="color: #111827; font-weight: 500;">${formatDateTime(quizData.startTime)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">End Time</div>
+                        <div style="color: #111827; font-weight: 500;">${formatDateTime(quizData.endTime)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fas fa-list" style="color: #2563eb; margin-right: 0.5rem;"></i>
+                        <h4 style="margin: 0; color: #111827; font-size: 1rem; font-weight: 600;">Questions Preview</h4>
+                    </div>
+                    <div style="color: #6b7280; font-size: 0.875rem;">
+                        ${quizData.questions.length} question${quizData.questions.length !== 1 ? 's' : ''}
+                    </div>
+                </div>
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; background: white;">
+                    ${quizData.questions.map((q, index) => `
+                        <div style="padding: 1rem; ${index < quizData.questions.length - 1 ? 'border-bottom: 1px solid #f3f4f6' : ''};">
+                            <div style="display: flex; align-items: flex-start; margin-bottom: 0.75rem;">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #eff6ff; color: #2563eb; border-radius: 50%; font-size: 0.75rem; font-weight: 600; margin-right: 0.75rem; flex-shrink: 0;">${index + 1}</span>
+                                <div style="color: #374151; font-weight: 500; line-height: 1.4; flex: 1;">${q.question}</div>
+                            </div>
+                            <div style="margin-left: 2.25rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+                                ${q.options.map((option, optIndex) => `
+                                    <div style="display: flex; align-items: center; padding: 0.25rem 0.5rem; border-radius: 4px; ${String.fromCharCode(65 + optIndex) === q.correctOption ? 'background: #dcfce7; color: #166534; font-weight: 600;' : 'background: #f9fafb; color: #6b7280;'}">
+                                        <span style="font-size: 0.75rem; font-weight: 600; margin-right: 0.5rem;">${String.fromCharCode(65 + optIndex)}:</span>
+                                        <span style="font-size: 0.875rem;">${option}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button id="backToEditBtn" style="
+                    padding: 0.625rem 1.25rem;
+                    background: white;
+                    color: #6b7280;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    transition: all 0.15s ease;
+                ">
+                    <i class="fas fa-arrow-left" style="margin-right: 0.5rem;"></i>
+                    Back to Edit
+                </button>
+                <button id="confirmPublishBtn" style="
+                    padding: 0.625rem 1.25rem;
+                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    transition: all 0.15s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                ">
+                    <i class="fas fa-rocket" style="font-size: 0.75rem;"></i>
+                    Confirm Publish
+                </button>
+            </div>
+        `;
+
+        modalOverlay.appendChild(modalContent);
+        document.body.appendChild(modalOverlay);
+
+        // Add event listeners
+        document.getElementById('backToEditBtn').addEventListener('click', () => {
+            document.body.removeChild(modalOverlay);
+        });
+
+        document.getElementById('confirmPublishBtn').addEventListener('click', () => {
+            document.body.removeChild(modalOverlay);
+            this.confirmPublishQuiz(quizData, quizId);
+        });
+
+        // Close on overlay click
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                document.body.removeChild(modalOverlay);
+            }
+        });
+
+        // Add hover effects
+        const buttons = modalContent.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                if (btn.id === 'confirmPublishBtn') {
+                    btn.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+                    btn.style.transform = 'translateY(-1px)';
+                    btn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                } else {
+                    btn.style.background = '#f9fafb';
+                    btn.style.color = '#374151';
+                    btn.style.borderColor = '#9ca3af';
+                }
+            });
+            btn.addEventListener('mouseleave', () => {
+                if (btn.id === 'confirmPublishBtn') {
+                    btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    btn.style.transform = 'translateY(0)';
+                    btn.style.boxShadow = 'none';
+                } else {
+                    btn.style.background = 'white';
+                    btn.style.color = '#6b7280';
+                    btn.style.borderColor = '#d1d5db';
+                }
+            });
+        });
+    }
+
+    async submitQuizData(quizData) {
         try {
             this.showLoading();
 
-            const response = await fetch('/api/teachers/quiz', {
+            const response = await fetch('/api/quizzes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2628,11 +4310,25 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const result = await response.json();
+                const newQuiz = result.quiz;
+
                 this.showMessage('Quiz created successfully', 'success');
-                document.getElementById('createQuizModal').classList.remove('show');
+
+                // Update quiz status immediately for new quiz
+                if (newQuiz && newQuiz._id && newQuiz.status) {
+                    // Since it's a new quiz, we'll let the loadQuizData handle the UI updates
+                    // But we can add the new quiz to the current data immediately if needed
+                    console.log('New quiz created with status:', newQuiz.status);
+                }
+
+                // Reset the form
+                const form = document.getElementById('createQuizForm');
                 form.reset();
                 // Reset to single question
                 this.resetQuestionsToDefault();
+                // Navigate back to quiz list
+                this.navigateToQuizPage();
+                // Refresh quiz list
                 this.loadQuizData();
                 this.loadDashboardData();
             } else {
@@ -2654,18 +4350,43 @@ class TeacherDashboard {
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
         questionDiv.innerHTML = `
-            <input type="text" name="questions[]" placeholder="Question ${questionCount}" required>
-            <input type="text" name="options${questionCount}[]" placeholder="Option A" required>
-            <input type="text" name="options${questionCount}[]" placeholder="Option B" required>
-            <input type="text" name="options${questionCount}[]" placeholder="Option C" required>
-            <input type="text" name="options${questionCount}[]" placeholder="Option D" required>
-            <select name="answers[]">
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-            </select>
-            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">Remove</button>
+            <div class="question-header">
+                <span class="question-number">Question ${questionCount}</span>
+                <button type="button" class="btn-remove-question" onclick="dashboard.showDeleteQuestionModal(this.closest('.question-item'))">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="question-field">
+                <input type="text" name="questions[]" placeholder="Enter question text" required>
+            </div>
+            <div class="options-grid">
+                <div class="option-item">
+                    <label>A</label>
+                    <input type="text" name="options${questionCount}[]" placeholder="Option A" required>
+                </div>
+                <div class="option-item">
+                    <label>B</label>
+                    <input type="text" name="options${questionCount}[]" placeholder="Option B" required>
+                </div>
+                <div class="option-item">
+                    <label>C</label>
+                    <input type="text" name="options${questionCount}[]" placeholder="Option C" required>
+                </div>
+                <div class="option-item">
+                    <label>D</label>
+                    <input type="text" name="options${questionCount}[]" placeholder="Option D" required>
+                </div>
+            </div>
+            <div class="answer-field">
+                <label>Correct Answer</label>
+                <select name="answers[]">
+                    <option value="">Select correct answer</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                </select>
+            </div>
         `;
 
         container.appendChild(questionDiv);
@@ -2688,7 +4409,7 @@ class TeacherDashboard {
 
     async loadQuizData() {
         try {
-            const response = await fetch('/api/teachers/quiz', {
+            const response = await fetch('/api/quizzes', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -2712,69 +4433,56 @@ class TeacherDashboard {
                             <div class="quiz-card-header">
                                 <div class="quiz-title-section">
                                     <div class="quiz-icon-enhanced">
-                                        <i class="fas fa-question-circle"></i>
+                                        <i class="fas fa-question"></i>
                                     </div>
                                     <div class="quiz-title-info">
                                         <h3 class="quiz-title">${quiz.title}</h3>
                                         <p class="quiz-subtitle">${quiz.class} • ${quiz.subject}</p>
                                     </div>
                                 </div>
-                                <div class="quiz-actions-enhanced">
-                                    <button class="btn-action btn-edit-enhanced" onclick="dashboard.editQuiz('${quiz._id}')" title="Edit Quiz">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn-action btn-delete-enhanced" onclick="dashboard.deleteQuiz('${quiz._id}')" title="Delete Quiz">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                <div class="quiz-header-right">
+                                    <div class="quiz-status-badge">
+                                        ${this.getQuizStatusBadge(quiz)}
+                                    </div>
+                                    <div class="quiz-actions-enhanced">
+                                        <button class="btn-action btn-edit-enhanced" onclick="dashboard.editQuiz('${quiz._id}')" title="Edit Quiz">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-action btn-delete-enhanced" onclick="dashboard.deleteQuiz('${quiz._id}')" title="Delete Quiz">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="quiz-card-body">
-                                <div class="quiz-stats-grid">
+                                <div class="quiz-stats-row">
                                     <div class="quiz-stat-item">
-                                        <div class="stat-icon questions">
-                                            <i class="fas fa-list-ol"></i>
-                                        </div>
-                                        <div class="stat-info">
-                                            <span class="stat-value">${quiz.questions?.length || 0}</span>
-                                            <span class="stat-label">Questions</span>
-                                        </div>
+                                        <div class="stat-label">Questions</div>
+                                        <div class="stat-value">${quiz.questions?.length || 0}</div>
                                     </div>
                                     <div class="quiz-stat-item">
-                                        <div class="stat-icon marks">
-                                            <i class="fas fa-star"></i>
-                                        </div>
-                                        <div class="stat-info">
-                                            <span class="stat-value">${quiz.totalMarks || quiz.questions?.length || 0}</span>
-                                            <span class="stat-label">Total Marks</span>
-                                        </div>
+                                        <div class="stat-label">Duration</div>
+                                        <div class="stat-value">${quiz.duration || 0} min</div>
                                     </div>
                                     <div class="quiz-stat-item">
-                                        <div class="stat-icon date">
-                                            <i class="fas fa-calendar"></i>
-                                        </div>
-                                        <div class="stat-info">
-                                            <span class="stat-value">${new Date(quiz.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                                            <span class="stat-label">Created</span>
-                                        </div>
+                                        <div class="stat-label">Created</div>
+                                        <div class="stat-value">${quiz.createdAt ? new Date(quiz.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</div>
                                     </div>
                                 </div>
-                                ${quiz.description ? `
-                                <div class="quiz-description">
-                                    <p>${quiz.description}</p>
-                                </div>
-                                ` : ''}
-                            </div>
-                            <div class="quiz-card-footer">
-                                <div class="quiz-status">
-                                    ${quiz.assignedClass ?
-                            `<span class="status-badge status-assigned">Assigned to ${quiz.assignedClass}</span>` :
-                            `<span class="status-badge status-active">Not Assigned</span>`
-                        }
-                                </div>
-                                <div class="quiz-footer-actions">
-                                    <button class="btn-view" onclick="dashboard.viewQuiz('${quiz._id}')">
-                                        <i class="fas fa-eye"></i> View Details
-                                    </button>
+                                
+                                <div class="quiz-schedule-row">
+                                    <div class="schedule-item">
+                                        <div class="schedule-label">Start</div>
+                                        <div class="schedule-value">
+                                            ${quiz.startTime ? this.formatDateTime(quiz.startTime) : 'Not set'}
+                                        </div>
+                                    </div>
+                                    <div class="schedule-item">
+                                        <div class="schedule-label">End</div>
+                                        <div class="schedule-value">
+                                            ${quiz.endTime ? this.formatDateTime(quiz.endTime) : 'Not set'}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2801,7 +4509,7 @@ class TeacherDashboard {
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`/api/teachers/quiz/${quizId}`, {
+            const response = await fetch(`/api/quizzes/${quizId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -2822,22 +4530,28 @@ class TeacherDashboard {
         }
     }
 
-    editQuiz(quizId) {
-        // Find the quiz data from the current displayed quizzes
-        const quizCard = document.querySelector(`[data-quiz-id="${quizId}"]`);
-        if (!quizCard) {
-            this.showMessage('Quiz not found', 'error');
-            return;
-        }
-
-        // Get quiz data (we'll need to fetch it from server for complete data)
-        this.fetchQuizAndShowEditModal(quizId);
-    }
-
-    async fetchQuizAndShowEditModal(quizId) {
+    async editQuiz(quizId) {
         try {
             this.showLoading();
-            const response = await fetch(`/api/teachers/quiz/${quizId}`, {
+
+            // Navigate to edit quiz page
+            this.navigateToEditQuizPage(quizId);
+
+            // Fetch quiz data and populate form
+            await this.fetchQuizAndPopulateEditForm(quizId);
+
+        } catch (error) {
+            console.error('Error editing quiz:', error);
+            this.showMessage('Failed to load quiz for editing', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async fetchQuizAndPopulateEditForm(quizId) {
+        try {
+            this.showLoading();
+            const response = await fetch(`/api/quizzes/${quizId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -2846,86 +4560,128 @@ class TeacherDashboard {
             if (response.ok) {
                 const result = await response.json();
                 const quiz = result.quiz;
-                this.showEditQuizModal(quiz);
+                this.populateEditForm(quiz);
             } else {
                 const error = await response.json();
                 this.showMessage(error.message || 'Failed to fetch quiz', 'error');
             }
         } catch (error) {
             console.error('Error fetching quiz:', error);
-            this.showMessage('Error fetching quiz', 'error');
+            this.showMessage('Failed to fetch quiz', 'error');
         } finally {
             this.hideLoading();
         }
     }
 
-    showEditQuizModal(quiz) {
-        // Create edit modal
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.id = 'editQuizModal';
+    populateEditForm(quiz) {
+        // Set quiz ID
+        document.getElementById('editQuizId').value = quiz._id;
+        
+        // Set minimum dates for the edit form
+        this.setMinDateForQuizInputs();
 
-        // Generate questions HTML
-        const questionsHTML = quiz.questions.map((q, index) => `
-            <div class="question-item" data-question-index="${index}">
-                <input type="text" name="questions[]" placeholder="Question ${index + 1}" value="${q.question}" required>
-                <input type="text" name="options${index + 1}[]" placeholder="Option A" value="${q.options[0]}" required>
-                <input type="text" name="options${index + 1}[]" placeholder="Option B" value="${q.options[1]}" required>
-                <input type="text" name="options${index + 1}[]" placeholder="Option C" value="${q.options[2]}" required>
-                <input type="text" name="options${index + 1}[]" placeholder="Option D" value="${q.options[3]}" required>
-                <select name="answers[]">
-                    <option value="A" ${q.correctOption === 'A' ? 'selected' : ''}>A</option>
-                    <option value="B" ${q.correctOption === 'B' ? 'selected' : ''}>B</option>
-                    <option value="C" ${q.correctOption === 'C' ? 'selected' : ''}>C</option>
-                    <option value="D" ${q.correctOption === 'D' ? 'selected' : ''}>D</option>
-                </select>
-                ${quiz.questions.length > 1 ? `<button type="button" class="btn-remove" onclick="this.parentElement.remove()">Remove</button>` : ''}
-            </div>
-        `).join('');
+        // Populate basic info
+        document.getElementById('editQuizTitle').value = quiz.title || '';
+        document.getElementById('editQuizSubject').value = quiz.subject || '';
 
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Edit Quiz</h3>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+        // Set class dropdown
+        const classSelect = document.getElementById('editQuizClass');
+        if (classSelect && quiz.class) {
+            classSelect.value = quiz.class;
+        }
+
+        // Populate schedule
+        if (quiz.startTime) {
+            document.getElementById('editQuizStartTime').value = new Date(quiz.startTime).toISOString().slice(0, 16);
+        }
+        if (quiz.endTime) {
+            document.getElementById('editQuizEndTime').value = new Date(quiz.endTime).toISOString().slice(0, 16);
+        }
+        document.getElementById('editQuizDuration').value = quiz.duration || 60;
+
+        // Populate questions
+        this.populateEditQuestions(quiz.questions || []);
+
+        // Show/hide Publish Quiz and Save to Draft buttons based on status
+        const publishBtn = document.getElementById('publishQuizBtn');
+        const saveToDraftBtn = document.getElementById('saveToDraftBtn');
+        
+        if (publishBtn) {
+            if (quiz.status === 'draft') {
+                publishBtn.style.display = 'flex';
+            } else {
+                publishBtn.style.display = 'none';
+            }
+        }
+        
+        if (saveToDraftBtn) {
+            if (quiz.status === 'published') {
+                saveToDraftBtn.style.display = 'flex';
+            } else {
+                saveToDraftBtn.style.display = 'none';
+            }
+        }
+    }
+
+    populateEditQuestions(questions) {
+        const container = document.getElementById('editQuestionsContainer');
+        container.innerHTML = '';
+
+        questions.forEach((q, index) => {
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'question-item';
+            questionDiv.innerHTML = `
+                <div class="question-header">
+                    <span class="question-number">Question ${index + 1}</span>
+                    <button type="button" class="btn-remove-question" onclick="dashboard.showDeleteQuestionModal(this.closest('.question-item'))">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <form id="editQuizForm" novalidate>
-                    <input type="hidden" name="quizId" value="${quiz._id}">
-                    <div class="form-group">
-                        <label>Quiz Title</label>
-                        <input type="text" name="title" placeholder="Enter quiz title" value="${quiz.title}" required>
+                <div class="question-field">
+                    <input type="text" name="questions[]" placeholder="Enter question text" value="${q.question || ''}" required>
+                </div>
+                <div class="options-grid">
+                    <div class="option-item">
+                        <label>A</label>
+                        <input type="text" name="options${index + 1}[]" placeholder="Option A" value="${q.options?.[0] || ''}" required>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Class</label>
-                            <input type="text" name="class" placeholder="e.g., 10th Grade" value="${quiz.class}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Subject</label>
-                            <input type="text" name="subject" placeholder="e.g., Mathematics" value="${quiz.subject}" required>
-                        </div>
+                    <div class="option-item">
+                        <label>B</label>
+                        <input type="text" name="options${index + 1}[]" placeholder="Option B" value="${q.options?.[1] || ''}" required>
                     </div>
-                    <div class="form-group">
-                        <label>Total Marks</label>
-                        <input type="number" name="totalMarks" placeholder="Enter total marks" value="${quiz.totalMarks || quiz.questions?.length || 1}" min="1" required>
+                    <div class="option-item">
+                        <label>C</label>
+                        <input type="text" name="options${index + 1}[]" placeholder="Option C" value="${q.options?.[2] || ''}" required>
                     </div>
-                    <div id="editQuestionsContainer">
-                        <h4>Questions</h4>
-                        ${questionsHTML}
+                    <div class="option-item">
+                        <label>D</label>
+                        <input type="text" name="options${index + 1}[]" placeholder="Option D" value="${q.options?.[3] || ''}" required>
                     </div>
-                    <button type="button" class="btn-secondary" onclick="dashboard.addEditQuestionField()">Add Question</button>
-                    <button type="submit" class="btn-primary">Update Quiz</button>
-                </form>
-            </div>
-        `;
+                </div>
+                <div class="answer-field">
+                    <label>Correct Answer</label>
+                    <select name="answers[]">
+                        <option value="">Select correct answer</option>
+                        <option value="A" ${q.correctOption === 'A' ? 'selected' : ''}>A</option>
+                        <option value="B" ${q.correctOption === 'B' ? 'selected' : ''}>B</option>
+                        <option value="C" ${q.correctOption === 'C' ? 'selected' : ''}>C</option>
+                        <option value="D" ${q.correctOption === 'D' ? 'selected' : ''}>D</option>
+                    </select>
+                </div>
+            `;
+            container.appendChild(questionDiv);
 
-        document.body.appendChild(modal);
-        modal.classList.add('show');
-
-        // Add form submit event listener
-        document.getElementById('editQuizForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.updateQuiz();
+            // Add event listeners to clear errors when fields are corrected
+            const questionInputs = questionDiv.querySelectorAll('input, select');
+            questionInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    this.clearQuestionError(questionDiv);
+                });
+                
+                input.addEventListener('change', () => {
+                    this.clearQuestionError(questionDiv);
+                });
+            });
         });
     }
 
@@ -2936,33 +4692,84 @@ class TeacherDashboard {
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
         questionDiv.innerHTML = `
-            <input type="text" name="questions[]" placeholder="Question ${questionCount}" required>
-            <input type="text" name="options${questionCount}[]" placeholder="Option A" required>
-            <input type="text" name="options${questionCount}[]" placeholder="Option B" required>
-            <input type="text" name="options${questionCount}[]" placeholder="Option C" required>
-            <input type="text" name="options${questionCount}[]" placeholder="Option D" required>
-            <select name="answers[]">
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-            </select>
-            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">Remove</button>
+            <div class="question-header">
+                <span class="question-number">Question ${questionCount}</span>
+                <button type="button" class="btn-remove-question" data-question-number="${questionCount}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="question-field">
+                <input type="text" name="questions[]" placeholder="Enter question text" required>
+            </div>
+            <div class="options-grid">
+                <div class="option-item">
+                    <label>A</label>
+                    <input type="text" name="options${questionCount}[]" placeholder="Option A" required>
+                </div>
+                <div class="option-item">
+                    <label>B</label>
+                    <input type="text" name="options${questionCount}[]" placeholder="Option B" required>
+                </div>
+                <div class="option-item">
+                    <label>C</label>
+                    <input type="text" name="options${questionCount}[]" placeholder="Option C" required>
+                </div>
+                <div class="option-item">
+                    <label>D</label>
+                    <input type="text" name="options${questionCount}[]" placeholder="Option D" required>
+                </div>
+            </div>
+            <div class="answer-field">
+                <label>Correct Answer</label>
+                <select name="answers[]">
+                    <option value="">Select correct answer</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                </select>
+            </div>
         `;
 
         container.appendChild(questionDiv);
+
+        // Add event listeners to clear errors when fields are corrected
+        const questionInputs = questionDiv.querySelectorAll('input, select');
+        questionInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                this.clearQuestionError(questionDiv);
+            });
+            
+            input.addEventListener('change', () => {
+                this.clearQuestionError(questionDiv);
+            });
+        });
     }
 
     async updateQuiz() {
+        // First validate the form
+        if (!this.validateEditQuizForm()) {
+            // Scroll to first error
+            const firstError = document.querySelector('.field-error, .question-error, .option-error, .general-error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return; // Stop execution if validation fails
+        }
+
         const form = document.getElementById('editQuizForm');
         const formData = new FormData(form);
         const quizId = formData.get('quizId');
 
         // Get basic quiz info
         const title = formData.get('title');
-        const className = formData.get('class') || 'General';
-        const subject = formData.get('subject') || 'General';
-        const totalMarks = parseInt(formData.get('totalMarks')) || 1;
+        const className = formData.get('class');
+        const subject = formData.get('subject');
+
+        // Get schedule information
+        const startTime = formData.get('startTime');
+        const endTime = formData.get('endTime');
+        const duration = parseInt(formData.get('duration')) || 60;
 
         // Collect questions from form
         const questions = [];
@@ -2988,13 +4795,15 @@ class TeacherDashboard {
             class: className,
             subject,
             questions,
-            totalMarks
+            startTime,
+            endTime,
+            duration
         };
 
         try {
             this.showLoading();
 
-            const response = await fetch(`/api/teachers/quiz/${quizId}`, {
+            const response = await fetch(`/api/quizzes/${quizId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3005,8 +4814,16 @@ class TeacherDashboard {
 
             if (response.ok) {
                 const result = await response.json();
+                const updatedQuiz = result.quiz;
+
                 this.showMessage('Quiz updated successfully', 'success');
-                document.getElementById('editQuizModal').remove();
+
+                // Update quiz status immediately if status changed
+                if (updatedQuiz && updatedQuiz.status) {
+                    this.updateQuizStatusImmediately(quizId, updatedQuiz.status);
+                }
+
+                this.navigateToQuizPage();
                 this.loadQuizData();
                 this.loadDashboardData();
             } else {
@@ -3019,6 +4836,448 @@ class TeacherDashboard {
         } finally {
             this.hideLoading();
         }
+    }
+
+    async publishQuiz() {
+        // First validate the form
+        if (!this.validateEditQuizForm()) {
+            // Scroll to the first error
+            const firstError = document.querySelector('.field-error, .question-error, .option-error, .general-error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return; // Stop execution if validation fails
+        }
+
+        try {
+            const form = document.getElementById('editQuizForm');
+            const formData = new FormData(form);
+            const quizId = formData.get('quizId');
+
+            console.log('Preparing to publish quiz with ID:', quizId);
+
+            // Get basic quiz info
+            const title = formData.get('title');
+            const className = formData.get('class');
+            const subject = formData.get('subject');
+
+            // Get schedule information
+            const startTime = formData.get('startTime');
+            const endTime = formData.get('endTime');
+            const duration = parseInt(formData.get('duration')) || 60;
+
+            // Collect questions from the form
+            const questions = [];
+            const questionElements = form.querySelectorAll('.question-item');
+
+            for (let i = 0; i < questionElements.length; i++) {
+                const questionEl = questionElements[i];
+                const questionText = questionEl.querySelector('input[name^="question"]').value;
+                const options = Array.from(questionEl.querySelectorAll('input[name^="options"]')).map(input => input.value);
+                const correctOption = questionEl.querySelector('select').value;
+
+                if (questionText && options.length === 4) {
+                    questions.push({
+                        question: questionText,
+                        options: options,
+                        correctOption: correctOption.toUpperCase()
+                    });
+                }
+            }
+
+            const quizData = {
+                title,
+                class: className,
+                subject,
+                questions,
+                startTime,
+                endTime,
+                duration,
+                status: 'published' // Set status to published
+            };
+
+            console.log('=== FRONTEND DEBUG: Quiz data prepared for preview ===');
+            console.log('Quiz ID:', quizId);
+            console.log('Quiz data being sent:', JSON.stringify(quizData, null, 2));
+
+            // Show quiz preview before publishing
+            this.showQuizPreviewDialog(quizData, quizId);
+
+        } catch (error) {
+            console.error('Error preparing quiz preview:', error);
+            this.showMessage('Error preparing quiz preview', 'error');
+        }
+    }
+
+    async confirmPublishQuiz(quizData, quizId) {
+        try {
+            this.showLoading();
+
+            console.log('=== FRONTEND DEBUG: Confirming quiz publish ===');
+            console.log('Quiz ID:', quizId);
+            console.log('Quiz data being sent:', JSON.stringify(quizData, null, 2));
+
+            const response = await fetch(`/api/quizzes/${quizId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(quizData)
+            });
+
+            console.log('=== FRONTEND DEBUG: Response status:', response.status);
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('=== FRONTEND DEBUG: API Response result:', JSON.stringify(result, null, 2));
+
+                this.showMessage('Quiz published successfully', 'success');
+
+                // Update quiz status immediately in all places
+                console.log('Calling updateQuizStatusImmediately with quizId:', quizId, 'status: published');
+                this.updateQuizStatusImmediately(quizId, 'published');
+
+                // Update button visibility in edit form
+                const publishBtn = document.getElementById('publishQuizBtn');
+                const saveToDraftBtn = document.getElementById('saveToDraftBtn');
+                
+                if (publishBtn) {
+                    publishBtn.style.display = 'none';
+                }
+                if (saveToDraftBtn) {
+                    saveToDraftBtn.style.display = 'flex';
+                }
+
+                // Navigate back to quiz list
+                this.navigateToQuizPage();
+                // Refresh quiz list (this will now show updated status)
+                this.loadQuizData();
+                this.loadDashboardData();
+            } else {
+                const error = await response.json();
+                console.error('=== FRONTEND DEBUG: API Error:', error);
+                this.showMessage(error.message || 'Failed to publish quiz', 'error');
+            }
+        } catch (error) {
+            console.error('Error publishing quiz:', error);
+            this.showMessage('Error publishing quiz', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async saveToDraft() {
+        // Show confirmation dialog
+        const confirmed = await this.showConfirmDialog(
+            'Are you sure you want to save this quiz as a draft? Students will not be able to take this quiz until it is published.',
+            'Save to Draft'
+        );
+
+        if (!confirmed) return;
+
+        // First validate the form
+        if (!this.validateEditQuizForm()) {
+            // Scroll to first error
+            const firstError = document.querySelector('.field-error, .question-error, .option-error, .general-error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return; // Stop execution if validation fails
+        }
+
+        try {
+            this.showLoading();
+
+            const form = document.getElementById('editQuizForm');
+            const formData = new FormData(form);
+            const quizId = formData.get('quizId');
+
+            console.log('Saving quiz to draft with ID:', quizId);
+
+            // Get basic quiz info
+            const title = formData.get('title');
+            const className = formData.get('class');
+            const subject = formData.get('subject');
+
+            // Get schedule information
+            const startTime = formData.get('startTime');
+            const endTime = formData.get('endTime');
+            const duration = parseInt(formData.get('duration')) || 60;
+
+            // Collect questions from the form
+            const questions = [];
+            const questionElements = form.querySelectorAll('.question-item');
+
+            for (let i = 0; i < questionElements.length; i++) {
+                const questionEl = questionElements[i];
+                const questionText = questionEl.querySelector('input[name^="question"]').value;
+                const options = Array.from(questionEl.querySelectorAll('input[name^="options"]')).map(input => input.value);
+                const correctOption = questionEl.querySelector('select').value;
+
+                if (questionText && options.length === 4) {
+                    questions.push({
+                        question: questionText,
+                        options: options,
+                        correctOption: correctOption.toUpperCase()
+                    });
+                }
+            }
+
+            const quizData = {
+                title,
+                class: className,
+                subject,
+                questions,
+                startTime,
+                endTime,
+                duration,
+                status: 'draft' // Set status to draft
+            };
+
+            console.log('=== FRONTEND DEBUG: Sending quiz data to API for draft ===');
+            console.log('Quiz ID:', quizId);
+            console.log('Quiz data being sent:', JSON.stringify(quizData, null, 2));
+
+            const response = await fetch(`/api/quizzes/${quizId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(quizData)
+            });
+
+            console.log('=== FRONTEND DEBUG: Response status:', response.status);
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('=== FRONTEND DEBUG: API Response result:', JSON.stringify(result, null, 2));
+
+                this.showMessage('Quiz saved to draft successfully', 'success');
+
+                // Update quiz status immediately in all places
+                console.log('Calling updateQuizStatusImmediately with quizId:', quizId, 'status: draft');
+                this.updateQuizStatusImmediately(quizId, 'draft');
+
+                // Update button visibility in edit form
+                const publishBtn = document.getElementById('publishQuizBtn');
+                const saveToDraftBtn = document.getElementById('saveToDraftBtn');
+                
+                if (publishBtn) {
+                    publishBtn.style.display = 'flex';
+                }
+                if (saveToDraftBtn) {
+                    saveToDraftBtn.style.display = 'none';
+                }
+
+                // Navigate back to quiz list
+                this.navigateToQuizPage();
+                // Refresh quiz list (this will now show updated status)
+                this.loadQuizData();
+                this.loadDashboardData();
+            } else {
+                const error = await response.json();
+                console.error('=== FRONTEND DEBUG: API Error:', error);
+                this.showMessage(error.message || 'Failed to save quiz to draft', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving quiz to draft:', error);
+            this.showMessage('Error saving quiz to draft', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    updateQuizStatusImmediately(quizId, newStatus) {
+        console.log(`Updating quiz ${quizId} status to ${newStatus} immediately`);
+
+        // Helper function to update status badge
+        const updateStatusBadge = (element, quizId, newStatus) => {
+            if (element) {
+                const statusBadge = element.querySelector('.quiz-status-badge');
+                if (statusBadge) {
+                    console.log('Found status badge, updating from:', statusBadge.innerHTML);
+                    const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
+                    console.log('To:', newBadgeHTML);
+                    statusBadge.innerHTML = newBadgeHTML;
+                    return true;
+                } else {
+                    console.log('Element found but no status badge inside');
+                }
+            } else {
+                console.log('Element not found');
+            }
+            return false;
+        };
+
+        let updatedCount = 0;
+
+        // Update status badge in quiz list cards
+        const quizCard = document.querySelector(`[data-quiz-id="${quizId}"]`);
+        console.log('Looking for quiz card with ID:', quizId);
+        if (updateStatusBadge(quizCard, quizId, newStatus)) {
+            updatedCount++;
+        }
+
+        // Update status in dashboard recent quizzes
+        const recentQuizzesContainer = document.getElementById('recentQuizzes');
+        if (recentQuizzesContainer) {
+            const recentQuizItem = recentQuizzesContainer.querySelector(`[data-quiz-id="${quizId}"]`);
+            console.log('Looking for recent quiz item with ID:', quizId);
+            if (updateStatusBadge(recentQuizItem, quizId, newStatus)) {
+                updatedCount++;
+            }
+        }
+
+        // Update status in any modal or overlay that might be showing the quiz
+        const modalOverlays = document.querySelectorAll('.modal-overlay');
+        modalOverlays.forEach((overlay, index) => {
+            const statusBadge = overlay.querySelector('.quiz-status-badge');
+            if (statusBadge) {
+                // Check if this modal is for the specific quiz
+                const modalTitle = overlay.querySelector('h3, h4');
+                if (modalTitle && modalTitle.textContent.includes('Quiz')) {
+                    console.log(`Found modal ${index} with quiz title, updating status`);
+                    const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
+                    statusBadge.innerHTML = newBadgeHTML;
+                    updatedCount++;
+                }
+            }
+        });
+
+        // Update status in edit form if it's currently open
+        const editQuizId = document.getElementById('editQuizId');
+        if (editQuizId && editQuizId.value === quizId) {
+            console.log('Edit form is open for this quiz, hiding publish button');
+            const publishBtn = document.getElementById('publishQuizBtn');
+            if (publishBtn) {
+                if (newStatus === 'published') {
+                    publishBtn.style.display = 'none';
+                } else {
+                    publishBtn.style.display = 'flex';
+                }
+                updatedCount++;
+            }
+        }
+
+        // Update any status badges in the current page (fallback)
+        const allStatusBadges = document.querySelectorAll('.quiz-status-badge');
+        console.log(`Found ${allStatusBadges.length} total status badges on page`);
+        allStatusBadges.forEach((badge, index) => {
+            // Check if this badge is related to the updated quiz
+            const parentCard = badge.closest('[data-quiz-id]');
+            if (parentCard && parentCard.getAttribute('data-quiz-id') === quizId) {
+                console.log(`Found matching badge ${index}, updating`);
+                const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
+                badge.innerHTML = newBadgeHTML;
+                updatedCount++;
+            }
+        });
+
+        console.log(`Status update completed. Updated ${updatedCount} elements for quiz ${quizId}`);
+    }
+
+    validateEditQuizForm() {
+        const form = document.getElementById('editQuizForm');
+
+        // Clear all previous error messages
+        this.clearAllErrorMessages();
+
+        let isValid = true;
+        let firstInvalidField = null;
+
+        // Validate title
+        const title = form.querySelector('#editQuizTitle').value.trim();
+        if (!title) {
+            this.showFieldError(form.querySelector('#editQuizTitle'), 'Title is required');
+            isValid = false;
+            if (!firstInvalidField) firstInvalidField = form.querySelector('#editQuizTitle');
+        }
+
+        // Validate subject
+        const subject = form.querySelector('#editQuizSubject').value.trim();
+        if (!subject) {
+            this.showFieldError(form.querySelector('#editQuizSubject'), 'Subject is required');
+            isValid = false;
+            if (!firstInvalidField) firstInvalidField = form.querySelector('#editQuizSubject');
+        }
+
+        // Validate class
+        const className = form.querySelector('#editQuizClass').value;
+        if (!className) {
+            this.showFieldError(form.querySelector('#editQuizClass'), 'Class is required');
+            isValid = false;
+            if (!firstInvalidField) firstInvalidField = form.querySelector('#editQuizClass');
+        }
+
+        // Validate duration
+        const duration = form.querySelector('#editQuizDuration').value;
+        if (!duration) {
+            this.showFieldError(form.querySelector('#editQuizDuration'), 'Duration is required');
+            isValid = false;
+            if (!firstInvalidField) firstInvalidField = form.querySelector('#editQuizDuration');
+        }
+
+        // Validate start date & time
+        const startTime = form.querySelector('#editQuizStartTime').value;
+        if (!startTime) {
+            this.showFieldError(form.querySelector('#editQuizStartTime'), 'Start date & time is required');
+            isValid = false;
+            if (!firstInvalidField) firstInvalidField = form.querySelector('#editQuizStartTime');
+        }
+
+        // Validate end date & time
+        const endTime = form.querySelector('#editQuizEndTime').value;
+        if (!endTime) {
+            this.showFieldError(form.querySelector('#editQuizEndTime'), 'End date & time is required');
+            isValid = false;
+            if (!firstInvalidField) firstInvalidField = form.querySelector('#editQuizEndTime');
+        }
+
+        // Validate start and end time logic
+        if (startTime && endTime && new Date(startTime) >= new Date(endTime)) {
+            this.showGeneralError('End time must be after start time');
+            isValid = false;
+        }
+
+        // Validate questions
+        const questionElements = form.querySelectorAll('.question-item');
+        if (questionElements.length === 0) {
+            this.showGeneralError('At least one question is required');
+            isValid = false;
+        }
+
+        // Validate each question
+        questionElements.forEach((questionEl, index) => {
+            const questionText = questionEl.querySelector('input[name^="question"]').value.trim();
+            const options = Array.from(questionEl.querySelectorAll('input[name^="options"]')).map(input => input.value.trim());
+            const correctOption = questionEl.querySelector('select').value;
+
+            if (!questionText) {
+                this.showQuestionError(questionEl, `Question ${index + 1} text is required`);
+                isValid = false;
+            }
+
+            // Check if all options are provided
+            if (options.some(option => !option)) {
+                this.showQuestionError(questionEl, `All options for Question ${index + 1} are required`);
+                isValid = false;
+            }
+
+            // Check if correct answer is selected
+            if (!correctOption) {
+                this.showQuestionError(questionEl, `Correct answer for Question ${index + 1} is required`);
+                isValid = false;
+            }
+        });
+
+        // Auto-focus first invalid field
+        if (firstInvalidField) {
+            firstInvalidField.focus();
+        }
+
+        return isValid;
     }
 
     viewQuiz(quizId) {
@@ -4687,14 +6946,14 @@ class TeacherDashboard {
                 // Handle booked slots with different restrictions
                 const slotClass = slot.isStudentBooked ? 'student-booked' : 'teacher-assigned';
                 const cursorStyle = slot.canCancel ? 'cursor: pointer;' : 'cursor: not-allowed;';
-                const hoverEffects = slot.canCancel ? 
+                const hoverEffects = slot.canCancel ?
                     'onmouseover="this.style.background=\'#c62828\'; this.style.transform=\'scale(1.05)\';"' +
                     'onmouseout="this.style.background=\'#d32f2f\'; this.style.transform=\'scale(1)\';"' : '';
-                const tooltip = slot.isTeacherAssigned ? 'title="Assigned by you - Click to cancel"' : 
-                               slot.isStudentBooked ? 'title="Student booked - Cannot cancel"' : 
-                               'title="Booked - Cannot cancel"';
-                const clickHandler = slot.canCancel ? 
-                    `onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.actualStudentName || slot.studentName}', '${sessionId}', '${slot.slotId}')"` : 
+                const tooltip = slot.isTeacherAssigned ? 'title="Assigned by you - Click to cancel"' :
+                    slot.isStudentBooked ? 'title="Student booked - Cannot cancel"' :
+                        'title="Booked - Cannot cancel"';
+                const clickHandler = slot.canCancel ?
+                    `onclick="dashboard.handleSlotClick('${slot.startTime}', '${slot.endTime}', 'booked', '${slot.actualStudentName || slot.studentName}', '${sessionId}', '${slot.slotId}')"` :
                     `onclick="event.preventDefault(); return false;"`;
 
                 return `
@@ -5429,14 +7688,6 @@ class TeacherDashboard {
             const formData = new FormData(document.getElementById('createSessionForm'));
             const data = Object.fromEntries(formData.entries());
 
-            // Check if the selected date is a holiday
-            const holidayCheck = await this.checkDateIsHoliday(data.date);
-            if (holidayCheck.isHoliday) {
-                this.hideLoading();
-                this.showMessage(`Session date cannot be a holiday. ${holidayCheck.holiday.reason} holiday from ${this.formatDate(holidayCheck.holiday.startDate)}${holidayCheck.holiday.startDate !== holidayCheck.holiday.endDate ? ' to ' + this.formatDate(holidayCheck.holiday.endDate) : ''}.`, 'error');
-                return;
-            }
-
             // Convert date format to DD-MM-YYYY
             const date = new Date(data.date);
             const formattedDate = `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
@@ -5461,9 +7712,11 @@ class TeacherDashboard {
                 body: JSON.stringify(data)
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                this.showMessage('Session slots created successfully!', 'success');
+            const result = await response.json();
+
+            if (response.ok && response.status === 201) {
+                // Success case
+                this.showMessage(result.message || 'Session slots created successfully!', 'success');
 
                 // Close modal
                 const modal = document.getElementById('createSessionModal');
@@ -5480,12 +7733,22 @@ class TeacherDashboard {
                     this.showSessionSlotsResult(result);
                 }
             } else {
-                const error = await response.json();
-                this.showMessage(error.message || 'Failed to create session slots', 'error');
+                // Error case - display backend error message
+                const errorMessage = result.message || 'Failed to create session slots';
+                const errorField = result.field;
+                
+                // Show error inline if field is specified, otherwise show as toast
+                if (errorField) {
+                    this.showBackendFieldError(errorField, errorMessage);
+                }
+                this.showMessage(errorMessage, 'error');
+                
+                // Keep the modal open and form intact so user can fix the errors
+                console.error('Session creation error:', errorMessage);
             }
         } catch (error) {
             console.error('Error creating session slots:', error);
-            this.showMessage('Error creating session slots', 'error');
+            this.showMessage('Network error. Please try again.', 'error');
         } finally {
             this.hideLoading();
         }
@@ -5649,7 +7912,7 @@ class TeacherDashboard {
         });
     }
 
-    downloadSampleCsv() {
+    downloadStudentSampleCsv() {
         const csvContent = `userId,fullName,email,password,age,mobileNo,city,state,class,timezone
 s101,John Smith,john.smith@email.com,password123,18,9876543210,Mumbai,Maharashtra,10th Grade,Asia/Kolkata
 s102,Emily Johnson,emily.j@email.com,password123,17,9876543211,Delhi,Delhi,9th Grade,Asia/Kolkata
@@ -5661,7 +7924,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'sample_students.csv';
+        a.download = 'student_sample.csv';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -5670,68 +7933,151 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         this.showMessage('Sample CSV downloaded successfully!', 'success');
     }
 
-    showMessage(message, type = 'info') {
+       showMessage(message, type = 'info') {
+        console.log('=== showMessage DEBUG ===');
+        console.log('Message:', message);
+        console.log('Type:', type);
+        
         // Remove any existing messages
-        const existingMessages = document.querySelectorAll('.message');
+        const existingMessages = document.querySelectorAll('.message, .toast-message');
         existingMessages.forEach(msg => msg.remove());
+        
+        // Remove any existing containers to avoid conflicts
+        const existingContainers = document.querySelectorAll('#messages, #toast-container');
+        existingContainers.forEach(container => container.remove());
 
-        // Find or create messages container with proper positioning
-        let container = document.getElementById('messages');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'messages';
-            container.className = 'messages';
-            document.body.appendChild(container);
-        }
-
-        // Create message element with enhanced styling
+        // Create a completely independent container with unique ID
+        const containerId = 'toast-container-' + Date.now();
+        const container = document.createElement('div');
+        container.id = containerId;
+        
+        // Apply container styles directly to avoid CSS conflicts
+        container.style.cssText = `
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            z-index: 2147483647 !important;
+            max-width: 400px !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+            display: block !important;
+            opacity: 1 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            transform: none !important;
+            transition: none !important;
+        `;
+        
+        // Create message element
         const messageElement = document.createElement('div');
-        messageElement.className = `message ${type}`;
-
-        // Add icon based on type
-        let icon = '';
+        messageElement.className = 'toast-message';
+        
+        // Determine colors based on type
+        let borderColor = '#10b981';
+        let bgColor = '#f0fdf4';
+        let icon = 'fa-check-circle';
+        let iconColor = '#10b981';
+        
         switch (type) {
             case 'success':
-                icon = '<i class="fas fa-check-circle"></i>';
+                borderColor = '#10b981';
+                bgColor = '#f0fdf4';
+                icon = 'fa-check-circle';
+                iconColor = '#10b981';
                 break;
             case 'error':
-                icon = '<i class="fas fa-exclamation-circle"></i>';
+                borderColor = '#ef4444';
+                bgColor = '#fef2f2';
+                icon = 'fa-exclamation-circle';
+                iconColor = '#ef4444';
                 break;
             case 'warning':
-                icon = '<i class="fas fa-exclamation-triangle"></i>';
+                borderColor = '#f59e0b';
+                bgColor = '#fffbeb';
+                icon = 'fa-exclamation-triangle';
+                iconColor = '#f59e0b';
                 break;
             default:
-                icon = '<i class="fas fa-info-circle"></i>';
+                borderColor = '#3b82f6';
+                bgColor = '#eff6ff';
+                icon = 'fa-info-circle';
+                iconColor = '#3b82f6';
         }
-
+        
+        // Apply message styles directly to avoid CSS conflicts
+        messageElement.style.cssText = `
+            background: white !important;
+            border-radius: 8px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            border-left: 4px solid ${borderColor} !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            position: relative !important;
+            min-height: 60px !important;
+            z-index: 2147483647 !important;
+            transform: translateX(0) !important;
+            transition: all 0.3s ease !important;
+            font-family: Inter, Arial, sans-serif !important;
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+            color: #374151 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        `;
+        
         messageElement.innerHTML = `
-            <div class="message-icon">${icon}</div>
-            <div class="message-text">${message}</div>
-            <button class="message-close" onclick="this.parentElement.remove()">
+            <i class="fas ${icon}" style="color: ${iconColor} !important; font-size: 20px !important; flex-shrink: 0 !important; display: block !important;"></i>
+            <span style="flex: 1 !important; font-weight: 500 !important; display: block !important;">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" style="background: none !important; border: none !important; color: #9ca3af !important; cursor: pointer !important; padding: 4px !important; border-radius: 4px !important; transition: all 0.2s ease !important; font-size: 14px !important; flex-shrink: 0 !important; display: block !important;">
                 <i class="fas fa-times"></i>
             </button>
         `;
 
-        // Add to container
-        container.appendChild(messageElement);
+        console.log('Created message element:', messageElement);
+        console.log('Message styles:', messageElement.style.cssText);
+        console.log('Container styles:', container.style.cssText);
 
-        // Trigger animation
-        setTimeout(() => {
-            messageElement.classList.add('show');
-        }, 10);
+        // Add message to container
+        container.appendChild(messageElement);
+        
+        // Add container to body
+        document.body.appendChild(container);
+        
+        console.log('Container added to body');
+        console.log('Container visible:', container.offsetWidth > 0 && container.offsetHeight > 0);
+        console.log('Message visible:', messageElement.offsetWidth > 0 && messageElement.offsetHeight > 0);
+        console.log('Container computed display:', window.getComputedStyle(container).display);
+        console.log('Message computed display:', window.getComputedStyle(messageElement).display);
+
+        // Force reflow
+        container.offsetHeight;
+        messageElement.offsetHeight;
 
         // Auto remove after 5 seconds
         setTimeout(() => {
-            if (messageElement.parentNode) {
-                messageElement.classList.remove('show');
+            console.log('Removing message after timeout');
+            if (container.parentNode) {
+                container.style.opacity = '0';
+                container.style.transform = 'translateX(100%)';
                 setTimeout(() => {
-                    if (messageElement.parentNode) {
-                        messageElement.parentNode.removeChild(messageElement);
+                    if (container.parentNode) {
+                        container.parentNode.removeChild(container);
                     }
                 }, 300);
             }
         }, 5000);
     }
+
 
     showConfirmDialog(message, title = 'Confirm Action', onConfirm = null, onCancel = null) {
         // Create modal overlay
@@ -5884,14 +8230,14 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             document.getElementById('assignSessionId').value = sessionId;
             document.getElementById('assignStartTime').value = startTime;
 
-            // Get the student selection form group
-            const studentFormGroup = document.querySelector('#assignSlotForm .form-group:nth-child(2)');
-            const modalTitle = document.querySelector('#assignSlotModal .modal-header h3');
+            // Get the student selection section
+            const studentAssignmentSection = document.querySelector('#assignSlotForm .form-section:nth-child(2)');
+            const modalTitle = document.querySelector('#assignSlotModal .modal-header-clean h3');
 
             if (sessionDetails && sessionDetails.allowedStudentId) {
                 // This is a personal session - hide student dropdown and update title
-                if (studentFormGroup) {
-                    studentFormGroup.style.display = 'none';
+                if (studentAssignmentSection) {
+                    studentAssignmentSection.style.display = 'none';
                 }
                 if (modalTitle) {
                     modalTitle.textContent = 'Personal Session Slot';
@@ -5904,8 +8250,8 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 }
             } else {
                 // This is a common session - show student dropdown and use default title
-                if (studentFormGroup) {
-                    studentFormGroup.style.display = 'block';
+                if (studentAssignmentSection) {
+                    studentAssignmentSection.style.display = 'block';
                 }
                 if (modalTitle) {
                     modalTitle.textContent = 'Assign Slot to Student';
@@ -6025,9 +8371,9 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 isValid = false;
             }
 
-            // Check if student selection is required (only if the dropdown is visible)
-            const studentFormGroup = document.querySelector('#assignSlotForm .form-group:nth-child(2)');
-            const isStudentSelectionRequired = studentFormGroup && studentFormGroup.style.display !== 'none';
+            // Check if student selection is required (only if the student assignment section is visible)
+            const studentAssignmentSection = document.querySelector('#assignSlotForm .form-section:nth-child(2)');
+            const isStudentSelectionRequired = studentAssignmentSection && studentAssignmentSection.style.display !== 'none';
 
             if (isStudentSelectionRequired && !studentId) {
                 this.showFieldError(document.getElementById('studentSelect'), 'Please select a student');
@@ -6079,6 +8425,247 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             this.showMessage('Error assigning slot', 'error');
         } finally {
             this.hideLoading();
+        }
+    }
+
+    // CSV Upload functionality
+    toggleCsvDropdown() {
+        const dropdown = document.getElementById('csvDropdown');
+        if (dropdown) {
+            const isVisible = dropdown.style.display !== 'none';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+        }
+    }
+
+    closeCsvDropdown() {
+        const dropdown = document.getElementById('csvDropdown');
+        if (dropdown) {
+            dropdown.style.display = 'none';
+        }
+    }
+
+    downloadSampleCsv() {
+        // Create sample CSV content
+        const csvContent = `Question,Option A,Option B,Option C,Option D,Correct Answer
+What is the capital of France?,London,Paris,Berlin,Madrid,B
+What is 2 + 2?,3,4,5,6,B
+Which planet is known as the Red Planet?,Venus,Mars,Jupiter,Saturn,B
+Who painted the Mona Lisa?,Van Gogh,Picasso,Da Vinci,Rembrandt,C
+What is the largest ocean?,Atlantic,Indian,Arctic,Pacific,D`;
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'sample_questions.csv');
+        link.style.visibility = 'hidden';
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        this.closeCsvDropdown();
+        this.showMessage('Sample CSV downloaded successfully', 'success');
+    }
+
+    downloadQuizSampleCsv() {
+        // Create sample CSV content for quiz questions
+        const csvContent = `Question,Option A,Option B,Option C,Option D,Correct Answer
+What is the capital of France?,London,Paris,Berlin,Madrid,B
+What is 2 + 2?,3,4,5,6,B
+Which planet is known as the Red Planet?,Venus,Mars,Jupiter,Saturn,B
+Who painted the Mona Lisa?,Van Gogh,Picasso,Da Vinci,Rembrandt,C
+What is the largest ocean?,Atlantic,Indian,Arctic,Pacific,D`;
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'sample_quiz_questions.csv');
+        link.style.visibility = 'hidden';
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        this.closeCsvDropdown();
+        this.showMessage('Quiz Sample CSV downloaded successfully', 'success');
+    }
+
+    async handleCsvFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.csv')) {
+            this.showMessage('Please select a valid CSV file', 'error');
+            return;
+        }
+
+        try {
+            const text = await file.text();
+            const questions = this.parseCsvQuestions(text);
+
+            if (questions.length === 0) {
+                this.showMessage('No valid questions found in CSV file', 'error');
+                return;
+            }
+
+            // Navigate to create quiz page and populate questions
+            this.navigateToCreateQuizPage();
+
+            // Wait a bit for the page to load
+            setTimeout(() => {
+                this.populateQuestionsFromCsv(questions);
+            }, 100);
+
+            this.closeCsvDropdown();
+            this.showMessage(`Successfully loaded ${questions.length} questions from CSV`, 'success');
+
+        } catch (error) {
+            console.error('Error reading CSV file:', error);
+            this.showMessage('Error reading CSV file. Please check the format.', 'error');
+        }
+
+        // Reset file input
+        event.target.value = '';
+    }
+
+    parseCsvQuestions(csvText) {
+        const lines = csvText.split('\n').filter(line => line.trim());
+        const questions = [];
+
+        // Skip header if present
+        const startIndex = lines[0].toLowerCase().includes('question') ? 1 : 0;
+
+        for (let i = startIndex; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            // Parse CSV line (simple parsing - assumes no commas in quoted text)
+            const parts = line.split(',').map(part => part.trim().replace(/^"|"$/g, ''));
+
+            if (parts.length >= 6) {
+                const question = {
+                    question: parts[0],
+                    options: [parts[1], parts[2], parts[3], parts[4]],
+                    correctOption: parts[5].toUpperCase()
+                };
+
+                // Validate question data
+                if (question.question &&
+                    question.options.every(opt => opt) &&
+                    ['A', 'B', 'C', 'D'].includes(question.correctOption)) {
+                    questions.push(question);
+                }
+            }
+        }
+
+        return questions;
+    }
+
+    populateQuestionsFromCsv(questions) {
+        const container = document.getElementById('questionsContainer');
+        if (!container) return;
+
+        // Clear existing questions
+        container.innerHTML = '';
+
+        questions.forEach((questionData, index) => {
+            const questionNumber = index + 1;
+            const questionHtml = `
+                <div class="question-item">
+                    <div class="question-header">
+                        <span class="question-number">Question ${questionNumber}</span>
+                        <button type="button" class="btn-remove-question" onclick="dashboard.showDeleteQuestionModal(this.closest('.question-item'))">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="question-field">
+                        <input type="text" name="questions[]" placeholder="Enter question text" required value="${this.escapeHtml(questionData.question)}">
+                    </div>
+                    <div class="options-grid">
+                        <div class="option-item">
+                            <label>A</label>
+                            <input type="text" name="options${questionNumber}[]" placeholder="Option A" required value="${this.escapeHtml(questionData.options[0])}">
+                        </div>
+                        <div class="option-item">
+                            <label>B</label>
+                            <input type="text" name="options${questionNumber}[]" placeholder="Option B" required value="${this.escapeHtml(questionData.options[1])}">
+                        </div>
+                        <div class="option-item">
+                            <label>C</label>
+                            <input type="text" name="options${questionNumber}[]" placeholder="Option C" required value="${this.escapeHtml(questionData.options[2])}">
+                        </div>
+                        <div class="option-item">
+                            <label>D</label>
+                            <input type="text" name="options${questionNumber}[]" placeholder="Option D" required value="${this.escapeHtml(questionData.options[3])}">
+                        </div>
+                    </div>
+                    <div class="answer-field">
+                        <label>Correct Answer</label>
+                        <select name="answers[]">
+                            <option value="">Select correct answer</option>
+                            <option value="A" ${questionData.correctOption === 'A' ? 'selected' : ''}>A</option>
+                            <option value="B" ${questionData.correctOption === 'B' ? 'selected' : ''}>B</option>
+                            <option value="C" ${questionData.correctOption === 'C' ? 'selected' : ''}>C</option>
+                            <option value="D" ${questionData.correctOption === 'D' ? 'selected' : ''}>D</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', questionHtml);
+        });
+
+        // Re-setup error clearing for new fields
+        this.setupQuizFormErrorClearing();
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    formatDateTime(dateTimeString) {
+        if (!dateTimeString) return 'Not set';
+
+        const date = new Date(dateTimeString);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    getQuizStatusBadge(quiz) {
+        // Check if quiz is in draft status
+        if (quiz.status === 'draft') {
+            return '<span class="status-badge status-draft">Draft</span>';
+        }
+
+        // Check if quiz is published
+        if (quiz.status === 'published') {
+            return '<span class="status-badge status-published">Published</span>';
+        }
+
+        const now = new Date();
+        const startTime = quiz.startTime ? new Date(quiz.startTime) : null;
+        const endTime = quiz.endTime ? new Date(quiz.endTime) : null;
+
+        if (!startTime || !endTime) {
+            return '<span class="status-badge status-inactive">Schedule Not Set</span>';
+        }
+
+        if (now >= startTime && now <= endTime) {
+            return '<span class="status-badge status-active">Active</span>';
+        } else {
+            return '<span class="status-badge status-completed">Completed</span>';
         }
     }
 }
