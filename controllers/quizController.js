@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Quiz = require("../models/quiz");
 const User = require("../models/user");
 const Marks = require("../models/marks");
@@ -15,38 +16,21 @@ exports.getQuizzes = async (req, res) => {
     const quizzes = await Quiz.find(query)
       .sort({ createdAt: -1 });
 
-    res.json({ quizzes });
+    res.json({
+      success: true,
+      quizzes
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.createQuiz = async (req, res) => {
   try {
     const { title, class: className, subject, questions, totalMarks, startTime, endTime, duration, status } = req.body;
-
-    if (status === 'draft') {
-      if (!title) {
-        return res.status(400).json({ message: "Quiz title is required for draft" });
-      }
-    } else {
-      // For published mode, all fields are required
-      if (!title || !className || !subject || !questions?.length || !startTime || !endTime || !duration) {
-        return res.status(400).json({ message: "All fields required" });
-      }
-
-      const startDate = new Date(startTime);
-      const endDate = new Date(endTime);
-      const durationNum = parseInt(duration);
-
-      if (endDate <= startDate) {
-        return res.status(400).json({ message: "End time must be after start time" });
-      }
-
-      if (durationNum < 1) {
-        return res.status(400).json({ message: "Duration must be at least 1 minute" });
-      }
-    }
 
     // Calculate totalMarks from number of questions if not provided
     const calculatedTotalMarks = totalMarks || questions?.length || 0;
@@ -69,12 +53,16 @@ exports.createQuiz = async (req, res) => {
       "Quiz created successfully";
 
     res.status(201).json({
+      success: true,
       message,
       quiz
     });
 
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -86,7 +74,10 @@ exports.updateQuiz = async (req, res) => {
     });
 
     if (!quiz) {
-      return res.status(404).json({ message: "Quiz not found" });
+      return res.status(404).json({ 
+        success: false,
+        message: "Quiz not found" 
+      });
     }
 
     const { title, class: className, subject, questions, totalMarks, startTime, endTime, duration, status } = req.body;
@@ -94,56 +85,26 @@ exports.updateQuiz = async (req, res) => {
     if (title) quiz.title = title;
     if (className) quiz.class = className;
     if (subject) quiz.subject = subject;
-
-    if (questions) {
-      quiz.questions = questions;
-    }
-
-    if (totalMarks !== undefined) {
-      quiz.totalMarks = totalMarks;
-    }
-
-    if (startTime) {
-      const startDate = new Date(startTime);
-      quiz.startTime = startDate;
-    }
-
-    if (endTime) {
-      const endDate = new Date(endTime);
-
-      if (quiz.startTime && endDate <= quiz.startTime) {
-        return res.status(400).json({ message: "End time must be after start time" });
-      }
-      quiz.endTime = endDate;
-    }
-
-    if (duration !== undefined) {
-      const durationNum = parseInt(duration);
-      if (durationNum < 1) {
-        return res.status(400).json({ message: "Duration must be at least 1 minute" });
-      }
-      quiz.duration = durationNum;
-    }
-
-    // Handle status update
-    if (status !== undefined) {
-      quiz.status = status;
-    }
-
-    // Final validation if both start and end times are present
-    if (quiz.startTime && quiz.endTime && quiz.endTime <= quiz.startTime) {
-      return res.status(400).json({ message: "End time must be after start time" });
-    }
+    if (questions) quiz.questions = questions;
+    if (totalMarks !== undefined) quiz.totalMarks = totalMarks;
+    if (startTime) quiz.startTime = new Date(startTime);
+    if (endTime) quiz.endTime = new Date(endTime);
+    if (duration !== undefined) quiz.duration = parseInt(duration);
+    if (status !== undefined) quiz.status = status;
 
     await quiz.save();
 
     res.json({
+      success: true,
       message: "Quiz updated successfully",
       quiz
     });
 
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -157,14 +118,6 @@ exports.updateSingleQuestion = async (req, res) => {
       teacherId: req.user.id
     });
 
-    if (!quiz) {
-      return res.status(404).json({ message: "Quiz not found" });
-    }
-
-    if (!quiz.questions[index]) {
-      return res.status(400).json({ message: "Invalid question index" });
-    }
-
     quiz.questions[index].question = question;
     quiz.questions[index].options = options;
     quiz.questions[index].correctOption = correctOption;
@@ -172,18 +125,22 @@ exports.updateSingleQuestion = async (req, res) => {
     await quiz.save();
 
     return res.json({
+      success: true,
       message: "Single question updated successfully",
       question: quiz.questions[index]
     });
 
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
   }
 };
 
 exports.submitQuiz = async (req, res) => {
   try {
-    const { quizId, studentId, answers, timeTaken, timeTakenSeconds, submittedAt, studentName, teacherId } = req.body;
+    const { quizId, studentId, answers, timeTaken } = req.body;
     
     // Validate required fields
     if (!quizId || !studentId || !answers) {
@@ -211,20 +168,11 @@ exports.submitQuiz = async (req, res) => {
       });
     }
 
-    // Check if student is linked to teacher (use provided teacherId or fallback to student.teacherId)
-    const assignedTeacherId = teacherId || student.teacherId;
-    if (!assignedTeacherId) {
-      return res.status(403).json({
-        success: false,
-        message: "Student not linked to any teacher. Please contact your administrator."
-      });
-    }
-
     // Verify student can attempt this quiz
-    if (quiz.teacherId.toString() !== assignedTeacherId.toString()) {
+    if (quiz.teacherId.toString() !== student.teacherId.toString()) {
       return res.status(403).json({
         success: false,
-        message: "You cannot attempt another teacher's quiz"
+        message: "You can only attempt quizzes from your assigned teacher"
       });
     }
 
@@ -237,54 +185,36 @@ exports.submitQuiz = async (req, res) => {
     if (alreadyAttempted) {
       return res.status(409).json({
         success: false,
-        message: "You have already submitted this quiz",
-        data: {
-          totalQuestions: quiz.questions.length,
-          correctAnswers: alreadyAttempted.score,
-          wrongAnswers: quiz.questions.length - alreadyAttempted.score,
-          scorePercentage: Math.round((alreadyAttempted.score / quiz.questions.length) * 100),
-          status: alreadyAttempted.score >= Math.ceil(quiz.questions.length * 0.5) ? 'Pass' : 'Fail'
-        }
+        message: "You have already submitted this quiz"
       });
     }
 
-    // Calculate Score Properly
+    // Calculate score
     let correctAnswers = 0;
-    let wrongAnswers = 0;
-    
     quiz.questions.forEach((question, index) => {
       const userAnswer = answers[index];
       const correctOption = question.correctOption;
       
-      // Simple comparison: convert both to same format
+      // Handle both string (A, B, C, D) and number (0, 1, 2, 3) formats
       let isCorrect = false;
-      
-      // If userAnswer is a number (0,1,2,3), convert to letter
-      const userAnswerLetter = typeof userAnswer === 'number' ? 
-        String.fromCharCode(65 + userAnswer) : userAnswer;
-      
-      // If correctOption is a number (0,1,2,3), convert to letter  
-      const correctOptionLetter = typeof correctOption === 'number' ? 
-        String.fromCharCode(65 + correctOption) : correctOption;
-      
-      // Compare letters
-      isCorrect = userAnswerLetter === correctOptionLetter;
-      
-      console.log(`Question ${index + 1}: User=${userAnswerLetter}, Correct=${correctOptionLetter}, Match=${isCorrect}`);
-      
-      if (isCorrect) {
-        correctAnswers++;
+      if (typeof userAnswer === 'number' && typeof correctOption === 'number') {
+        isCorrect = userAnswer === correctOption;
+      } else if (typeof userAnswer === 'number' && typeof correctOption === 'string') {
+        isCorrect = String.fromCharCode(65 + userAnswer) === correctOption;
+      } else if (typeof userAnswer === 'string' && typeof correctOption === 'number') {
+        isCorrect = userAnswer === String.fromCharCode(65 + correctOption);
       } else {
-        wrongAnswers++;
+        isCorrect = userAnswer === correctOption;
       }
+      
+      if (isCorrect) correctAnswers++;
     });
 
     const totalQuestions = quiz.questions.length;
     const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100);
-    const status = scorePercentage >= 50 ? 'Pass' : 'Fail';
 
-    // Save results in database
-    const result = await Marks.create({
+    // Save results
+    await Marks.create({
       studentId,
       quizId: quiz._id,
       teacherId: quiz.teacherId,
@@ -295,25 +225,23 @@ exports.submitQuiz = async (req, res) => {
       submittedAt: new Date()
     });
 
-    // Return result data in exact format requested
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "Quiz submitted successfully!",
       data: {
         totalQuestions,
         correctAnswers,
-        wrongAnswers,
+        wrongAnswers: totalQuestions - correctAnswers,
         scorePercentage,
-        status
+        status: scorePercentage >= 50 ? 'Pass' : 'Fail'
       }
     });
 
   } catch (err) {
     console.error('Quiz submission error:', err);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: "Internal server error during quiz submission",
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      message: "Failed to submit quiz"
     });
   }
 };
@@ -328,13 +256,15 @@ exports.deleteQuiz = async (req, res) => {
       teacherId: teacherId
     });
 
-    if (!quiz) {
-      return res.status(404).json({ message: "Quiz not found" });
-    }
-
-    res.json({ message: "Quiz deleted successfully" });
+    res.json({ 
+      success: true,
+      message: "Quiz deleted successfully" 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -347,6 +277,7 @@ exports.getQuizForStudent = async (req, res) => {
     const student = await User.findById(studentId);
     if (!student || !student.teacherId) {
       return res.status(403).json({
+        success: false,
         message: "Student not linked to any teacher"
       });
     }
@@ -355,6 +286,7 @@ exports.getQuizForStudent = async (req, res) => {
     const quiz = await Quiz.findById(quizId).select('-questions.correctOption');
     if (!quiz) {
       return res.status(404).json({
+        success: false,
         message: "Quiz not found"
       });
     }
@@ -362,6 +294,7 @@ exports.getQuizForStudent = async (req, res) => {
     // Verify quiz has questions
     if (!quiz.questions || quiz.questions.length === 0) {
       return res.status(404).json({
+        success: false,
         message: "Quiz has no questions available"
       });
     }
@@ -369,13 +302,17 @@ exports.getQuizForStudent = async (req, res) => {
     // CRITICAL: Verify student can only access their teacher's quiz
     if (quiz.teacherId.toString() !== student.teacherId.toString()) {
       return res.status(403).json({
+        success: false,
         message: "You can only access quizzes from your assigned teacher"
       });
     }
 
     res.json({ quiz });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -420,17 +357,24 @@ exports.getAvailableQuizzesForStudent = async (req, res) => {
     }).distinct('quizId');
 
     // Format response and include all quizzes (attempted and unattempted)
-    const availableQuizzes = quizzes.map(quiz => ({
-      _id: quiz._id,
-      title: quiz.title,
-      subject: quiz.subject,
-      class: quiz.class,
-      totalQuestions: quiz.questions ? quiz.questions.length : 0,
-      duration: quiz.duration,
-      startDate: quiz.startTime,
-      endDate: quiz.endTime,
-      alreadySubmitted: attemptedQuizzes.includes(quiz._id.toString())
-    }));
+    const availableQuizzes = quizzes.map(quiz => {
+      const quizIdStr = quiz._id.toString();
+      const isSubmitted = attemptedQuizzes.some(attemptedId => 
+        attemptedId.toString() === quizIdStr
+      );
+      
+      return {
+        _id: quiz._id,
+        title: quiz.title,
+        subject: quiz.subject,
+        class: quiz.class,
+        totalQuestions: quiz.questions ? quiz.questions.length : 0,
+        duration: quiz.duration,
+        startDate: quiz.startTime,
+        endDate: quiz.endTime,
+        alreadySubmitted: isSubmitted
+      };
+    });
 
     res.json({ quizzes: availableQuizzes });
   } catch (err) {
@@ -458,18 +402,153 @@ exports.checkQuizAttemptStatus = async (req, res) => {
   }
 };
 
+exports.getSpecificQuizResult = async (req, res) => {
+  try {
+    const quizId = req.params.id;
+    const studentId = req.user.id;
+    
+    const result = await Marks.findOne({
+      studentId: studentId,
+      quizId: quizId
+    })
+      .populate('quizId', 'title subject questions');
+      
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz result not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      result: {
+        quizId: result.quizId,
+        quiz: result.quiz,
+        score: result.score,
+        totalMarks: result.totalMarks,
+        percentage: result.percentage,
+        attemptedAt: result.createdAt,
+        submittedAt: result.createdAt,
+        totalQuestions: result.quiz?.questions?.length || 10
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch quiz result: " + err.message
+    });
+  }
+};
+
 exports.getStudentResults = async (req, res) => {
   try {
     const results = await Marks.find({
       studentId: req.user.id
     })
-      .populate('quizId', 'title subject')
+      .populate('quizId', 'title subject questions')
       .sort({ createdAt: -1 });
 
     res.json({ results });
   } catch (err) {
     res.status(500).json({
       message: "Failed to fetch quiz results: " + err.message
+    });
+  }
+};
+
+exports.getQuizAttemptTracking = async (req, res) => {
+  try {
+    const quizId = req.params.id;
+    const teacherId = req.user.id;
+
+    if (!quizId || !mongoose.Types.ObjectId.isValid(quizId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid quiz ID"
+      });
+    }
+
+    const quiz = await Quiz.findOne({
+      _id: quizId,
+      teacherId: teacherId
+    }).select('title subject class totalMarks');
+
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz not found'
+      });
+    }
+
+    // Students "assigned" to this quiz = same teacher and same class
+    const assignedStudents = await User.find({
+      role: 'student',
+      teacherId: teacherId,
+      class: quiz.class
+    }).select('_id fullName').lean();
+
+    const studentIds = assignedStudents.map(s => s._id);
+
+    const attempts = await Marks.find({
+      quizId: quizId,
+      studentId: { $in: studentIds }
+    }).lean();
+
+    const attemptedSet = new Set(attempts.map(a => a.studentId.toString()));
+    const attemptByStudent = {};
+    attempts.forEach(a => {
+      attemptByStudent[a.studentId.toString()] = {
+        score: a.score,
+        totalMarks: a.totalMarks,
+        attemptedAt: a.createdAt
+      };
+    });
+
+    const attempted = [];
+    const notAttempted = [];
+
+    assignedStudents.forEach(student => {
+      const idStr = student._id.toString();
+      const record = {
+        studentId: student._id,
+        fullName: student.fullName
+      };
+      if (attemptedSet.has(idStr)) {
+        const a = attemptByStudent[idStr];
+        attempted.push({
+          ...record,
+          score: a.score,
+          totalMarks: a.totalMarks,
+          attemptedAt: a.attemptedAt
+        });
+      } else {
+        notAttempted.push(record);
+      }
+    });
+
+    // Sort attempted by attemptedAt desc (most recent first)
+    attempted.sort((a, b) => new Date(b.attemptedAt) - new Date(a.attemptedAt));
+
+    res.json({
+      success: true,
+      quiz: {
+        _id: quiz._id,
+        title: quiz.title,
+        subject: quiz.subject,
+        class: quiz.class,
+        totalMarks: quiz.totalMarks
+      },
+      totalStudents: assignedStudents.length,
+      attemptedCount: attempted.length,
+      notAttemptedCount: notAttempted.length,
+      attempted,
+      notAttempted
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
     });
   }
 };

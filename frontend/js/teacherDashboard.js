@@ -452,6 +452,59 @@ class TeacherDashboard {
             });
         }
 
+        const backToQuizListBtnFromDetails = document.getElementById('backToQuizListBtnFromDetails');
+        if (backToQuizListBtnFromDetails) {
+            backToQuizListBtnFromDetails.addEventListener('click', () => {
+                this.backToQuizListFromDetails();
+            });
+        }
+
+        const quizDetailsStudentSearch = document.getElementById('quizDetailsStudentSearch');
+        if (quizDetailsStudentSearch) {
+            quizDetailsStudentSearch.addEventListener('input', () => this.applyQuizDetailsFilter());
+        }
+        const quizDetailsFilter = document.querySelector('.quiz-details-filter');
+        if (quizDetailsFilter) {
+            quizDetailsFilter.addEventListener('click', (e) => {
+                const btn = e.target.closest('.filter-btn');
+                if (btn) {
+                    document.querySelectorAll('.quiz-details-filter .filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.applyQuizDetailsFilter();
+                }
+            });
+        }
+
+        const backToQuizDetailsBtn = document.getElementById('backToQuizDetailsBtn');
+        if (backToQuizDetailsBtn) {
+            backToQuizDetailsBtn.addEventListener('click', () => this.backToQuizDetailsFromResult());
+        }
+
+        document.getElementById('quizDetailsView')?.addEventListener('click', (e) => {
+            const viewDetailsBtn = e.target.closest('.btn-view-quiz-details');
+            if (viewDetailsBtn) {
+                e.preventDefault();
+                const studentId = viewDetailsBtn.dataset.studentId;
+                if (!studentId || !this.currentQuizDetailsData?.attempted) return;
+                const row = this.currentQuizDetailsData.attempted.find(a => {
+                    const id = (a.studentId && a.studentId._id ? a.studentId._id : a.studentId || '').toString();
+                    return id === studentId;
+                });
+                if (row) {
+                    const totalMarks = row.totalMarks != null ? row.totalMarks : 0;
+                    const score = row.score != null ? row.score : 0;
+                    const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 100) : 0;
+                    this.openStudentQuizResult({
+                        fullName: row.fullName || '—',
+                        score,
+                        totalMarks,
+                        percentage,
+                        attemptedAt: row.attemptedAt
+                    });
+                }
+            }
+        });
+
         const editQuizForm = document.getElementById('editQuizForm');
         if (editQuizForm) {
             editQuizForm.addEventListener('submit', (e) => {
@@ -2893,8 +2946,8 @@ class TeacherDashboard {
         const className = form.querySelector('#quizClass')?.value;
         const subject = form.querySelector('#quizSubject')?.value;
         const totalMarks = form.querySelector('#totalMarks')?.value;
-        const startTime = form.querySelector('#quizStartTime')?.value;
-        const endTime = form.querySelector('#quizEndTime')?.value;
+        const startTime = this.toIsoStringFromDateTimeLocal(form.querySelector('#quizStartTime')?.value);
+        const endTime = this.toIsoStringFromDateTimeLocal(form.querySelector('#quizEndTime')?.value);
         const duration = form.querySelector('#quizDuration')?.value;
 
         // Clear previous errors
@@ -3835,8 +3888,8 @@ class TeacherDashboard {
         const subject = formData.get('subject') || 'General';
 
         // Get schedule information
-        const startTime = formData.get('startTime');
-        const endTime = formData.get('endTime');
+        const startTime = this.toIsoStringFromDateTimeLocal(formData.get('startTime'));
+        const endTime = this.toIsoStringFromDateTimeLocal(formData.get('endTime'));
         const duration = parseInt(formData.get('duration')) || 60;
 
         // Collect questions from the form
@@ -3912,7 +3965,8 @@ class TeacherDashboard {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                hour12: true
             });
         };
 
@@ -4123,7 +4177,8 @@ class TeacherDashboard {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                hour12: true
             });
         };
 
@@ -4445,6 +4500,9 @@ class TeacherDashboard {
                                         ${this.getQuizStatusBadge(quiz)}
                                     </div>
                                     <div class="quiz-actions-enhanced">
+                                        <button class="btn-action btn-view-enhanced" onclick="dashboard.viewQuiz('${quiz._id}')" title="View Quiz Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
                                         <button class="btn-action btn-edit-enhanced" onclick="dashboard.editQuiz('${quiz._id}')" title="Edit Quiz">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -4591,13 +4649,20 @@ class TeacherDashboard {
         }
 
         // Populate schedule
-        if (quiz.startTime) {
-            document.getElementById('editQuizStartTime').value = new Date(quiz.startTime).toISOString().slice(0, 16);
+        const editStartInput = document.getElementById('editQuizStartTime');
+        const editEndInput = document.getElementById('editQuizEndTime');
+        if (editStartInput) {
+            editStartInput.value = quiz.startTime ? this.toDateTimeLocalInputValue(quiz.startTime) : '';
         }
-        if (quiz.endTime) {
-            document.getElementById('editQuizEndTime').value = new Date(quiz.endTime).toISOString().slice(0, 16);
+        if (editEndInput) {
+            editEndInput.value = quiz.endTime ? this.toDateTimeLocalInputValue(quiz.endTime) : '';
         }
+        this.clearTimeDisplay('editQuizStartTimeDisplay');
+        this.clearTimeDisplay('editQuizEndTimeDisplay');
         document.getElementById('editQuizDuration').value = quiz.duration || 60;
+
+        // Add event listeners for time display updates
+        this.setupEditTimeDisplayListeners();
 
         // Populate questions
         this.populateEditQuestions(quiz.questions || []);
@@ -4767,8 +4832,8 @@ class TeacherDashboard {
         const subject = formData.get('subject');
 
         // Get schedule information
-        const startTime = formData.get('startTime');
-        const endTime = formData.get('endTime');
+        const startTime = this.toIsoStringFromDateTimeLocal(formData.get('startTime'));
+        const endTime = this.toIsoStringFromDateTimeLocal(formData.get('endTime'));
         const duration = parseInt(formData.get('duration')) || 60;
 
         // Collect questions from form
@@ -4862,8 +4927,8 @@ class TeacherDashboard {
             const subject = formData.get('subject');
 
             // Get schedule information
-            const startTime = formData.get('startTime');
-            const endTime = formData.get('endTime');
+            const startTime = this.toIsoStringFromDateTimeLocal(formData.get('startTime'));
+            const endTime = this.toIsoStringFromDateTimeLocal(formData.get('endTime'));
             const duration = parseInt(formData.get('duration')) || 60;
 
             // Collect questions from the form
@@ -5001,8 +5066,8 @@ class TeacherDashboard {
             const subject = formData.get('subject');
 
             // Get schedule information
-            const startTime = formData.get('startTime');
-            const endTime = formData.get('endTime');
+            const startTime = this.toIsoStringFromDateTimeLocal(formData.get('startTime'));
+            const endTime = this.toIsoStringFromDateTimeLocal(formData.get('endTime'));
             const duration = parseInt(formData.get('duration')) || 60;
 
             // Collect questions from the form
@@ -5280,9 +5345,178 @@ class TeacherDashboard {
         return isValid;
     }
 
-    viewQuiz(quizId) {
-        // TODO: Implement view quiz functionality
-        this.showMessage('View quiz details functionality coming soon', 'info');
+    async viewQuiz(quizId) {
+        try {
+            this.showLoading();
+            await this.loadQuizDetailsView(quizId);
+        } catch (error) {
+            console.error('Error loading quiz details:', error);
+            const message = error && error.message ? error.message : 'Failed to load quiz details';
+            this.showMessage(message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async loadQuizDetailsView(quizId) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            this.showMessage('Please log in again', 'error');
+            return;
+        }
+        const response = await fetch(`/api/quizzes/attempt-tracking/${quizId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            let message = 'Failed to load quiz details';
+            try {
+                const err = await response.json();
+                message = err.message || message;
+            } catch (_) {
+                message = `Request failed (${response.status}). Please try again.`;
+            }
+            console.error('Quiz details error:', response.status, message);
+            throw new Error(message);
+        }
+        let data;
+        try {
+            data = await response.json();
+        } catch (_) {
+            throw new Error('Invalid response from server');
+        }
+        if (!data || !data.quiz) {
+            throw new Error('Invalid response from server');
+        }
+        this.currentQuizDetailsData = data;
+
+        document.getElementById('quizListView').style.display = 'none';
+        document.getElementById('quizDetailsView').style.display = 'block';
+
+        document.getElementById('quizDetailsTitle').textContent = data.quiz.title;
+        document.getElementById('quizDetailsSubtitle').textContent = `${data.quiz.class} • ${data.quiz.subject}`;
+
+        document.getElementById('quizDetailsTotalStudents').textContent = data.totalStudents;
+        document.getElementById('quizDetailsAttempted').textContent = data.attemptedCount;
+        document.getElementById('quizDetailsNotAttempted').textContent = data.notAttemptedCount;
+
+        document.getElementById('attemptedSectionCount').textContent = data.attemptedCount;
+        document.getElementById('notAttemptedSectionCount').textContent = data.notAttemptedCount;
+
+        this.renderQuizDetailsAttempted(data.attempted || []);
+        this.renderQuizDetailsNotAttempted(data.notAttempted || []);
+
+        const attemptedSection = document.getElementById('quizDetailsAttemptedSection');
+        const notAttemptedSection = document.getElementById('quizDetailsNotAttemptedSection');
+        const allDoneEl = document.getElementById('quizDetailsAllDone');
+
+        if (data.notAttemptedCount === 0 && data.totalStudents > 0) {
+            attemptedSection.style.display = 'block';
+            notAttemptedSection.style.display = 'none';
+            allDoneEl.style.display = 'flex';
+        } else {
+            attemptedSection.style.display = 'block';
+            notAttemptedSection.style.display = 'block';
+            allDoneEl.style.display = 'none';
+        }
+
+        document.getElementById('quizDetailsAttemptedEmpty').style.display = (data.attempted || []).length === 0 ? 'block' : 'none';
+        document.getElementById('quizDetailsNotAttemptedEmpty').style.display = (data.notAttempted || []).length === 0 ? 'block' : 'none';
+
+        document.getElementById('quizDetailsStudentSearch').value = '';
+        document.querySelectorAll('.quiz-details-filter .filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === 'all');
+        });
+        this.applyQuizDetailsFilter();
+    }
+
+    applyQuizDetailsFilter() {
+        const searchInput = document.getElementById('quizDetailsStudentSearch');
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        const activeFilter = document.querySelector('.quiz-details-filter .filter-btn.active')?.dataset.filter || 'all';
+
+        const attemptedSection = document.getElementById('quizDetailsAttemptedSection');
+        const notAttemptedSection = document.getElementById('quizDetailsNotAttemptedSection');
+
+        if (attemptedSection) {
+            attemptedSection.style.display = (activeFilter === 'all' || activeFilter === 'attempted') ? 'block' : 'none';
+        }
+        if (notAttemptedSection) {
+            notAttemptedSection.style.display = (activeFilter === 'all' || activeFilter === 'not-attempted') ? 'block' : 'none';
+        }
+
+        document.querySelectorAll('.quiz-details-sections .student-row').forEach(row => {
+            const name = row.dataset.name || '';
+            const status = row.dataset.status || '';
+            const matchesSearch = !query || name.includes(query);
+            const matchesFilter =
+                activeFilter === 'all' ||
+                (activeFilter === 'attempted' && status === 'attempted') ||
+                (activeFilter === 'not-attempted' && status === 'not-attempted');
+            row.style.display = matchesSearch && matchesFilter ? '' : 'none';
+        });
+    }
+
+    renderQuizDetailsAttempted(attempted) {
+        const tbody = document.getElementById('quizDetailsAttemptedBody');
+        const formatAttemptTime = (d) => d ? new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+        tbody.innerHTML = attempted.map(row => {
+            const totalMarks = row.totalMarks != null ? row.totalMarks : 0;
+            const studentIdStr = (row.studentId && row.studentId._id ? row.studentId._id : row.studentId || '').toString();
+            return `
+            <tr class="student-row" data-status="attempted" data-name="${(row.fullName || '').toLowerCase()}">
+                <td data-label="Student Name">${this.escapeHtml(row.fullName || '—')}</td>
+                <td data-label="Score">${row.score != null ? `${row.score} / ${totalMarks || '?'}` : '—'}</td>
+                <td data-label="Attempt Time">${formatAttemptTime(row.attemptedAt)}</td>
+                <td data-label="Status"><span class="status-badge status-attempted">Attempted</span></td>
+                <td data-label="Action" class="td-actions">
+                    <button type="button" class="btn-view-quiz-details" data-student-id="${this.escapeHtml(studentIdStr)}" title="View result">
+                        View Details
+                    </button>
+                </td>
+            </tr>
+        `;
+        }).join('');
+    }
+
+    renderQuizDetailsNotAttempted(notAttempted) {
+        const tbody = document.getElementById('quizDetailsNotAttemptedBody');
+        tbody.innerHTML = notAttempted.map(row => `
+            <tr class="student-row" data-status="not-attempted" data-name="${(row.fullName || '').toLowerCase()}">
+                <td data-label="Student Name">${this.escapeHtml(row.fullName || '—')}</td>
+                <td data-label="Status"><span class="status-badge status-not-attempted">Not Attempted</span></td>
+            </tr>
+        `).join('');
+    }
+
+    openStudentQuizResult(data) {
+        const resultView = document.getElementById('quizStudentResultView');
+        const detailsView = document.getElementById('quizDetailsView');
+        if (!resultView || !detailsView) return;
+        const quiz = this.currentQuizDetailsData?.quiz || {};
+        document.getElementById('quizStudentResultQuizTitle').textContent = quiz.title || 'Quiz';
+        document.getElementById('quizStudentResultSubtitle').textContent = [quiz.class, quiz.subject].filter(Boolean).join(' • ') || '—';
+        document.getElementById('quizStudentResultStudentName').textContent = data.fullName || 'Student';
+        document.getElementById('quizStudentResultScore').textContent = `${data.score ?? '—'} / ${data.totalMarks ?? '—'}`;
+        document.getElementById('quizStudentResultPercentage').textContent = (data.percentage != null ? `${data.percentage}%` : '—');
+        const attemptTime = data.attemptedAt ? new Date(data.attemptedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+        document.getElementById('quizStudentResultAttemptTime').textContent = attemptTime;
+        detailsView.style.display = 'none';
+        resultView.style.display = 'block';
+    }
+
+    backToQuizDetailsFromResult() {
+        const resultView = document.getElementById('quizStudentResultView');
+        const detailsView = document.getElementById('quizDetailsView');
+        if (resultView) resultView.style.display = 'none';
+        if (detailsView) detailsView.style.display = 'block';
+    }
+
+    backToQuizListFromDetails() {
+        document.getElementById('quizDetailsView').style.display = 'none';
+        const resultView = document.getElementById('quizStudentResultView');
+        if (resultView) resultView.style.display = 'none';
+        document.getElementById('quizListView').style.display = 'block';
+        this.currentQuizDetailsData = null;
     }
 
     async loadAvailabilityData() {
@@ -6540,8 +6774,12 @@ class TeacherDashboard {
         try {
             this.showLoading();
 
+            // Add cache-busting timestamp
+            const timestamp = new Date().getTime();
+            console.log('Loading sessions data at:', new Date());
+
             // Load teacher sessions with pagination
-            const response = await fetch(`/api/sessions/teacher?page=${page}&limit=${limit}`, {
+            const response = await fetch(`/api/sessions/teacher?page=${page}&limit=${limit}&_t=${timestamp}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -6555,7 +6793,7 @@ class TeacherDashboard {
                 const sessionsWithSlots = await Promise.all(
                     (data.sessions || []).map(async (session) => {
                         try {
-                            const slotResponse = await fetch(`/api/sessions/${session._id}/details`, {
+                            const slotResponse = await fetch(`/api/sessions/${session._id}/details?_t=${timestamp}`, {
                                 headers: {
                                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                                 }
@@ -6578,6 +6816,15 @@ class TeacherDashboard {
 
                 console.log('Sessions with slots:', sessionsWithSlots);
                 console.log('Pagination data:', data.pagination);
+
+                // Debug: Log each session's date and status
+                sessionsWithSlots.forEach((session, index) => {
+                    console.log(`Session ${index + 1}:`, {
+                        title: session.title,
+                        date: session.date,
+                        status: this.getSessionStatus(session)
+                    });
+                });
 
                 this.updateSessionsList(sessionsWithSlots, data.pagination);
                 this.updateSessionStats({ ...data, sessions: sessionsWithSlots });
@@ -6738,8 +6985,8 @@ class TeacherDashboard {
                                     ` : ''}
                                 </div>
                                 <div style="text-align: right;">
-                                    <span style="background: ${status === 'completed' ? '#2196f3' : '#1976d2'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500; text-transform: uppercase;">
-                                        ${status}
+                                    <span class="session-status ${status}">
+                                        ${status.toUpperCase()}
                                     </span>
                                 </div>
                             </div>
@@ -6863,10 +7110,10 @@ class TeacherDashboard {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        console.log('Session date:', session.date, 'Session date object:', sessionDate, 'Today:', today, 'Comparison:', sessionDate < today);
+
         if (sessionDate < today) {
-            return 'completed';
-        } else if (sessionDate.getTime() === today.getTime()) {
-            return 'active';
+            return 'expired';
         } else {
             return 'active';
         }
@@ -8634,13 +8881,58 @@ What is the largest ocean?,Atlantic,Indian,Arctic,Pacific,D`;
         if (!dateTimeString) return 'Not set';
 
         const date = new Date(dateTimeString);
+        if (Number.isNaN(date.getTime())) return 'Not set';
         return date.toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            hour12: true
         });
+    }
+
+    toIsoStringFromDateTimeLocal(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return date.toISOString();
+    }
+
+    toDateTimeLocalInputValue(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    clearTimeDisplay(displayId) {
+        const display = document.getElementById(displayId);
+        if (!display) return;
+        display.textContent = '';
+    }
+
+    updateEditTimeDisplay(inputId, displayId) {
+        // Requirement: don't show extra helper text under inputs.
+        this.clearTimeDisplay(displayId);
+    }
+
+    setupEditTimeDisplayListeners() {
+        const startTimeInput = document.getElementById('editQuizStartTime');
+        const endTimeInput = document.getElementById('editQuizEndTime');
+
+        if (startTimeInput) {
+            startTimeInput.addEventListener('change', () => {
+                this.updateEditTimeDisplay('editQuizStartTime', 'editQuizStartTimeDisplay');
+            });
+        }
+
+        if (endTimeInput) {
+            endTimeInput.addEventListener('change', () => {
+                this.updateEditTimeDisplay('editQuizEndTime', 'editQuizEndTimeDisplay');
+            });
+        }
     }
 
     getQuizStatusBadge(quiz) {
@@ -8651,6 +8943,11 @@ What is the largest ocean?,Atlantic,Indian,Arctic,Pacific,D`;
 
         // Check if quiz is published
         if (quiz.status === 'published') {
+            const endTime = quiz.endTime ? new Date(quiz.endTime) : null;
+            const now = new Date();
+            if (endTime && now > endTime) {
+                return '<span class="status-badge status-expired">Expired</span>';
+            }
             return '<span class="status-badge status-published">Published</span>';
         }
 

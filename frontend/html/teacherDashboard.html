@@ -103,35 +103,179 @@
 
                 <!-- Quiz Management Page -->
                 <div class="page" id="quiz-page">
-                    <div class="page-header">
-                        <h2>Manage Quiz</h2>
-                        <div class="header-actions">
-                            <div class="csv-upload-container">
-                                <button class="btn-secondary" id="uploadQuestionsBtn">
-                                    <i class="fas fa-file-csv"></i>
-                                    Upload Questions
-                                </button>
-                                <div class="csv-dropdown" id="csvDropdown" style="display: none;">
-                                    <button class="dropdown-item" id="downloadQuizSampleCsvBtn">
-                                        <i class="fas fa-download"></i>
-                                        Download Sample CSV
+                    <!-- Quiz list view (default) -->
+                    <div class="quiz-list-view" id="quizListView">
+                        <div class="page-header">
+                            <h2>Manage Quiz</h2>
+                            <div class="header-actions">
+                                <div class="csv-upload-container">
+                                    <button class="btn-secondary" id="uploadQuestionsBtn">
+                                        <i class="fas fa-file-csv"></i>
+                                        Upload Questions
                                     </button>
-                                    <label for="csvFileInput" class="dropdown-item">
-                                        <i class="fas fa-upload"></i>
-                                        Choose CSV File
-                                    </label>
-                                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                                    <div class="csv-dropdown" id="csvDropdown" style="display: none;">
+                                        <button class="dropdown-item" id="downloadQuizSampleCsvBtn">
+                                            <i class="fas fa-download"></i>
+                                            Download Sample CSV
+                                        </button>
+                                        <label for="csvFileInput" class="dropdown-item">
+                                            <i class="fas fa-upload"></i>
+                                            Choose CSV File
+                                        </label>
+                                        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                                    </div>
                                 </div>
+                                <button class="btn-primary" id="createQuizBtn">
+                                    <i class="fas fa-plus"></i>
+                                    Create Quiz
+                                </button>
                             </div>
-                            <button class="btn-primary" id="createQuizBtn">
-                                <i class="fas fa-plus"></i>
-                                Create Quiz
-                            </button>
+                        </div>
+
+                        <div class="quiz-list" id="quizList">
+                            <p class="empty">No quizes created yet</p>
                         </div>
                     </div>
 
-                    <div class="quiz-list" id="quizList">
-                        <p class="empty">No quizes created yet</p>
+                    <!-- Quiz details view (attempt tracking) -->
+                    <div class="quiz-details-view quiz-details-card" id="quizDetailsView" style="display: none;">
+                        <div class="quiz-details-header">
+                            <button type="button" class="btn-secondary" id="backToQuizListBtnFromDetails">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Quiz List
+                            </button>
+                            <div class="quiz-details-toolbar">
+                                <div class="quiz-details-search">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="quizDetailsStudentSearch" placeholder="Search students..." autocomplete="off">
+                                </div>
+                                <div class="quiz-details-filter">
+                                    <button type="button" class="filter-btn active" data-filter="all">All</button>
+                                    <button type="button" class="filter-btn" data-filter="attempted">Attempted</button>
+                                    <button type="button" class="filter-btn" data-filter="not-attempted">Not Attempted</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="quiz-details-meta" id="quizDetailsMeta">
+                            <h2 class="quiz-details-title" id="quizDetailsTitle">Quiz Title</h2>
+                            <p class="quiz-details-subtitle" id="quizDetailsSubtitle">Class • Subject</p>
+                        </div>
+
+                        <div class="quiz-attempt-summary-cards" id="quizAttemptSummaryCards">
+                            <div class="attempt-summary-card">
+                                <div class="attempt-summary-icon total">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="attempt-summary-content">
+                                    <span class="attempt-summary-value" id="quizDetailsTotalStudents">0</span>
+                                    <span class="attempt-summary-label">Total Students</span>
+                                </div>
+                            </div>
+                            <div class="attempt-summary-card">
+                                <div class="attempt-summary-icon attempted">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="attempt-summary-content">
+                                    <span class="attempt-summary-value" id="quizDetailsAttempted">0</span>
+                                    <span class="attempt-summary-label">Attempted</span>
+                                </div>
+                            </div>
+                            <div class="attempt-summary-card">
+                                <div class="attempt-summary-icon not-attempted">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="attempt-summary-content">
+                                    <span class="attempt-summary-value" id="quizDetailsNotAttempted">0</span>
+                                    <span class="attempt-summary-label">Not Attempted</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quiz-details-sections">
+                            <section class="quiz-details-section attempted-section" id="quizDetailsAttemptedSection">
+                                <h3 class="section-title-with-count">
+                                    <span>Attempted Students</span>
+                                    <span class="section-count" id="attemptedSectionCount">0</span>
+                                </h3>
+                                <div class="quiz-details-table-wrapper">
+                                    <table class="quiz-details-table quiz-details-table-attempted">
+                                        <thead>
+                                            <tr>
+                                                <th>Student Name</th>
+                                                <th>Score</th>
+                                                <th>Attempt Time</th>
+                                                <th>Status</th>
+                                                <th class="th-actions">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="quizDetailsAttemptedBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="quiz-details-empty-state" id="quizDetailsAttemptedEmpty" style="display: none;">
+                                    <i class="fas fa-user-graduate"></i>
+                                    <p>No students have attempted this quiz yet.</p>
+                                </div>
+                            </section>
+
+                            <section class="quiz-details-section not-attempted-section" id="quizDetailsNotAttemptedSection">
+                                <h3 class="section-title-with-count">
+                                    <span>Not Attempted Students</span>
+                                    <span class="section-count" id="notAttemptedSectionCount">0</span>
+                                </h3>
+                                <div class="quiz-details-table-wrapper">
+                                    <table class="quiz-details-table quiz-details-table-not-attempted">
+                                        <thead>
+                                            <tr>
+                                                <th>Student Name</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="quizDetailsNotAttemptedBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="quiz-details-empty-state" id="quizDetailsNotAttemptedEmpty" style="display: none;">
+                                    <i class="fas fa-check-circle"></i>
+                                    <p>All students have attempted this quiz.</p>
+                                </div>
+                            </section>
+
+                            <div class="quiz-details-all-done" id="quizDetailsAllDone" style="display: none;">
+                                <i class="fas fa-check-circle"></i>
+                                <p>Everyone has attempted this quiz.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student quiz result view (new page when View Details is clicked) -->
+                    <div class="quiz-student-result-view quiz-details-card" id="quizStudentResultView" style="display: none;">
+                        <div class="quiz-details-header">
+                            <button type="button" class="btn-secondary" id="backToQuizDetailsBtn">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Quiz Details
+                            </button>
+                        </div>
+                        <div class="quiz-result-page-meta">
+                            <h2 class="quiz-details-title" id="quizStudentResultQuizTitle">Quiz Title</h2>
+                            <p class="quiz-details-subtitle" id="quizStudentResultSubtitle">Class • Subject</p>
+                            <p class="quiz-result-student-name" id="quizStudentResultStudentName">Student Name</p>
+                        </div>
+                        <div class="quiz-result-summary-cards">
+                            <div class="quiz-result-summary-card">
+                                <span class="quiz-result-summary-label">Score</span>
+                                <span class="quiz-result-summary-value" id="quizStudentResultScore">— / —</span>
+                            </div>
+                            <div class="quiz-result-summary-card">
+                                <span class="quiz-result-summary-label">Percentage</span>
+                                <span class="quiz-result-summary-value" id="quizStudentResultPercentage">—%</span>
+                            </div>
+                            <div class="quiz-result-summary-card">
+                                <span class="quiz-result-summary-label">Attempt Time</span>
+                                <span class="quiz-result-summary-value" id="quizStudentResultAttemptTime">—</span>
+                            </div>
+                        </div>
+                        <p class="quiz-result-note" id="quizStudentResultNote">Answer breakdown is available only in the student's dashboard.</p>
                     </div>
                 </div>
 
@@ -192,10 +336,12 @@
                                     <div class="form-group">
                                         <label for="quizStartTime">Start Time *</label>
                                         <input type="datetime-local" name="startTime" id="quizStartTime" required>
+                                        <div class="time-display" id="quizStartTimeDisplay" style="font-size: 13px; color: #666; margin-top: 4px;"></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="quizEndTime">End Time *</label>
                                         <input type="datetime-local" name="endTime" id="quizEndTime" required>
+                                        <div class="time-display" id="quizEndTimeDisplay" style="font-size: 13px; color: #666; margin-top: 4px;"></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="quizDuration">Duration (minutes) *</label>
@@ -329,10 +475,12 @@
                                     <div class="form-group">
                                         <label for="editQuizStartTime">Start Time *</label>
                                         <input type="datetime-local" name="startTime" id="editQuizStartTime" required>
+                                        <div class="time-display" id="editQuizStartTimeDisplay" style="font-size: 13px; color: #666; margin-top: 4px;"></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="editQuizEndTime">End Time *</label>
                                         <input type="datetime-local" name="endTime" id="editQuizEndTime" required>
+                                        <div class="time-display" id="editQuizEndTimeDisplay" style="font-size: 13px; color: #666; margin-top: 4px;"></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="editQuizDuration">Duration (minutes) *</label>

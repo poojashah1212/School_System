@@ -7,10 +7,12 @@ const {
   updateQuiz,
   deleteQuiz,
   getQuizById,
+  getQuizAttemptTracking,
   getQuizForStudent,
   submitQuiz,
   getAvailableQuizzesForStudent,
   getStudentResults,
+  getSpecificQuizResult,
   updateSingleQuestion,
   uploadQuizCsv,
   checkQuizAttemptStatus
@@ -28,7 +30,8 @@ router.get("/", jwtAuth, roleAuth("teacher"), getQuizzes);
 router.post("/", jwtAuth, roleAuth("teacher"), createQuiz);
 router.post("/upload-csv", jwtAuth, roleAuth("teacher"), uploadQuizCsv);
 
-// Parameterized routes (must come after specific routes)
+//router.get("/attempt-tracking/:id", jwtAuth, roleAuth("teacher"), getQuizAttemptTracking);//
+router.get("/:id/attempt-tracking", jwtAuth, roleAuth("teacher"), getQuizAttemptTracking);
 router.get("/:id", jwtAuth, roleAuth("teacher"), getQuizById);
 router.put("/:id", jwtAuth, roleAuth("teacher"), updateQuiz);
 router.delete("/:id", jwtAuth, roleAuth("teacher"), deleteQuiz);
@@ -38,6 +41,7 @@ router.put("/:id/questions/:index", jwtAuth, roleAuth("teacher"), updateSingleQu
 router.get("/student/quizzes", jwtAuth, roleAuth("student"), getAvailableQuizzesForStudent);
 router.get("/student/:id", jwtAuth, roleAuth("student"), getQuizForStudent);
 router.get("/student/:id/attempt-status", jwtAuth, roleAuth("student"), checkQuizAttemptStatus);
+router.get("/student/:id/results", jwtAuth, roleAuth("student"), getSpecificQuizResult);
 router.post("/student/:id/submit", jwtAuth, roleAuth("student"), submitQuiz);
 router.get("/student/results", jwtAuth, roleAuth("student"), getStudentResults);
 

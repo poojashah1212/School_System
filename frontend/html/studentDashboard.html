@@ -82,39 +82,11 @@
                             </div>
                         </div>
                         <div class="card">
-                            <h3>Upcoming Events</h3>
-                            <div class="event-list">
-                                <div class="event-item">
-                                    <div class="event-date">
-                                        <span class="date-day">15</span>
-                                        <span class="date-month">Jan</span>
-                                    </div>
-                                    <div class="event-details">
-                                        <h4>Math Quiz</h4>
-                                        <p class="event-time">10:00 AM</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="event-item">
-                                    <div class="event-date">
-                                        <span class="date-day">18</span>
-                                        <span class="date-month">Jan</span>
-                                    </div>
-                                    <div class="event-details">
-                                        <h4>Science Project Due</h4>
-                                        <p class="event-time">11:59 PM</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="event-item">
-                                    <div class="event-date">
-                                        <span class="date-day">20</span>
-                                        <span class="date-month">Jan</span>
-                                    </div>
-                                    <div class="event-details">
-                                        <h4>Parent-Teacher Meeting</h4>
-                                        <p class="event-time">2:00 PM</p>
-                                    </div>
+                            <h3>Available Quizzes</h3>
+                            <div class="quiz-list" id="dashboard-quiz-list">
+                                <div class="loading-quizzes">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading quizzes...</p>
                                 </div>
                             </div>
                         </div>
@@ -160,6 +132,128 @@
                 </button>
                 <button class="btn btn-primary" id="confirmBookingBtn">
                     <i class="fas fa-check"></i> Confirm Booking
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Attempt Modal -->
+    <div id="quizAttemptModal" class="quiz-modal-overlay" style="display: none;">
+        <div class="quiz-modal">
+            <div class="quiz-modal-header">
+                <h2 id="quiz-title">Quiz Attempt</h2>
+                <button class="modal-close" onclick="studentDashboard.handleExitQuizClick()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="quiz-modal-content">
+                <div class="quiz-info-bar">
+                    <div class="quiz-info-item">
+                        <i class="fas fa-clock"></i>
+                        <span id="quiz-timer">00:00</span>
+                    </div>
+                    <div class="quiz-info-item">
+                        <i class="fas fa-list"></i>
+                        <span id="quiz-progress">Question 1 of 10</span>
+                    </div>
+                </div>
+                
+                <div id="quiz-questions-container">
+                    <!-- Quiz questions will be loaded here -->
+                    <div class="loading-questions">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading quiz questions...</p>
+                    </div>
+                </div>
+                <div class="quiz-actions-bar">
+                    <button class="btn btn-secondary" id="prevQuestionBtn" onclick="studentDashboard.previousQuestion()" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="btn btn-primary" id="nextQuestionBtn" onclick="studentDashboard.nextQuestion()">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="btn btn-success" id="submitQuizBtn" onclick="studentDashboard.submitQuiz()" style="display: none;">
+                        <i class="fas fa-check"></i> Submit Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Result Page -->
+    <div id="quiz-result-page" class="quiz-result-page" style="display: none;">
+        <div class="result-container">
+            <div class="result-header">
+                <h1>Quiz Results</h1>
+                <div class="result-quiz-info">
+                    <h2 id="result-quiz-title">Mathematics Quiz</h2>
+                    <p id="result-quiz-subject">Mathematics</p>
+                </div>
+            </div>
+
+            <div class="result-score-section">
+                <div class="score-circle-container">
+                    <div class="score-circle">
+                        <div class="score-percentage" id="score-percentage">85%</div>
+                        <div class="score-label">Score</div>
+                    </div>
+                    <div class="performance-message" id="performance-message">
+                        <i class="fas fa-trophy"></i>
+                        <span>Excellent Work!</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-questions">20</div>
+                        <div class="stat-label">Total Questions</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon correct">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="correct-answers">17</div>
+                        <div class="stat-label">Correct Answers</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon wrong">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="wrong-answers">3</div>
+                        <div class="stat-label">Wrong Answers</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon attempted">
+                        <i class="fas fa-pencil-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="attempted-questions">20</div>
+                        <div class="stat-label">Attempted Questions</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-actions">
+                <button class="btn btn-secondary" onclick="studentDashboard.backToDashboard()">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Dashboard
+                </button>
+                <button class="btn btn-primary" onclick="studentDashboard.viewAnswers()" id="view-answers-btn">
+                    <i class="fas fa-eye"></i>
+                    View Answers
                 </button>
             </div>
         </div>
