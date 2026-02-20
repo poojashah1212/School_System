@@ -1,6 +1,7 @@
 const moment = require("moment-timezone");
 const TeacherAvailability = require("../models/TeacherAvailability");
-const SessionSlot = require("../models/SessionSlot");
+const SessionSlot = require("../models/sessionSlot");
+
 const User = require("../models/user");
 const { redisClient } = require("../config/redis");
 const generateAvailableSlots = require("../utils/generateAvailableSlots");
