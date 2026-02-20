@@ -30,8 +30,7 @@ router.get("/", jwtAuth, roleAuth("teacher"), getQuizzes);
 router.post("/", jwtAuth, roleAuth("teacher"), createQuiz);
 router.post("/upload-csv", jwtAuth, roleAuth("teacher"), uploadQuizCsv);
 
-//router.get("/attempt-tracking/:id", jwtAuth, roleAuth("teacher"), getQuizAttemptTracking);//
-router.get("/:id/attempt-tracking", jwtAuth, roleAuth("teacher"), getQuizAttemptTracking);
+router.get("/attempt-tracking/:id", jwtAuth, roleAuth("teacher"), getQuizAttemptTracking);
 router.get("/:id", jwtAuth, roleAuth("teacher"), getQuizById);
 router.put("/:id", jwtAuth, roleAuth("teacher"), updateQuiz);
 router.delete("/:id", jwtAuth, roleAuth("teacher"), deleteQuiz);

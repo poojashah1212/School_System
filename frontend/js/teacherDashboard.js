@@ -4500,12 +4500,17 @@ class TeacherDashboard {
                                         ${this.getQuizStatusBadge(quiz)}
                                     </div>
                                     <div class="quiz-actions-enhanced">
+                                        ${quiz.status !== 'draft' ? `
                                         <button class="btn-action btn-view-enhanced" onclick="dashboard.viewQuiz('${quiz._id}')" title="View Quiz Details">
                                             <i class="fas fa-eye"></i>
-                                        </button>
+                                        </button>` : ''}
+                                        ${this.isQuizEditable(quiz) ? `
                                         <button class="btn-action btn-edit-enhanced" onclick="dashboard.editQuiz('${quiz._id}')" title="Edit Quiz">
                                             <i class="fas fa-edit"></i>
-                                        </button>
+                                        </button>` : `
+                                        <button class="btn-action btn-edit-enhanced" disabled title="Cannot edit - quiz is active or expired" style="opacity: 0.5; cursor: not-allowed;">
+                                            <i class="fas fa-edit"></i>
+                                        </button>`}
                                         <button class="btn-action btn-delete-enhanced" onclick="dashboard.deleteQuiz('${quiz._id}')" title="Delete Quiz">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -5157,7 +5162,7 @@ class TeacherDashboard {
     updateQuizStatusImmediately(quizId, newStatus) {
         console.log(`Updating quiz ${quizId} status to ${newStatus} immediately`);
 
-        // Helper function to update status badge
+        // Helper function to update status badge, eye icon visibility, and edit button state
         const updateStatusBadge = (element, quizId, newStatus) => {
             if (element) {
                 const statusBadge = element.querySelector('.quiz-status-badge');
@@ -5166,6 +5171,44 @@ class TeacherDashboard {
                     const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
                     console.log('To:', newBadgeHTML);
                     statusBadge.innerHTML = newBadgeHTML;
+                    
+                    // Update eye icon visibility based on status
+                    const viewButton = element.querySelector('.btn-view-enhanced');
+                    if (viewButton) {
+                        if (newStatus === 'draft') {
+                            viewButton.style.display = 'none';
+                        } else {
+                            viewButton.style.display = 'flex';
+                        }
+                    }
+                    
+                    // Update edit button state based on quiz data
+                    const editButton = element.querySelector('.btn-edit-enhanced');
+                    if (editButton) {
+                        // Get the quiz data to check if it's editable
+                        const quizData = { status: newStatus };
+                        // Try to get more quiz data from the element or current state
+                        const quizId = element.getAttribute('data-quiz-id');
+                        if (quizId) {
+                            // For dynamic updates, we need to check the current time vs quiz times
+                            // This is a simplified check - in a real implementation, you might want to fetch full quiz data
+                            const isEditable = this.isQuizEditable(quizData);
+                            if (isEditable) {
+                                editButton.disabled = false;
+                                editButton.style.opacity = '1';
+                                editButton.style.cursor = 'pointer';
+                                editButton.title = 'Edit Quiz';
+                                editButton.setAttribute('onclick', `dashboard.editQuiz('${quizId}')`);
+                            } else {
+                                editButton.disabled = true;
+                                editButton.style.opacity = '0.5';
+                                editButton.style.cursor = 'not-allowed';
+                                editButton.title = 'Cannot edit - quiz is active or expired';
+                                editButton.removeAttribute('onclick');
+                            }
+                        }
+                    }
+                    
                     return true;
                 } else {
                     console.log('Element found but no status badge inside');
@@ -5206,6 +5249,37 @@ class TeacherDashboard {
                     console.log(`Found modal ${index} with quiz title, updating status`);
                     const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
                     statusBadge.innerHTML = newBadgeHTML;
+                    
+                    // Update eye icon visibility in modal
+                    const viewButton = overlay.querySelector('.btn-view-enhanced');
+                    if (viewButton) {
+                        if (newStatus === 'draft') {
+                            viewButton.style.display = 'none';
+                        } else {
+                            viewButton.style.display = 'flex';
+                        }
+                    }
+                    
+                    // Update edit button state in modal
+                    const editButton = overlay.querySelector('.btn-edit-enhanced');
+                    if (editButton) {
+                        const quizData = { status: newStatus };
+                        const isEditable = this.isQuizEditable(quizData);
+                        if (isEditable) {
+                            editButton.disabled = false;
+                            editButton.style.opacity = '1';
+                            editButton.style.cursor = 'pointer';
+                            editButton.title = 'Edit Quiz';
+                            editButton.setAttribute('onclick', `dashboard.editQuiz('${quizId}')`);
+                        } else {
+                            editButton.disabled = true;
+                            editButton.style.opacity = '0.5';
+                            editButton.style.cursor = 'not-allowed';
+                            editButton.title = 'Cannot edit - quiz is active or expired';
+                            editButton.removeAttribute('onclick');
+                        }
+                    }
+                    
                     updatedCount++;
                 }
             }
@@ -5236,6 +5310,37 @@ class TeacherDashboard {
                 console.log(`Found matching badge ${index}, updating`);
                 const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
                 badge.innerHTML = newBadgeHTML;
+                
+                // Update eye icon visibility
+                const viewButton = parentCard.querySelector('.btn-view-enhanced');
+                if (viewButton) {
+                    if (newStatus === 'draft') {
+                        viewButton.style.display = 'none';
+                    } else {
+                        viewButton.style.display = 'flex';
+                    }
+                }
+                
+                // Update edit button state
+                const editButton = parentCard.querySelector('.btn-edit-enhanced');
+                if (editButton) {
+                    const quizData = { status: newStatus };
+                    const isEditable = this.isQuizEditable(quizData);
+                    if (isEditable) {
+                        editButton.disabled = false;
+                        editButton.style.opacity = '1';
+                        editButton.style.cursor = 'pointer';
+                        editButton.title = 'Edit Quiz';
+                        editButton.setAttribute('onclick', `dashboard.editQuiz('${quizId}')`);
+                    } else {
+                        editButton.disabled = true;
+                        editButton.style.opacity = '0.5';
+                        editButton.style.cursor = 'not-allowed';
+                        editButton.title = 'Cannot edit - quiz is active or expired';
+                        editButton.removeAttribute('onclick');
+                    }
+                }
+                
                 updatedCount++;
             }
         });
@@ -8933,6 +9038,31 @@ What is the largest ocean?,Atlantic,Indian,Arctic,Pacific,D`;
                 this.updateEditTimeDisplay('editQuizEndTime', 'editQuizEndTimeDisplay');
             });
         }
+    }
+
+    isQuizEditable(quiz) {
+        // Quiz is editable if it's not active (not started) and not expired
+        const now = new Date();
+        const startTime = quiz.startTime ? new Date(quiz.startTime) : null;
+        const endTime = quiz.endTime ? new Date(quiz.endTime) : null;
+        
+        // If no time is set, it's editable
+        if (!startTime || !endTime) {
+            return true;
+        }
+        
+        // If current time is between start and end time, quiz is active and not editable
+        if (now >= startTime && now <= endTime) {
+            return false;
+        }
+        
+        // If current time is after end time, quiz is expired and not editable
+        if (now > endTime) {
+            return false;
+        }
+        
+        // Otherwise, quiz is editable (scheduled but not started)
+        return true;
     }
 
     getQuizStatusBadge(quiz) {
