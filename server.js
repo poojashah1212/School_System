@@ -8,7 +8,7 @@ const app = express();
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: ['http://localhost:5001'],
+  origin: ['http://localhost:5001', 'https://smartschool-je18.onrender.com'],
   credentials: true
 }));
 

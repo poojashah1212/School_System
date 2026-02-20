@@ -14,6 +14,13 @@ class TeacherDashboard {
         this.init();
     }
 
+    // Helper function to get server URL
+    getServerUrl() {
+        return window.location.hostname === 'localhost' 
+            ? 'http://localhost:5001'
+            : 'https://smartschool-je18.onrender.com';
+    }
+
     init() {
         this.checkAuth();
         this.setupEventListeners();
@@ -90,7 +97,7 @@ class TeacherDashboard {
 
             // If the profile image path is relative (starts with /uploads/), add server URL
             if (profileImageUrl.startsWith('/uploads/')) {
-                profileImageUrl = `http://localhost:5001${profileImageUrl}`;
+                profileImageUrl = `${this.getServerUrl()}${profileImageUrl}`;
             }
 
             const profileImg = document.querySelector('.profile-img');
@@ -1555,7 +1562,7 @@ class TeacherDashboard {
                     profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
                 }
                 if (profileImageUrl.startsWith('/uploads/')) {
-                    profileImageUrl = `http://localhost:5001${profileImageUrl}`;
+                    profileImageUrl = `${this.getServerUrl()}${profileImageUrl}`;
                 }
             }
 
@@ -2420,7 +2427,7 @@ class TeacherDashboard {
                     profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
                 }
                 if (profileImageUrl.startsWith('/uploads/')) {
-                    profileImageUrl = `http://localhost:5001${profileImageUrl}`;
+                    profileImageUrl = `${this.getServerUrl()}${profileImageUrl}`;
                 }
             }
 
@@ -2789,7 +2796,7 @@ class TeacherDashboard {
                 profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
             }
             if (profileImageUrl.startsWith('/uploads/')) {
-                profileImageUrl = `http://localhost:5001${profileImageUrl}`;
+                profileImageUrl = `${this.getServerUrl()}${profileImageUrl}`;
             }
         }
 
@@ -6367,7 +6374,7 @@ class TeacherDashboard {
         if (teacher.profileImage) {
             let profileImageUrl = teacher.profileImage;
             if (profileImageUrl.startsWith('/uploads/')) {
-                profileImageUrl = `http://localhost:5001${profileImageUrl}`;
+                profileImageUrl = `${this.getServerUrl()}${profileImageUrl}`;
             }
 
             if (profileAvatar) {

@@ -1,6 +1,9 @@
 class AuthSystem {
     constructor() {
-        this.apiBaseUrl = 'http://localhost:5001/api/auth';
+        // Use production backend URL when deployed, localhost for development
+        this.apiBaseUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5001/api/auth'
+            : 'https://smartschool-je18.onrender.com/api/auth';
         this.init();
     }
 
