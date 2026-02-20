@@ -90,7 +90,7 @@ class TeacherDashboard {
 
             // If the profile image path is relative (starts with /uploads/), add server URL
             if (profileImageUrl.startsWith('/uploads/')) {
-                profileImageUrl = `https://smartschool-je18.onrender.com${profileImageUrl}`;
+                profileImageUrl = `http://localhost:5001${profileImageUrl}`;
             }
 
             const profileImg = document.querySelector('.profile-img');
@@ -1555,7 +1555,7 @@ class TeacherDashboard {
                     profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
                 }
                 if (profileImageUrl.startsWith('/uploads/')) {
-                    profileImageUrl = `https://smartschool-je18.onrender.com${profileImageUrl}`;
+                    profileImageUrl = `http://localhost:5001${profileImageUrl}`;
                 }
             }
 
@@ -2420,7 +2420,7 @@ class TeacherDashboard {
                     profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
                 }
                 if (profileImageUrl.startsWith('/uploads/')) {
-                    profileImageUrl = `https://smartschool-je18.onrender.com${profileImageUrl}`;
+                    profileImageUrl = `http://localhost:5001${profileImageUrl}`;
                 }
             }
 
@@ -2789,7 +2789,7 @@ class TeacherDashboard {
                 profileImageUrl = '/uploads/' + profileImageUrl.replace(/^uploads\//, '');
             }
             if (profileImageUrl.startsWith('/uploads/')) {
-                profileImageUrl = `https://smartschool-je18.onrender.com${profileImageUrl}`;
+                profileImageUrl = `http://localhost:5001${profileImageUrl}`;
             }
         }
 
@@ -6367,7 +6367,7 @@ class TeacherDashboard {
         if (teacher.profileImage) {
             let profileImageUrl = teacher.profileImage;
             if (profileImageUrl.startsWith('/uploads/')) {
-                profileImageUrl = `https://smartschool-je18.onrender.com${profileImageUrl}`;
+                profileImageUrl = `http://localhost:5001${profileImageUrl}`;
             }
 
             if (profileAvatar) {
