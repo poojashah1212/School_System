@@ -1,6 +1,6 @@
 class AuthSystem {
     constructor() {
-        this.apiBaseUrl = 'http://localhost:5001/api/auth';
+        this.apiBaseUrl = 'https://smartschool-je18.onrender.com/api/auth';
         this.init();
     }
 
