@@ -6,9 +6,14 @@ class TeacherDashboard {
         this.currentCancelSlotData = null; // Store current slot data for cancellation
         this.highlightedSessionId = null; // Store session ID to highlight
 
-        // Initialize API service
+        // Initialize API service with environment-based configuration
         if (window.apiService) {
-            window.apiService.setBaseUrl('/api');
+            if (window.envConfig) {
+                window.apiService.setBaseUrl(window.envConfig.getApiBaseUrl());
+            } else {
+                // Fallback to production URL
+                window.apiService.setBaseUrl('https://smartschool-je18.onrender.com/api');
+            }
         }
 
         this.init();
@@ -16,6 +21,9 @@ class TeacherDashboard {
 
     // Helper function to get server URL
     getServerUrl() {
+        if (window.envConfig) {
+            return window.envConfig.getFrontendBaseUrl();
+        }
         return 'https://smartschool-je18.onrender.com';
     }
 

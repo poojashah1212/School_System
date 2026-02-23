@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
     <div class="container">
         <div class="auth-container">
@@ -21,14 +23,14 @@
             <div class="form-content">
                 <form class="auth-form" id="signup-form" enctype="multipart/form-data">
                     <input type="hidden" id="signup-role" name="role" value="teacher">
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="signup-userId">User ID</label>
                             <input type="text" id="signup-userId" name="userId" placeholder="Choose a user ID">
                             <span class="error-message"></span>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="signup-fullName">Full Name</label>
                             <input type="text" id="signup-fullName" name="fullName" placeholder="Enter your full name">
@@ -42,11 +44,12 @@
                             <input type="email" id="signup-email" name="email" placeholder="Enter your email">
                             <span class="error-message"></span>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="signup-password">Password</label>
                             <div class="password-input">
-                                <input type="password" id="signup-password" name="password" placeholder="Create a password">
+                                <input type="password" id="signup-password" name="password"
+                                    placeholder="Create a password">
                                 <button type="button" class="toggle-password" data-target="signup-password">
                                     <i class="fas fa-eye eye-icon"></i>
                                 </button>
@@ -103,7 +106,7 @@
                             </select>
                             <span class="error-message"></span>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="signup-city">City</label>
                             <input type="text" id="signup-city" name="city" placeholder="Your city">
@@ -117,7 +120,7 @@
                             <input type="text" id="signup-state" name="state" placeholder="Your state">
                             <span class="error-message"></span>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="signup-age">Age</label>
                             <input type="number" id="signup-age" name="age" placeholder="Your age" min="1" max="120">
@@ -130,11 +133,12 @@
                             <label for="signup-mobileNo">Mobile Number</label>
                             <div class="mobile-input-container">
                                 <span class="country-code" id="country-code">+1</span>
-                                <input type="tel" id="signup-mobileNo" name="mobileNo" placeholder="Enter mobile number" maxlength="15">
+                                <input type="tel" id="signup-mobileNo" name="mobileNo" placeholder="Enter mobile number"
+                                    maxlength="15">
                             </div>
                             <span class="error-message"></span>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="signup-profileImage">Profile Image (Optional)</label>
                             <div class="file-upload">
@@ -168,6 +172,8 @@
         </div>
     </div>
 
+    <script src="../js/config.js"></script>
     <script src="../js/auth.js"></script>
 </body>
+
 </html>

@@ -33,21 +33,21 @@ app.use((req, res, next) => {
   if (req.path.startsWith("/api")) {
     return next();
   }
-  
+
   // Handle specific HTML pages
   const htmlPages = ['/login', '/signup', '/teacherDashboard', '/studentDashboard'];
   const pagePath = htmlPages.find(page => req.path.includes(page));
-  
+
   // Serve login page for root path
   if (req.path === '/' || req.path === '') {
     return res.sendFile(path.join(__dirname, "frontend", "html", "login.html"));
   }
-  
+
   if (pagePath) {
     const fileName = pagePath === '/' ? 'index' : pagePath.substring(1);
     return res.sendFile(path.join(__dirname, "frontend", "html", `${fileName}.html`));
   }
-  
+
   // Default to index.html for other routes
   res.sendFile(path.join(__dirname, "frontend", "html", "index.html"));
 });

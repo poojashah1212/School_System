@@ -1,6 +1,12 @@
 class StudentDashboard {
     constructor() {
-        this.apiBaseUrl = '/api';
+        // Use environment-based configuration
+        if (window.envConfig) {
+            this.apiBaseUrl = window.envConfig.getApiBaseUrl();
+        } else {
+            // Fallback to production URL
+            this.apiBaseUrl = 'https://smartschool-je18.onrender.com/api';
+        }
         this.studentTimezone = 'Asia/Kolkata';
         this.currentUser = null;
         this.pendingBookingData = null;

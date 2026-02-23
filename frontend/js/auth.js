@@ -1,13 +1,22 @@
 class AuthSystem {
     constructor() {
-        // Use production backend URL
-        this.apiBaseUrl = 'https://smartschool-je18.onrender.com/api/auth';
-        
+        // Use environment-based configuration
+        if (window.envConfig) {
+            this.apiBaseUrl = window.envConfig.getApiBaseUrl() + '/auth';
+        } else {
+            // Fallback to production URL
+            this.apiBaseUrl = 'https://smartschool-je18.onrender.com/api/auth';
+        }
+
         // Initialize API service for consistency
         if (window.apiService) {
-            window.apiService.setBaseUrl('https://smartschool-je18.onrender.com/api');
+            if (window.envConfig) {
+                window.apiService.setBaseUrl(window.envConfig.getApiBaseUrl());
+            } else {
+                window.apiService.setBaseUrl('https://smartschool-je18.onrender.com/api');
+            }
         }
-        
+
         this.init();
     }
 
@@ -31,7 +40,7 @@ class AuthSystem {
                 const input = document.getElementById(btn.dataset.target);
                 const icon = btn.querySelector('.eye-icon');
                 input.type = input.type === 'password' ? 'text' : 'password';
-                
+
                 // Toggle Font Awesome icons
                 if (input.type === 'password') {
                     icon.classList.remove('fa-eye-slash');
@@ -146,7 +155,7 @@ class AuthSystem {
     validateFile(file) {
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         const maxSize = 5 * 1024 * 1024;
-        
+
         if (!allowedTypes.includes(file.type)) {
             return { valid: false, error: 'Invalid file type' };
         }
@@ -190,9 +199,9 @@ class AuthSystem {
     async handleLogin(e) {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target));
-        
+
         if (!this.validateLoginForm(data)) return;
-        
+
         this.showLoading();
         try {
             const res = await fetch(`${this.apiBaseUrl}/login`, {
@@ -200,12 +209,12 @@ class AuthSystem {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            
+
             const result = await res.json();
             if (res.ok) {
                 this.showMessage('Welcome back!', 'success');
                 localStorage.setItem('token', result.token);
-                
+
                 // Check user role and redirect accordingly
                 try {
                     const payload = JSON.parse(atob(result.token.split('.')[1]));
@@ -231,14 +240,14 @@ class AuthSystem {
     async handleSignup(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
-        
+
         if (!this.validateSignupForm(formData)) return;
-        
+
         this.showLoading();
         try {
             // Use apiService for consistency
             const result = await window.apiService.postFormData('/auth/signup', formData);
-            
+
             this.showMessage(result.message || 'Account created successfully!', 'success');
             setTimeout(() => {
                 window.location.href = '/html/login.html';
@@ -259,7 +268,7 @@ class AuthSystem {
 
     validateLoginForm(data) {
         return this.validateField(document.getElementById('login-email'), 'email') &&
-               this.validateField(document.getElementById('login-password'), 'required');
+            this.validateField(document.getElementById('login-password'), 'required');
     }
 
     validateSignupForm(formData) {
@@ -303,7 +312,7 @@ class AuthSystem {
         const container = document.getElementById('message-container');
         const msg = document.createElement('div');
         msg.className = `message ${type}`;
-        
+
         // Simple minimal design for success messages
         if (type === 'success' && text === 'Welcome back!') {
             msg.innerHTML = `
@@ -315,7 +324,7 @@ class AuthSystem {
         } else {
             msg.innerHTML = `${text}<button class="message-close">&times;</button>`;
         }
-        
+
         container.appendChild(msg);
 
         setTimeout(() => msg.remove(), 5000);
@@ -329,7 +338,7 @@ class AuthSystem {
     setupTimezoneCountryCode() {
         const timezoneSelect = document.getElementById('signup-timezone');
         const countryCodeElement = document.getElementById('country-code');
-        
+
         if (!timezoneSelect || !countryCodeElement) return;
 
         // Mapping of timezones to country codes
