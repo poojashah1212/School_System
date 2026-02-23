@@ -1,11 +1,17 @@
 class AuthSystem {
     constructor() {
-        // Use production backend URL
-        this.apiBaseUrl = 'https://smartschool-je18.onrender.com/api/auth';
+        // Automatically detect environment and set API URL
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        this.apiBaseUrl = isLocal 
+            ? 'http://localhost:5001/api/auth'    // local backend
+            : 'https://smartschool-je18.onrender.com/api/auth';  // live backend
 
         // Initialize API service for consistency
         if (window.apiService) {
-            window.apiService.setBaseUrl('https://smartschool-je18.onrender.com/api');
+            const apiBase = isLocal 
+                ? 'http://localhost:5001/api'    // local backend
+                : 'https://smartschool-je18.onrender.com/api';  // live backend
+            window.apiService.setBaseUrl(apiBase);
         }
 
         this.init();
@@ -237,7 +243,7 @@ class AuthSystem {
         this.showLoading();
         try {
             // Use apiService for consistency
-            const result = await window.apiService.postFormData('/auth/signup', formData);
+            const result = await window.apiService.postFormData(`${this.apiBaseUrl}/signup`, formData);
 
             this.showMessage(result.message || 'Account created successfully!', 'success');
             setTimeout(() => {
