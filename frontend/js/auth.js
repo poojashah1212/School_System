@@ -1,7 +1,7 @@
 class AuthSystem {
     constructor() {
         // Automatically detect environment and set API URL
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const isLocal = false;
         this.apiBaseUrl = isLocal 
             ? 'http://localhost:5001/api/auth'    // local backend
             : 'https://smartschool-je18.onrender.com/api/auth';  // live backend
