@@ -1,20 +1,14 @@
 class AuthSystem {
     constructor() {
-        // Dynamic API base URL - works for both local and production
-        // Check if we're in development or production
-        this.apiBaseUrl = this.getApiBaseUrl();
-        this.init();
-    }
-
-    getApiBaseUrl() {
-        // If accessing from localhost, use local server
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Get the port from current location or default to 5000
-            const port = window.location.port || '5000';
-            return `http://localhost:${port}/api/auth`;
+        // Use production backend URL
+        this.apiBaseUrl = 'https://smartschool-je18.onrender.com/api/auth';
+        
+        // Initialize API service for consistency
+        if (window.apiService) {
+            window.apiService.setBaseUrl('https://smartschool-je18.onrender.com/api');
         }
-        // Otherwise use production server
-        return 'https://smartschool-je18.onrender.com/api/auth';
+        
+        this.init();
     }
 
     init() {
@@ -242,28 +236,22 @@ class AuthSystem {
         
         this.showLoading();
         try {
-            const res = await fetch(`${this.apiBaseUrl}/signup`, {
-                method: 'POST',
-                body: formData
-            });
+            // Use apiService for consistency
+            const result = await window.apiService.postFormData('/auth/signup', formData);
             
-            const result = await res.json();
-            if (res.ok) {
-                this.showMessage(result.message || 'Account created successfully!', 'success');
-                setTimeout(() => {
-                    window.location.href = '/html/login.html';
-                }, 1500);
-            } else {
-                if (result.errors) {
-                    result.errors.forEach(err => {
-                        const input = document.querySelector(`[name="${err.field}"]`);
-                        if (input) this.showError(input, err.message);
-                    });
-                }
-                this.showMessage(result.message || 'Signup failed', 'error');
-            }
+            this.showMessage(result.message || 'Account created successfully!', 'success');
+            setTimeout(() => {
+                window.location.href = '/html/login.html';
+            }, 1500);
         } catch (error) {
-            this.showMessage('Network error', 'error');
+            console.error('Signup error:', error);
+            if (error.errors) {
+                error.errors.forEach(err => {
+                    const input = document.querySelector(`[name="${err.field}"]`);
+                    if (input) this.showError(input, err.message);
+                });
+            }
+            this.showMessage(error.message || 'Signup failed', 'error');
         } finally {
             this.hideLoading();
         }

@@ -1,6 +1,6 @@
 class StudentDashboard {
     constructor() {
-        this.apiBaseUrl = this.getApiBaseUrl();
+        this.apiBaseUrl = '/api';
         this.studentTimezone = 'Asia/Kolkata';
         this.currentUser = null;
         this.pendingBookingData = null;
@@ -11,17 +11,6 @@ class StudentDashboard {
             window.apiService.setBaseUrl(this.apiBaseUrl);
         }
         this.init();
-    }
-
-    getApiBaseUrl() {
-        // If accessing from localhost, use local server
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Get the port from current location or default to 5000
-            const port = window.location.port || '5000';
-            return `http://localhost:${port}/api`;
-        }
-        // Otherwise use production server
-        return 'https://smartschool-je18.onrender.com/api';
     }
 
     async init() {
