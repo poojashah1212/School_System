@@ -361,7 +361,7 @@ const emailTemplates = {
               </ul>
             </div>
             
-            <a href="https://smartschool-je18.onrender.com/html/login.html" class="login-button">Go to Login Page</a>
+            <a href="http://localhost:5001/html/index.html" class="login-button">Go to Login Page</a>
             
             <p>If you have any questions about your account or need assistance, please contact your teacher directly.</p>
           </div>
@@ -526,7 +526,7 @@ const emailTemplates = {
               </ul>
             </div>
             
-            <a href="https://smartschool-je18.onrender.com/html/studentDashboard.html" class="action-button">Go to Your Dashboard</a>
+            <a href="http://localhost:5001/html/index.html" class="action-button">Go to Your Dashboard</a>
             
             <p>If you have any questions about this session, please don't hesitate to contact your teacher.</p>
           </div>
@@ -715,7 +715,7 @@ const emailTemplates = {
               </ul>
             </div>
             
-            <a href="https://smartschool-je18.onrender.com/html/studentDashboard.html" class="action-button">Go to Your Dashboard</a>
+            <a href="http://localhost:5001/html/index.html" class="action-button">Go to Your Dashboard</a>
             
             <p>If you have any questions about this assigned slot, please don't hesitate to contact your teacher.</p>
           </div>

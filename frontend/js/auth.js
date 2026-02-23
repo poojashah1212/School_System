@@ -1,20 +1,11 @@
 class AuthSystem {
     constructor() {
-        // Use environment-based configuration
-        if (window.envConfig) {
-            this.apiBaseUrl = window.envConfig.getApiBaseUrl() + '/auth';
-        } else {
-            // Fallback to production URL
-            this.apiBaseUrl = 'https://smartschool-je18.onrender.com/api/auth';
-        }
+        // Use production backend URL
+        this.apiBaseUrl = 'https://smartschool-je18.onrender.com/api/auth';
 
         // Initialize API service for consistency
         if (window.apiService) {
-            if (window.envConfig) {
-                window.apiService.setBaseUrl(window.envConfig.getApiBaseUrl());
-            } else {
-                window.apiService.setBaseUrl('https://smartschool-je18.onrender.com/api');
-            }
+            window.apiService.setBaseUrl('https://smartschool-je18.onrender.com/api');
         }
 
         this.init();
