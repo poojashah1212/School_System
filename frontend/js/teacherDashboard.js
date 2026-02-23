@@ -8,17 +8,26 @@ class TeacherDashboard {
 
         // Initialize API service
         if (window.apiService) {
-            window.apiService.setBaseUrl('/api');
+            window.apiService.setBaseUrl(this.getApiBaseUrl());
         }
 
         this.init();
     }
 
+    getApiBaseUrl() {
+        // If accessing from localhost, use local server
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Get the port from current location or default to 5000
+            const port = window.location.port || '5000';
+            return `http://localhost:${port}/api`;
+        }
+        // Otherwise use production server
+        return 'https://smartschool-je18.onrender.com/api';
+    }
+
     // Helper function to get server URL
     getServerUrl() {
-        return window.location.hostname === 'localhost' 
-            ? 'http://localhost:5001'
-            : 'https://smartschool-je18.onrender.com';
+        return 'https://smartschool-je18.onrender.com';
     }
 
     init() {
@@ -173,7 +182,7 @@ class TeacherDashboard {
     showDeleteQuestionModal(questionElement) {
         // Check if the question has any content
         const questionInput = questionElement.querySelector('input[name^="questions"]');
-        
+
         if (questionInput && questionInput.value.trim() !== '') {
             // If question has content, show confirmation
             this.showConfirmDialog(
@@ -199,15 +208,15 @@ class TeacherDashboard {
     validateQuestionField(input) {
         const questionItem = input.closest('.question-item');
         if (!questionItem) return;
-        
-        const errorElement = questionItem.querySelector('.question-error') || 
+
+        const errorElement = questionItem.querySelector('.question-error') ||
             (() => {
                 const error = document.createElement('div');
                 error.className = 'question-error text-danger mt-1';
                 input.parentNode.insertAdjacentElement('afterend', error);
                 return error;
             })();
-        
+
         if (input.value.trim() === '') {
             errorElement.textContent = 'Question cannot be empty';
             input.classList.add('is-invalid');
@@ -526,7 +535,7 @@ class TeacherDashboard {
                 field.addEventListener('input', () => {
                     this.clearFieldError(field);
                 });
-                
+
                 field.addEventListener('change', () => {
                     this.clearFieldError(field);
                 });
@@ -546,20 +555,20 @@ class TeacherDashboard {
             // Remove any existing click event listeners to prevent duplicates
             const newPublishBtn = publishQuizBtn.cloneNode(true);
             publishQuizBtn.parentNode.replaceChild(newPublishBtn, publishQuizBtn);
-            
+
             // Add single click handler
             newPublishBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 // Check if we're in edit mode by looking for the edit form
                 const isEditMode = !!document.getElementById('editQuizForm');
-                
+
                 // For edit form, use validateEditQuizForm, otherwise use validateQuizForm
-                const isValid = isEditMode ? 
-                    this.validateEditQuizForm() : 
+                const isValid = isEditMode ?
+                    this.validateEditQuizForm() :
                     this.validateQuizForm();
-                
+
                 if (!isValid) {
                     // Scroll to first error
                     const firstError = document.querySelector('.field-error, .question-error, .option-error, .general-error');
@@ -568,7 +577,7 @@ class TeacherDashboard {
                     }
                     return;
                 }
-                
+
                 // Call publishQuiz directly - it will handle its own confirmation
                 this.publishQuiz();
             });
@@ -580,7 +589,7 @@ class TeacherDashboard {
             saveToDraftBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 // Call saveToDraft function
                 this.saveToDraft();
             });
@@ -1388,7 +1397,7 @@ class TeacherDashboard {
         if (!this.validateQuizForm()) {
             // Show a toast message
             this.showMessage('Please fill in all required fields before saving as draft', 'error');
-            
+
             // Scroll to the first error
             const firstError = document.querySelector('.field-error, .question-error, .option-error, .general-error');
             if (firstError) {
@@ -1863,10 +1872,10 @@ class TeacherDashboard {
                 const minutes = String(minEndDate.getMinutes()).padStart(2, '0');
 
                 const minEndTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-                
+
                 // Update the min attribute to prevent selecting invalid times
                 quizEndTime.min = minEndTime;
-                
+
                 // If end time is set and is before the new minimum, clear it
                 if (quizEndTime.value && new Date(quizEndTime.value) < minEndDate) {
                     quizEndTime.value = '';
@@ -2560,7 +2569,7 @@ class TeacherDashboard {
 
         const fieldId = fieldMapping[fieldName] || fieldName;
         const field = document.getElementById(fieldId);
-        
+
         if (field) {
             this.showFieldError(field, message);
             // Scroll to the field with error
@@ -3775,13 +3784,13 @@ class TeacherDashboard {
         questionElement.style.borderColor = '';
         questionElement.style.borderWidth = '';
         questionElement.style.borderStyle = '';
-        
+
         // Remove error message for this question
         const errorElement = questionElement.querySelector('.question-error');
         if (errorElement) {
             errorElement.remove();
         }
-        
+
         // Clear general errors if this was the last question with an error
         const remainingErrors = document.querySelectorAll('.field-error, .question-error, .general-error');
         if (remainingErrors.length === 0) {
@@ -3796,13 +3805,13 @@ class TeacherDashboard {
         // Remove error styling from field
         field.style.borderColor = '';
         field.classList.remove('error');
-        
+
         // Remove error message for this field
         const errorElement = field.parentNode.querySelector('.field-error');
         if (errorElement) {
             errorElement.remove();
         }
-        
+
         // Clear general errors if this was the last field with an error
         const remainingErrors = document.querySelectorAll('.field-error, .question-error, .general-error');
         if (remainingErrors.length === 0) {
@@ -4646,7 +4655,7 @@ class TeacherDashboard {
     populateEditForm(quiz) {
         // Set quiz ID
         document.getElementById('editQuizId').value = quiz._id;
-        
+
         // Set minimum dates for the edit form
         this.setMinDateForQuizInputs();
 
@@ -4682,7 +4691,7 @@ class TeacherDashboard {
         // Show/hide Publish Quiz and Save to Draft buttons based on status
         const publishBtn = document.getElementById('publishQuizBtn');
         const saveToDraftBtn = document.getElementById('saveToDraftBtn');
-        
+
         if (publishBtn) {
             if (quiz.status === 'draft') {
                 publishBtn.style.display = 'flex';
@@ -4690,7 +4699,7 @@ class TeacherDashboard {
                 publishBtn.style.display = 'none';
             }
         }
-        
+
         if (saveToDraftBtn) {
             if (quiz.status === 'published') {
                 saveToDraftBtn.style.display = 'flex';
@@ -4754,7 +4763,7 @@ class TeacherDashboard {
                 input.addEventListener('input', () => {
                     this.clearQuestionError(questionDiv);
                 });
-                
+
                 input.addEventListener('change', () => {
                     this.clearQuestionError(questionDiv);
                 });
@@ -4816,7 +4825,7 @@ class TeacherDashboard {
             input.addEventListener('input', () => {
                 this.clearQuestionError(questionDiv);
             });
-            
+
             input.addEventListener('change', () => {
                 this.clearQuestionError(questionDiv);
             });
@@ -5018,7 +5027,7 @@ class TeacherDashboard {
                 // Update button visibility in edit form
                 const publishBtn = document.getElementById('publishQuizBtn');
                 const saveToDraftBtn = document.getElementById('saveToDraftBtn');
-                
+
                 if (publishBtn) {
                     publishBtn.style.display = 'none';
                 }
@@ -5140,7 +5149,7 @@ class TeacherDashboard {
                 // Update button visibility in edit form
                 const publishBtn = document.getElementById('publishQuizBtn');
                 const saveToDraftBtn = document.getElementById('saveToDraftBtn');
-                
+
                 if (publishBtn) {
                     publishBtn.style.display = 'flex';
                 }
@@ -5178,7 +5187,7 @@ class TeacherDashboard {
                     const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
                     console.log('To:', newBadgeHTML);
                     statusBadge.innerHTML = newBadgeHTML;
-                    
+
                     // Update eye icon visibility based on status
                     const viewButton = element.querySelector('.btn-view-enhanced');
                     if (viewButton) {
@@ -5188,7 +5197,7 @@ class TeacherDashboard {
                             viewButton.style.display = 'flex';
                         }
                     }
-                    
+
                     // Update edit button state based on quiz data
                     const editButton = element.querySelector('.btn-edit-enhanced');
                     if (editButton) {
@@ -5215,7 +5224,7 @@ class TeacherDashboard {
                             }
                         }
                     }
-                    
+
                     return true;
                 } else {
                     console.log('Element found but no status badge inside');
@@ -5256,7 +5265,7 @@ class TeacherDashboard {
                     console.log(`Found modal ${index} with quiz title, updating status`);
                     const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
                     statusBadge.innerHTML = newBadgeHTML;
-                    
+
                     // Update eye icon visibility in modal
                     const viewButton = overlay.querySelector('.btn-view-enhanced');
                     if (viewButton) {
@@ -5266,7 +5275,7 @@ class TeacherDashboard {
                             viewButton.style.display = 'flex';
                         }
                     }
-                    
+
                     // Update edit button state in modal
                     const editButton = overlay.querySelector('.btn-edit-enhanced');
                     if (editButton) {
@@ -5286,7 +5295,7 @@ class TeacherDashboard {
                             editButton.removeAttribute('onclick');
                         }
                     }
-                    
+
                     updatedCount++;
                 }
             }
@@ -5317,7 +5326,7 @@ class TeacherDashboard {
                 console.log(`Found matching badge ${index}, updating`);
                 const newBadgeHTML = this.getQuizStatusBadge({ status: newStatus });
                 badge.innerHTML = newBadgeHTML;
-                
+
                 // Update eye icon visibility
                 const viewButton = parentCard.querySelector('.btn-view-enhanced');
                 if (viewButton) {
@@ -5327,7 +5336,7 @@ class TeacherDashboard {
                         viewButton.style.display = 'flex';
                     }
                 }
-                
+
                 // Update edit button state
                 const editButton = parentCard.querySelector('.btn-edit-enhanced');
                 if (editButton) {
@@ -5347,7 +5356,7 @@ class TeacherDashboard {
                         editButton.removeAttribute('onclick');
                     }
                 }
-                
+
                 updatedCount++;
             }
         });
@@ -8095,13 +8104,13 @@ class TeacherDashboard {
                 // Error case - display backend error message
                 const errorMessage = result.message || 'Failed to create session slots';
                 const errorField = result.field;
-                
+
                 // Show error inline if field is specified, otherwise show as toast
                 if (errorField) {
                     this.showBackendFieldError(errorField, errorMessage);
                 }
                 this.showMessage(errorMessage, 'error');
-                
+
                 // Keep the modal open and form intact so user can fix the errors
                 console.error('Session creation error:', errorMessage);
             }
@@ -8292,15 +8301,15 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         this.showMessage('Sample CSV downloaded successfully!', 'success');
     }
 
-       showMessage(message, type = 'info') {
+    showMessage(message, type = 'info') {
         console.log('=== showMessage DEBUG ===');
         console.log('Message:', message);
         console.log('Type:', type);
-        
+
         // Remove any existing messages
         const existingMessages = document.querySelectorAll('.message, .toast-message');
         existingMessages.forEach(msg => msg.remove());
-        
+
         // Remove any existing containers to avoid conflicts
         const existingContainers = document.querySelectorAll('#messages, #toast-container');
         existingContainers.forEach(container => container.remove());
@@ -8309,7 +8318,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         const containerId = 'toast-container-' + Date.now();
         const container = document.createElement('div');
         container.id = containerId;
-        
+
         // Apply container styles directly to avoid CSS conflicts
         container.style.cssText = `
             position: fixed !important;
@@ -8329,17 +8338,17 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             transform: none !important;
             transition: none !important;
         `;
-        
+
         // Create message element
         const messageElement = document.createElement('div');
         messageElement.className = 'toast-message';
-        
+
         // Determine colors based on type
         let borderColor = '#10b981';
         let bgColor = '#f0fdf4';
         let icon = 'fa-check-circle';
         let iconColor = '#10b981';
-        
+
         switch (type) {
             case 'success':
                 borderColor = '#10b981';
@@ -8365,7 +8374,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 icon = 'fa-info-circle';
                 iconColor = '#3b82f6';
         }
-        
+
         // Apply message styles directly to avoid CSS conflicts
         messageElement.style.cssText = `
             background: white !important;
@@ -8393,7 +8402,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             width: 100% !important;
             box-sizing: border-box !important;
         `;
-        
+
         messageElement.innerHTML = `
             <i class="fas ${icon}" style="color: ${iconColor} !important; font-size: 20px !important; flex-shrink: 0 !important; display: block !important;"></i>
             <span style="flex: 1 !important; font-weight: 500 !important; display: block !important;">${message}</span>
@@ -8408,10 +8417,10 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
 
         // Add message to container
         container.appendChild(messageElement);
-        
+
         // Add container to body
         document.body.appendChild(container);
-        
+
         console.log('Container added to body');
         console.log('Container visible:', container.offsetWidth > 0 && container.offsetHeight > 0);
         console.log('Message visible:', messageElement.offsetWidth > 0 && messageElement.offsetHeight > 0);
@@ -8569,34 +8578,42 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             }
 
             // Set slot information
-            document.getElementById('slotTimeDisplay').textContent = `${startTime} - ${endTime}`;
+            const slotTimeDisplay = document.getElementById('slotTimeDisplay');
+            const slotDateDisplay = document.getElementById('slotDateDisplay');
+            const sessionTypeDisplay = document.getElementById('sessionTypeDisplay');
+
+            if (slotTimeDisplay) slotTimeDisplay.textContent = `${startTime} - ${endTime}`;
 
             // Set date information if session details are available
-            if (sessionDetails && sessionDetails.date) {
-                const formattedDate = this.formatSessionDate(sessionDetails.date);
-                document.getElementById('slotDateDisplay').textContent = formattedDate;
-            } else {
-                document.getElementById('slotDateDisplay').textContent = 'Date not available';
+            if (slotDateDisplay) {
+                if (sessionDetails && sessionDetails.date) {
+                    const formattedDate = this.formatSessionDate(sessionDetails.date);
+                    slotDateDisplay.textContent = formattedDate;
+                } else {
+                    slotDateDisplay.textContent = 'Date not available';
+                }
             }
 
             // Set session type information
-            if (sessionDetails && sessionDetails.allowedStudentId) {
-                document.getElementById('sessionTypeDisplay').textContent = 'Personal Session';
-            } else {
-                document.getElementById('sessionTypeDisplay').textContent = 'Common Session';
+            if (sessionTypeDisplay) {
+                if (sessionDetails && sessionDetails.allowedStudentId) {
+                    sessionTypeDisplay.textContent = 'Personal Session';
+                } else {
+                    sessionTypeDisplay.textContent = 'Common Session';
+                }
             }
 
             document.getElementById('assignSessionId').value = sessionId;
             document.getElementById('assignStartTime').value = startTime;
 
-            // Get the student selection section
-            const studentAssignmentSection = document.querySelector('#assignSlotForm .form-section:nth-child(2)');
-            const modalTitle = document.querySelector('#assignSlotModal .modal-header-clean h3');
+            // Get the student selection field and header
+            const studentAssignmentField = document.querySelector('.assign-slot-field');
+            const modalTitle = document.querySelector('.assign-slot-header h3');
 
             if (sessionDetails && sessionDetails.allowedStudentId) {
                 // This is a personal session - hide student dropdown and update title
-                if (studentAssignmentSection) {
-                    studentAssignmentSection.style.display = 'none';
+                if (studentAssignmentField) {
+                    studentAssignmentField.style.display = 'none';
                 }
                 if (modalTitle) {
                     modalTitle.textContent = 'Personal Session Slot';
@@ -8609,11 +8626,11 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
                 }
             } else {
                 // This is a common session - show student dropdown and use default title
-                if (studentAssignmentSection) {
-                    studentAssignmentSection.style.display = 'block';
+                if (studentAssignmentField) {
+                    studentAssignmentField.style.display = 'block';
                 }
                 if (modalTitle) {
-                    modalTitle.textContent = 'Assign Slot to Student';
+                    modalTitle.textContent = 'Assign Slot';
                 }
 
                 // Add required attribute back to student select
@@ -8702,14 +8719,7 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
         try {
             const form = document.getElementById('assignSlotForm');
 
-            // Clear previous errors
-            form.querySelectorAll('.error-message').forEach(error => {
-                error.style.display = 'none';
-                error.textContent = '';
-            });
-            form.querySelectorAll('.error').forEach(field => {
-                field.classList.remove('error');
-            });
+            // Clear previous errors if any (using default browser validation or simple check)
 
             // Get form data
             const formData = new FormData(form);
@@ -8726,16 +8736,16 @@ s105,James Wilson,james.w@email.com,password123,17,9876543214,Kolkata,West Benga
             }
 
             if (!startTime) {
-                this.showFieldError(document.getElementById('assignStartTime'), 'Start time is missing');
+                this.showMessage('Start time is missing', 'error');
                 isValid = false;
             }
 
-            // Check if student selection is required (only if the student assignment section is visible)
-            const studentAssignmentSection = document.querySelector('#assignSlotForm .form-section:nth-child(2)');
-            const isStudentSelectionRequired = studentAssignmentSection && studentAssignmentSection.style.display !== 'none';
+            // Check if student selection is required (only if the student assignment field is visible)
+            const studentAssignmentField = document.querySelector('.assign-slot-field');
+            const isStudentSelectionRequired = studentAssignmentField && studentAssignmentField.style.display !== 'none';
 
             if (isStudentSelectionRequired && !studentId) {
-                this.showFieldError(document.getElementById('studentSelect'), 'Please select a student');
+                this.showMessage('Please select a student', 'error');
                 isValid = false;
             }
 
@@ -9052,22 +9062,22 @@ What is the largest ocean?,Atlantic,Indian,Arctic,Pacific,D`;
         const now = new Date();
         const startTime = quiz.startTime ? new Date(quiz.startTime) : null;
         const endTime = quiz.endTime ? new Date(quiz.endTime) : null;
-        
+
         // If no time is set, it's editable
         if (!startTime || !endTime) {
             return true;
         }
-        
+
         // If current time is between start and end time, quiz is active and not editable
         if (now >= startTime && now <= endTime) {
             return false;
         }
-        
+
         // If current time is after end time, quiz is expired and not editable
         if (now > endTime) {
             return false;
         }
-        
+
         // Otherwise, quiz is editable (scheduled but not started)
         return true;
     }

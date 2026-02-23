@@ -183,12 +183,14 @@
                         <div class="quiz-details-toolbar">
                             <div class="quiz-details-search">
                                 <i class="fas fa-search"></i>
-                                <input type="text" id="quizDetailsStudentSearch" placeholder="Search students..." autocomplete="off">
+                                <input type="text" id="quizDetailsStudentSearch" placeholder="Search students..."
+                                    autocomplete="off">
                             </div>
                             <div class="quiz-details-filter">
                                 <button type="button" class="filter-btn active" data-filter="all">All</button>
                                 <button type="button" class="filter-btn" data-filter="attempted">Attempted</button>
-                                <button type="button" class="filter-btn" data-filter="not-attempted">Not Attempted</button>
+                                <button type="button" class="filter-btn" data-filter="not-attempted">Not
+                                    Attempted</button>
                             </div>
                         </div>
 
@@ -213,13 +215,15 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="quiz-details-empty-state" id="quizDetailsAttemptedEmpty" style="display: none;">
+                                <div class="quiz-details-empty-state" id="quizDetailsAttemptedEmpty"
+                                    style="display: none;">
                                     <i class="fas fa-user-graduate"></i>
                                     <p>No students have attempted this quiz yet.</p>
                                 </div>
                             </section>
 
-                            <section class="quiz-details-section not-attempted-section" id="quizDetailsNotAttemptedSection">
+                            <section class="quiz-details-section not-attempted-section"
+                                id="quizDetailsNotAttemptedSection">
                                 <h3 class="section-title-with-count">
                                     <span>Not Attempted Students</span>
                                     <span class="section-count" id="notAttemptedSectionCount">0</span>
@@ -236,7 +240,8 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="quiz-details-empty-state" id="quizDetailsNotAttemptedEmpty" style="display: none;">
+                                <div class="quiz-details-empty-state" id="quizDetailsNotAttemptedEmpty"
+                                    style="display: none;">
                                     <i class="fas fa-check-circle"></i>
                                     <p>All students have attempted this quiz.</p>
                                 </div>
@@ -250,7 +255,8 @@
                     </div>
 
                     <!-- Student quiz result view (new page when View Details is clicked) -->
-                    <div class="quiz-student-result-view quiz-details-card" id="quizStudentResultView" style="display: none;">
+                    <div class="quiz-student-result-view quiz-details-card" id="quizStudentResultView"
+                        style="display: none;">
                         <div class="quiz-details-header">
                             <button type="button" class="btn-secondary" id="backToQuizDetailsBtn">
                                 <i class="fas fa-arrow-left"></i>
@@ -276,7 +282,8 @@
                                 <span class="quiz-result-summary-value" id="quizStudentResultAttemptTime">—</span>
                             </div>
                         </div>
-                        <p class="quiz-result-note" id="quizStudentResultNote">Answer breakdown is available only in the student's dashboard.</p>
+                        <p class="quiz-result-note" id="quizStudentResultNote">Answer breakdown is available only in the
+                            student's dashboard.</p>
                     </div>
                 </div>
 
@@ -337,12 +344,14 @@
                                     <div class="form-group">
                                         <label for="quizStartTime">Start Time *</label>
                                         <input type="datetime-local" name="startTime" id="quizStartTime" required>
-                                        <div class="time-display" id="quizStartTimeDisplay" style="font-size: 13px; color: #666; margin-top: 4px;"></div>
+                                        <div class="time-display" id="quizStartTimeDisplay"
+                                            style="font-size: 13px; color: #666; margin-top: 4px;"></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="quizEndTime">End Time *</label>
                                         <input type="datetime-local" name="endTime" id="quizEndTime" required>
-                                        <div class="time-display" id="quizEndTimeDisplay" style="font-size: 13px; color: #666; margin-top: 4px;"></div>
+                                        <div class="time-display" id="quizEndTimeDisplay"
+                                            style="font-size: 13px; color: #666; margin-top: 4px;"></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="quizDuration">Duration (minutes) *</label>
@@ -476,12 +485,14 @@
                                     <div class="form-group">
                                         <label for="editQuizStartTime">Start Time *</label>
                                         <input type="datetime-local" name="startTime" id="editQuizStartTime" required>
-                                        <div class="time-display" id="editQuizStartTimeDisplay" style="font-size: 13px; color: #666; margin-top: 4px;"></div>
+                                        <div class="time-display" id="editQuizStartTimeDisplay"
+                                            style="font-size: 13px; color: #666; margin-top: 4px;"></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="editQuizEndTime">End Time *</label>
                                         <input type="datetime-local" name="endTime" id="editQuizEndTime" required>
-                                        <div class="time-display" id="editQuizEndTimeDisplay" style="font-size: 13px; color: #666; margin-top: 4px;"></div>
+                                        <div class="time-display" id="editQuizEndTimeDisplay"
+                                            style="font-size: 13px; color: #666; margin-top: 4px;"></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="editQuizDuration">Duration (minutes) *</label>
@@ -986,7 +997,8 @@
                             <button class="modal-close" id="closeSessionModal">&times;</button>
                         </div>
                         <form id="createSessionForm" novalidate>
-                            <div id="sessionFormError" class="form-alert alert-error" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 0.375rem; color: #dc2626; font-size: 0.875rem;">
+                            <div id="sessionFormError" class="form-alert alert-error"
+                                style="display: none; margin-bottom: 1rem; padding: 0.75rem; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 0.375rem; color: #dc2626; font-size: 0.875rem;">
                             </div>
                             <div class="form-group">
                                 <label for="sessionTitle">Session Title *</label>
@@ -994,14 +1006,16 @@
                                     placeholder="e.g., Mathematics Tutoring"
                                     title="Enter a descriptive title for the session (e.g., Mathematics Tutoring, Science Lab)"
                                     required>
-                                <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                                <span class="error-message"
+                                    style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="sessionDate">Date *</label>
                                     <input type="date" name="date" id="sessionDate"
                                         title="Select the date when the session will be held" required>
-                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                                    <span class="error-message"
+                                        style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
                                 </div>
                                 <div class="form-group">
                                     <label for="sessionDuration">Session Duration (minutes) *</label>
@@ -1013,7 +1027,8 @@
                                         <option value="60">60 minutes</option>
                                         <option value="120">120 minutes</option>
                                     </select>
-                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                                    <span class="error-message"
+                                        style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -1027,7 +1042,8 @@
                                         <option value="15">15 minutes</option>
                                         <option value="20">20 minutes</option>
                                     </select>
-                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                                    <span class="error-message"
+                                        style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
                                 </div>
                                 <div class="form-group">
                                     <label for="studentType">Session Type</label>
@@ -1038,7 +1054,8 @@
                                         <option value="all">All Students</option>
                                         <option value="particular">Particular Student</option>
                                     </select>
-                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
+                                    <span class="error-message"
+                                        style="color: #dc3545; font-size: 12px; margin-top: 4px;"></span>
                                 </div>
                                 <div class="form-group student-dropdown-container" id="particularStudentGroup">
                                     <label for="particularStudentSelect">Select Student</label>
@@ -1046,7 +1063,8 @@
                                         title="Select a specific student for the session">
                                         <option value="">Select a student</option>
                                     </select>
-                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
+                                    <span class="error-message"
+                                        style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
                                 </div>
                             </div>
                             <div class="form-actions">
@@ -1059,70 +1077,40 @@
 
                 <!-- Assign Slot Modal -->
                 <div class="modal" id="assignSlotModal">
-                    <div class="modal-content modal-wide">
-                        <div class="modal-header-clean">
-                            <h3>Assign Slot to Student</h3>
-                            <button class="modal-close-clean" id="closeAssignSlotModal">&times;</button>
+                    <div class="modal-content assign-slot-modal">
+                        <div class="assign-slot-header">
+                            <h3>Assign Slot</h3>
                         </div>
-                        <form id="assignSlotForm" novalidate>
-                            <!-- Selected Slot Section -->
-                            <div class="form-section">
-                                <h4 class="section-title-clean">Selected Slot Details</h4>
-                                <div class="slot-info-grid">
-                                    <div class="slot-info-item">
-                                        <div class="slot-info-icon">
-                                            <i class="fas fa-clock"></i>
-                                        </div>
-                                        <div class="slot-info-content">
-                                            <label>Time</label>
-                                            <div id="slotTimeDisplay" class="slot-info-value">--:--</div>
-                                        </div>
-                                    </div>
-                                    <div class="slot-info-item">
-                                        <div class="slot-info-icon">
-                                            <i class="fas fa-calendar"></i>
-                                        </div>
-                                        <div class="slot-info-content">
-                                            <label>Date</label>
-                                            <div id="slotDateDisplay" class="slot-info-value">----/--/--</div>
-                                        </div>
-                                    </div>
-                                    <div class="slot-info-item">
-                                        <div class="slot-info-icon">
-                                            <i class="fas fa-tag"></i>
-                                        </div>
-                                        <div class="slot-info-content">
-                                            <label>Session Type</label>
-                                            <div id="sessionTypeDisplay" class="slot-info-value">---</div>
-                                        </div>
-                                    </div>
+                        <form id="assignSlotForm" novalidate autocomplete="off">
+                            <div class="assign-slot-info">
+                                <div class="info-item">
+                                    <span class="info-icon"><i class="fas fa-clock"></i></span>
+                                    <span id="slotTimeDisplay">12:00–14:00</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-icon"><i class="fas fa-calendar-alt"></i></span>
+                                    <span id="slotDateDisplay">Mar 4, 2026</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-icon"><i class="fas fa-tag"></i></span>
+                                    <span id="sessionTypeDisplay">Common Session</span>
                                 </div>
                             </div>
 
-                            <!-- Select Student Section -->
-                            <div class="form-section">
-                                <h4 class="section-title-clean">Student Assignment</h4>
-                                <div class="form-field-clean required">
-                                    <label for="studentSelect">Select Student *</label>
-                                    <select name="studentId" id="studentSelect" required data-required="true">
-                                        <option value="">Select a student...</option>
-                                    </select>
-                                    <span class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></span>
-                                </div>
+                            <div class="assign-slot-field">
+                                <label for="studentSelect">Select Student</label>
+                                <select name="studentId" id="studentSelect" required>
+                                    <option value="" disabled selected>Select Student</option>
+                                    <!-- Students will be populated here -->
+                                </select>
                             </div>
 
                             <input type="hidden" id="assignSessionId" name="sessionId">
                             <input type="hidden" id="assignStartTime" name="startTime">
 
-                            <div class="form-actions-clean">
-                                <button type="button" class="btn-secondary-clean" id="cancelAssignBtn">
-                                    <i class="fas fa-times"></i>
-                                    Cancel
-                                </button>
-                                <button type="submit" class="btn-primary-clean">
-                                    <i class="fas fa-user-plus"></i>
-                                    Assign Slot
-                                </button>
+                            <div class="assign-slot-actions">
+                                <button type="button" class="btn-cancel" id="cancelAssignBtn">Cancel</button>
+                                <button type="submit" class="btn-assign">Assign</button>
                             </div>
                         </form>
                     </div>

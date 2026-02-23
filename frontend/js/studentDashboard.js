@@ -1,15 +1,27 @@
 class StudentDashboard {
     constructor() {
-        this.apiBaseUrl = '/api';
+        this.apiBaseUrl = this.getApiBaseUrl();
         this.studentTimezone = 'Asia/Kolkata';
         this.currentUser = null;
         this.pendingBookingData = null;
-        
+        this.realTimeUpdateInterval = null; // For real-time slot updates
+
         // Initialize API service
         if (window.apiService) {
             window.apiService.setBaseUrl(this.apiBaseUrl);
         }
         this.init();
+    }
+
+    getApiBaseUrl() {
+        // If accessing from localhost, use local server
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Get the port from current location or default to 5000
+            const port = window.location.port || '5000';
+            return `http://localhost:${port}/api`;
+        }
+        // Otherwise use production server
+        return 'https://smartschool-je18.onrender.com/api';
     }
 
     async init() {
@@ -18,6 +30,8 @@ class StudentDashboard {
             await this.checkAuthentication();
             this.loadUserData();
             this.setupNavigation();
+            this.startRealTimeUpdates(); // Start real-time polling
+            this.setupVisibilityChangeHandler(); // Handle tab visibility
 
             // Fallback: Setup dropdown after a short delay to ensure DOM is ready
             setTimeout(() => {
@@ -195,11 +209,11 @@ class StudentDashboard {
 
         // Set student timezone with fallback to browser timezone
         this.studentTimezone = TimezoneUtils.getStudentTimezone(this.currentUser);
-        
+
         console.log('Student timezone set to:', this.studentTimezone);
         console.log('User object timezone:', this.currentUser.timezone);
         console.log('Browser timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
-        
+
         // Auto-update timezone if user has default timezone and browser timezone is different
         this.autoUpdateTimezone();
 
@@ -300,7 +314,7 @@ class StudentDashboard {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            
+
             if (confirmedResponse.ok) {
                 const confirmedData = await confirmedResponse.json();
                 bookedSlots = confirmedData.sessions || [];
@@ -315,13 +329,13 @@ class StudentDashboard {
             console.log('Current Session:', session); // Debug current session
             // Backend returns dates in Asia/Kolkata timezone, convert to student's timezone
             let displayDate = session.date || 'Date not specified';
-            
+
             // Store original date for booking (without timezone conversion)
             const originalSessionDate = session.date ? session.date.split('/')[0] : session.date;
-            
+
             // Ensure the date is in DD-MM-YYYY format (backend expects this exact format)
             const normalizedDate = originalSessionDate && moment ? moment(originalSessionDate, 'DD-MM-YYYY').format('DD-MM-YYYY') : originalSessionDate;
-            
+
             try {
                 const moment = window.moment;
                 if (moment && session.date) {
@@ -334,14 +348,14 @@ class StudentDashboard {
                 console.error('Error converting session date:', error);
                 displayDate = session.date || 'Date not specified';
             }
-            
+
             // Create a map of booked slots for this session for quick lookup
             const sessionBookedSlots = bookedSlots.filter(slot => String(slot.sessionId) === String(session.sessionId || session._id));
             const bookedSlotTimes = new Set();
             const myBookedSlotsByTime = new Map();
-            
+
             console.log('Session Booked Slots for session ID', session.sessionId || session._id, ':', sessionBookedSlots);
-            
+
             sessionBookedSlots.forEach(bookedSlot => {
                 const startTimeString = this.formatSlotTime(bookedSlot.startTime, session);
                 if (startTimeString) {
@@ -353,13 +367,13 @@ class StudentDashboard {
                     console.log('Booked slot time:', startTimeString, '(raw startTime:', bookedSlot.startTime, ')');
                 }
             });
-            
+
             console.log('Final booked slot times set:', Array.from(bookedSlotTimes));
             console.log('Available slots from backend:', session.availableSlots);
 
             // Get all slots (both available and booked) and maintain original backend order
             const allSlots = [];
-            
+
             // First, add all available slots in their original order
             (session.availableSlots || []).forEach(slot => {
                 const start = this.formatSlotTime(slot.startTime, session);
@@ -386,7 +400,7 @@ class StudentDashboard {
             });
 
             console.log('Final slots to render (maintaining original order):', allSlots);
-            
+
             return `
             <div class="session-card" data-session-id="${session.sessionId || session._id}" style="background: white; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: fit-content;">
                 <!-- Session Header -->
@@ -438,19 +452,19 @@ class StudentDashboard {
                     <h4 class="available-slots-header" style="margin: 0 0 12px 0; color: #1976d2; font-size: 14px; font-weight: 500;">Available Slots (${allSlots.filter(s => !s.isBookedByMe).length})</h4>
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                         ${allSlots.length > 0 ? allSlots.map(slot => {
-                            const startTime = slot.startTime;
-                            const endTime = slot.endTime;
-                            const isBookedByMe = slot.isBookedByMe === true;
+                const startTime = slot.startTime;
+                const endTime = slot.endTime;
+                const isBookedByMe = slot.isBookedByMe === true;
 
-                            if (isBookedByMe) {
-                                return `
+                if (isBookedByMe) {
+                    return `
                                 <span class="slot-badge booked" data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}" 
                                       style="background: #e8f5e8; color: #2e7d32; border: 1px solid #4caf50; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: default;">
                                     <i class="fas fa-check"></i> ${startTime} - ${endTime}
                                 </span>
                             `;
-                            } else {
-                                return `
+                } else {
+                    return `
                                 <span class="slot-badge" onclick="studentDashboard.bookSession('${session.sessionId || session._id}', '${startTime}', '${normalizedDate}')" 
                                       data-session-id="${session.sessionId || session._id}" data-start-time="${startTime}" data-session-date="${normalizedDate}"
                                       style="background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;"
@@ -459,8 +473,8 @@ class StudentDashboard {
                                     <i class="fas fa-plus"></i> ${startTime} - ${endTime}
                                 </span>
                             `;
-                            }
-                        }).join('') : '<p style="color: #9e9e9e; font-size: 13px; margin: 0;">No available slots</p>'}
+                }
+            }).join('') : '<p style="color: #9e9e9e; font-size: 13px; margin: 0;">No available slots</p>'}
                     </div>
                 </div>
             </div>
@@ -502,7 +516,7 @@ class StudentDashboard {
     async bookSession(sessionId, startTime, sessionDate) {
         const badge = event.target.closest('.slot-badge');
         const originalContent = badge.innerHTML;
-        
+
         // Store booking data for modal confirmation
         this.pendingBookingData = {
             sessionId: sessionId,
@@ -511,7 +525,7 @@ class StudentDashboard {
             badge: badge,
             originalContent: originalContent
         };
-        
+
         // Show custom confirmation modal
         this.showBookingModal(sessionDate, startTime);
     }
@@ -558,8 +572,8 @@ class StudentDashboard {
 
     updateSessionsData(sessions) {
         try {
-            // Update available sessions count
-            const availableSessionsElement = document.querySelector('.stat-card:nth-child(1) .stat-number');
+            // Update available sessions count using new ID
+            const availableSessionsElement = document.getElementById('available-slots-count');
             if (availableSessionsElement && sessions.success && sessions.sessions) {
                 const totalSlots = sessions.sessions.reduce((sum, session) => {
                     return sum + (session.availableSlots ? session.availableSlots.length : 0);
@@ -590,21 +604,21 @@ class StudentDashboard {
 
         // Get recent sessions (first 3)
         const recentSessions = sessions.sessions.slice(0, 3);
-        
+
         const recentSessionsHtml = recentSessions.map(session => {
             const sessionTitle = session.title || 'Untitled Session';
             const sessionDate = session.date || 'Date not specified';
             const availableSlots = session.availableSlots ? session.availableSlots.length : 0;
             const sessionType = session.type || 'common';
-            
+
             // Get subject icon based on title
             const subjectIcon = this.getSubjectIcon(sessionTitle);
             const subjectClass = this.getSubjectClass(sessionTitle);
-            
+
             // Determine status
             let status = 'available';
             let statusText = 'Available';
-            
+
             if (availableSlots === 0) {
                 status = 'completed';
                 statusText = 'Completed';
@@ -716,7 +730,7 @@ class StudentDashboard {
             .map(button => button.getAttribute('data-slot-id'));
 
         // Toggle selection
-        const newSelectedSlots = selectedSlots.includes(slotId) 
+        const newSelectedSlots = selectedSlots.includes(slotId)
             ? selectedSlots.filter(id => id !== slotId) // Remove from selected
             : [...selectedSlots, slotId]; // Add to selected
 
@@ -726,8 +740,8 @@ class StudentDashboard {
 
     updateConfirmedSessionsData(confirmedSessions) {
         try {
-            // Update confirmed sessions count
-            const confirmedSessionsElement = document.querySelector('.stat-card:nth-child(2) .stat-number');
+            // Update confirmed sessions count using new ID
+            const confirmedSessionsElement = document.getElementById('booked-sessions-count');
             if (confirmedSessionsElement && confirmedSessions.pagination) {
                 confirmedSessionsElement.textContent = confirmedSessions.pagination.totalSessions || 0;
             }
@@ -739,6 +753,81 @@ class StudentDashboard {
     updateStatsWithRealData() {
         // This method is called after loading dashboard data
         // Stats are already updated by the specific update methods above
+    }
+
+    // Real-time update methods
+    startRealTimeUpdates() {
+        // Update every 30 seconds for real-time slot availability
+        this.realTimeUpdateInterval = setInterval(() => {
+            this.updateAvailableSlotsRealTime();
+        }, 30000); // 30 seconds
+
+        console.log('Real-time updates started for available slots');
+    }
+
+    stopRealTimeUpdates() {
+        if (this.realTimeUpdateInterval) {
+            clearInterval(this.realTimeUpdateInterval);
+            this.realTimeUpdateInterval = null;
+            console.log('Real-time updates stopped');
+        }
+    }
+
+    async updateAvailableSlotsRealTime() {
+        try {
+            // Only update if user is on dashboard page
+            const dashboardPage = document.getElementById('dashboard-page');
+            if (!dashboardPage || !dashboardPage.classList.contains('active')) {
+                return;
+            }
+
+            // Fetch latest sessions data
+            const response = await fetch(`${this.apiBaseUrl}/sessions`);
+            const sessions = await response.json();
+
+            if (sessions.success && sessions.sessions) {
+                // Update only the available slots count
+                const totalSlots = sessions.sessions.reduce((sum, session) => {
+                    return sum + (session.availableSlots ? session.availableSlots.length : 0);
+                }, 0);
+
+                const availableSlotsElement = document.getElementById('available-slots-count');
+                if (availableSlotsElement) {
+                    const currentCount = parseInt(availableSlotsElement.textContent);
+                    if (currentCount !== totalSlots) {
+                        availableSlotsElement.textContent = totalSlots;
+                        // Add animation class when count changes
+                        availableSlotsElement.classList.add('updating');
+                        setTimeout(() => {
+                            availableSlotsElement.classList.remove('updating');
+                        }, 1000);
+                        console.log(`Available slots updated: ${currentCount} → ${totalSlots}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error updating available slots in real-time:', error);
+        }
+    }
+
+    setupVisibilityChangeHandler() {
+        // Handle tab visibility to pause/resume real-time updates
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Tab is hidden, pause updates to save resources
+                this.stopRealTimeUpdates();
+                console.log('Real-time updates paused (tab hidden)');
+            } else {
+                // Tab is visible again, resume updates
+                const dashboardPage = document.getElementById('dashboard-page');
+                if (dashboardPage && dashboardPage.classList.contains('active')) {
+                    this.startRealTimeUpdates();
+                    // Immediately update once when tab becomes visible
+                    this.updateAvailableSlotsRealTime();
+                    console.log('Real-time updates resumed (tab visible)');
+                }
+            }
+        });
     }
 
     updateRecentActivity(activities) {
@@ -799,7 +888,7 @@ class StudentDashboard {
                 this.navigateToPage('messages');
                 break;
             default:
-                // Silently handle or implement specific action logic
+            // Silently handle or implement specific action logic
         }
     }
 
@@ -857,7 +946,7 @@ class StudentDashboard {
                 this.showPageContent('Help & Support', 'help');
                 break;
             default:
-                // Unknown page
+            // Unknown page
         }
     }
 
@@ -886,7 +975,7 @@ class StudentDashboard {
 
         if (mainContent) {
             mainContent.style.display = 'block';
-            
+
             // Show quizzes for assignments page
             if (pageType === 'assignments') {
                 mainContent.innerHTML = `
@@ -1243,7 +1332,7 @@ class StudentDashboard {
                 }
             }
         `;
-        
+
         document.head.appendChild(styles);
     }
 
@@ -1279,7 +1368,7 @@ class StudentDashboard {
             updateTimezoneBtn.addEventListener('click', async () => {
                 updateTimezoneBtn.disabled = true;
                 updateTimezoneBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
-                
+
                 try {
                     const updated = await this.autoUpdateTimezone(true); // Force update
                     if (updated) {
@@ -1307,18 +1396,18 @@ class StudentDashboard {
 
     formatSlotTime(timeString, session = null) {
         if (!timeString) return 'Time not specified';
-        
+
         try {
             const moment = window.moment;
             const rawTz = this.studentTimezone || 'Asia/Kolkata';
             const cleanedTz = String(rawTz).replace(/\s*\([^)]*\)\s*/g, '').trim();
             const tz = (moment && cleanedTz && moment.tz.zone(cleanedTz)) ? cleanedTz : 'Asia/Kolkata';
-            
+
             // Get teacher timezone from session data or fallback with proper null checks
-            const teacherTimezone = session?.teacher?.timezone || 
-                                  (this.currentUser && this.currentUser.teacherId && this.currentUser.teacherId.timezone) || 
-                                  'Asia/Kolkata';
-            
+            const teacherTimezone = session?.teacher?.timezone ||
+                (this.currentUser && this.currentUser.teacherId && this.currentUser.teacherId.timezone) ||
+                'Asia/Kolkata';
+
             console.log('formatSlotTime input:', timeString, 'student timezone:', tz, 'teacher timezone:', teacherTimezone);
 
             // If already in HH:mm format, these times are already converted to student timezone by the backend
@@ -1436,6 +1525,7 @@ class StudentDashboard {
     }
 
     logout() {
+        this.stopRealTimeUpdates(); // Stop real-time updates
         localStorage.removeItem('token');
         this.redirectToLogin();
     }
@@ -1452,11 +1542,11 @@ class StudentDashboard {
         try {
             // Get browser timezone
             const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            
+
             // Check if user has default timezone and it's different from browser, or if force update is requested
             if (forceUpdate || (this.currentUser.timezone === 'Asia/Kolkata' && browserTimezone !== 'Asia/Kolkata')) {
                 console.log('Auto-updating timezone from', this.currentUser.timezone, 'to', browserTimezone);
-                
+
                 // Update timezone on server
                 const response = await fetch(`${this.apiBaseUrl}/auth/update-profile`, {
                     method: 'PUT',
@@ -1466,17 +1556,17 @@ class StudentDashboard {
                     },
                     body: JSON.stringify({ timezone: browserTimezone })
                 });
-                
+
                 if (response.ok) {
                     const result = await response.json();
                     // Update local user data
                     this.currentUser.timezone = browserTimezone;
                     this.studentTimezone = browserTimezone;
                     console.log('Timezone updated successfully to:', browserTimezone);
-                    
+
                     // Refresh the page to show updated timezone
                     this.loadSessions();
-                    
+
                     return true;
                 } else {
                     console.error('Failed to update timezone');
@@ -1512,24 +1602,24 @@ class StudentDashboard {
         const modalDateElement = document.getElementById('modalDate');
         const modalTimeElement = document.getElementById('modalTime');
         const confirmBtn = document.getElementById('confirmBookingBtn');
-        
+
         // Set modal content
         modalDateElement.textContent = sessionDate;
         modalTimeElement.textContent = startTime;
-        
+
         // Show modal
         modal.style.display = 'flex';
-        
+
         // Add event listener to confirm button
         confirmBtn.onclick = () => this.confirmBooking();
-        
+
         // Close modal on overlay click
         modal.onclick = (e) => {
             if (e.target === modal) {
                 this.hideBookingModal();
             }
         };
-        
+
         // Close modal on Escape key
         const handleEscape = (e) => {
             if (e.key === 'Escape') {
@@ -1588,31 +1678,31 @@ class StudentDashboard {
         }
 
         const { sessionId, startTime, sessionDate, badge, originalContent } = this.pendingBookingData;
-        
+
         // Send the time in student's timezone (as displayed to student)
         const startTimeForBackend = startTime;
         // Use the date directly since it's now in correct DD-MM-YYYY format
         const bookingDateForBackend = sessionDate;
-        
+
         console.log('Booking debug - sessionDate:', sessionDate);
         console.log('Booking debug - bookingDateForBackend:', bookingDateForBackend);
         console.log('Booking debug - startTimeForBackend:', startTimeForBackend);
-        
+
         try {
             // Show loading state
             badge.style.pointerEvents = 'none';
             badge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Booking...';
-            
+
             // Hide modal while processing
             this.hideBookingModal();
-            
+
             const token = localStorage.getItem('token');
             const requestBody = {
                 sessionId: sessionId,
                 startTime: startTimeForBackend,
                 date: bookingDateForBackend
             };
-            
+
             const response = await fetch(`${this.apiBaseUrl}/sessions/confirm`, {
                 method: 'POST',
                 headers: {
@@ -1628,12 +1718,12 @@ class StudentDashboard {
             }
 
             const data = await response.json();
-            
+
             // Instant visual feedback - convert the same existing slot badge to green (no duplicates, no reorder)
             badge.style.pointerEvents = 'none';
             badge.classList.add('booked');
             badge.removeAttribute('onclick');
-            
+
             // Smooth transition to green state
             badge.style.transition = 'all 0.3s ease';
             badge.style.background = '#e8f5e8';
@@ -1712,7 +1802,7 @@ class StudentDashboard {
             let isDisabled = false;
             let statusText = 'Upcoming';
             const isCompleted = Boolean(quiz.alreadySubmitted);
-            
+
             if (startTime && endTime) {
                 if (now >= startTime && now <= endTime) {
                     status = 'active';
@@ -1740,12 +1830,12 @@ class StudentDashboard {
                     // Convert UTC date to student timezone using TimezoneUtils
                     const utcDate = new Date(date);
                     const localDate = TimezoneUtils.convertTimezone(utcDate, 'UTC', studentTimezone);
-                    
-                    return localDate.toLocaleString('en-US', { 
-                        month: 'short', 
+
+                    return localDate.toLocaleString('en-US', {
+                        month: 'short',
                         day: 'numeric',
                         year: 'numeric',
-                        hour: '2-digit', 
+                        hour: '2-digit',
                         minute: '2-digit',
                         hour12: true
                     });
@@ -1754,7 +1844,7 @@ class StudentDashboard {
                     return 'Invalid Date';
                 }
             };
-            
+
             return `
             <div class="quiz-row">
                 <div class="quiz-info">
@@ -1782,11 +1872,15 @@ class StudentDashboard {
                 <div class="quiz-status">
                     <span class="status-pill ${status}">${statusText}</span>
                     ${isCompleted
-                        ? `<button class="btn-start completed" onclick="studentDashboard.handleQuizClick('${quiz.quizId || quiz._id}', true)">View Results</button>`
-                        : `<button class="btn-start" ${isDisabled ? 'disabled' : ''} onclick="studentDashboard.startQuiz('${quiz.quizId || quiz._id}')">
-                            ${isDisabled ? 'Locked' : 'Start'}
-                           </button>`
-                    }
+                    ? `<div class="completed-indicator">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Completed</span>
+                    </div>`
+                    : `<div class="available-indicator">
+                        <i class="fas fa-play-circle"></i>
+                        <span>Available</span>
+                    </div>`
+                }
                 </div>
             </div>
             `;
@@ -1854,23 +1948,42 @@ class StudentDashboard {
         }
 
         console.log('=== DEBUG: Processing quizzes:', quizzes);
-        const quizzesHtml = quizzes.map((quiz, index) => {
+        
+        // Filter out expired quizzes
+        const now = new Date();
+        const activeQuizzes = quizzes.filter(quiz => {
+            const endTime = quiz.endDate ? new Date(quiz.endDate) : null;
+            // Include quiz if it doesn't have an end date or if it hasn't expired yet
+            return !endTime || now <= endTime;
+        });
+        
+        console.log('=== DEBUG: Filtered active quizzes:', activeQuizzes);
+        
+        if (activeQuizzes.length === 0) {
+            console.log('=== DEBUG: No active quizzes found');
+            quizListContainer.innerHTML = `
+                <div class="no-quizzes">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>No active quizzes available</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const quizzesHtml = activeQuizzes.map((quiz, index) => {
             console.log('=== DEBUG: Processing quiz:', quiz);
             console.log('=== DEBUG: Quiz alreadySubmitted:', quiz.alreadySubmitted);
             console.log('=== DEBUG: Quiz ID:', quiz._id);
-            
+
             const isCompleted = Boolean(quiz.alreadySubmitted);
             console.log('=== DEBUG: Final isCompleted status:', isCompleted);
-            
+
             const statusClass = isCompleted ? 'completed' : 'pending';
             const statusIcon = isCompleted ? 'fa-check-circle' : 'fa-clock';
             const statusText = isCompleted ? 'Completed' : 'Available';
-            const buttonText = isCompleted ? 'View Results' : 'Start Quiz';
-            const isDisabled = isCompleted;
 
             const quizHtml = `
                 <div class="quiz-item ${isCompleted ? 'quiz-completed' : ''}">
-                    ${isCompleted ? '<div class="completed-badge">Completed</div>' : ''}
                     <div class="quiz-info">
                         <h4>${quiz.title}</h4>
                         <div class="quiz-meta">
@@ -1881,24 +1994,26 @@ class StudentDashboard {
                             </span>
                         </div>
                     </div>
-                    <div class="quiz-action">
+                    <div class="quiz-status-indicator">
                         ${isCompleted ? 
-                            `<button class="btn btn-completed" onclick="event.stopPropagation(); studentDashboard.handleQuizClick('${quiz._id}', ${isCompleted})">
-                                View Results
-                            </button>` :
-                            `<button class="btn btn-primary" onclick="event.stopPropagation(); studentDashboard.handleQuizClick('${quiz._id}', ${isCompleted})" ${isDisabled ? 'disabled' : ''}>
-                                Start Quiz
-                            </button>`
+                            `<div class="completed-indicator">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Completed</span>
+                            </div>` :
+                            `<div class="available-indicator">
+                                <i class="fas fa-play-circle"></i>
+                                <span>Available</span>
+                            </div>`
                         }
                     </div>
                 </div>
             `;
-            
-           
+
+
             return quizHtml;
         }).join('');
-        
-       
+
+
 
         quizListContainer.innerHTML = `
             <div class="quiz-list">
@@ -1934,26 +2049,26 @@ class StudentDashboard {
     async loadQuizResults(quizId) {
         try {
             console.log('=== DEBUG: Loading quiz results for quiz ID:', quizId);
-            
+
             // Try the specific endpoint first
             let data;
             try {
                 data = await window.apiService.get(`/quizzes/student/${quizId}/results`);
                 console.log('=== DEBUG: Specific quiz results response:', data);
-                
+
                 if (data.success && data.result) {
                     const result = data.result;
-                    
+
                     // Use marks data from database
                     const obtainedMarks = result.score || 0;
                     const totalMarks = result.totalMarks || 0;
-                    
+
                     // Calculate percentage if not stored
                     const percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
-                    
+
                     // Calculate wrong answers from total marks and score
                     const wrongAnswers = totalMarks - obtainedMarks;
-                    
+
                     const resultData = {
                         obtainedMarks: obtainedMarks,
                         totalMarks: totalMarks,
@@ -1963,22 +2078,22 @@ class StudentDashboard {
                         status: percentage >= 50 ? 'Pass' : 'Fail',
                         attemptedDate: result.attemptedAt || result.createdAt || new Date()
                     };
-                    
+
                     const quizData = {
                         title: result.quiz?.title || 'Quiz',
                         subject: result.quiz?.subject || 'Subject'
                     };
-                    
+
                     console.log('=== DEBUG: Result data from Marks table:', resultData);
                     console.log('=== DEBUG: Quiz data:', quizData);
-                    
+
                     this.showQuizResultPage(resultData, quizData);
                     return;
                 }
             } catch (specificError) {
                 console.log('=== DEBUG: Specific endpoint failed, falling back to general results:', specificError);
             }
-            
+
             // Fallback to general results endpoint
             data = await window.apiService.get(`/quizzes/student/results`);
             console.log('=== DEBUG: General quiz results response:', data);
@@ -1993,7 +2108,7 @@ class StudentDashboard {
                     percentage: r.percentage
                 })) : 'No results'
             });
-            
+
             if (data.results && Array.isArray(data.results)) {
                 // Find the specific quiz result - try both string and ObjectId comparison
                 const quizResult = data.results.find(result => {
@@ -2003,20 +2118,20 @@ class StudentDashboard {
                     console.log(`=== DEBUG: Comparing resultQuizId: ${resultQuizId} with targetQuizId: ${targetQuizId} - Match: ${match}`);
                     return match;
                 });
-                
+
                 console.log('=== DEBUG: Found quiz result:', quizResult);
-                
+
                 if (quizResult) {
                     // Use marks data from database
                     const obtainedMarks = quizResult.score || 0;
                     const totalMarks = quizResult.totalMarks || 0;
-                    
+
                     // Calculate percentage if not stored
                     const percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
-                    
+
                     // Calculate wrong answers from total marks and score
                     const wrongAnswers = totalMarks - obtainedMarks;
-                    
+
                     // Create result data object in expected format
                     const resultData = {
                         obtainedMarks: obtainedMarks,
@@ -2027,16 +2142,16 @@ class StudentDashboard {
                         status: percentage >= 50 ? 'Pass' : 'Fail',
                         attemptedDate: quizResult.attemptedAt || quizResult.createdAt || new Date()
                     };
-                    
+
                     // Get quiz details for title and subject
                     const quizData = {
                         title: quizResult.quiz?.title || quizResult.title || 'Quiz',
                         subject: quizResult.quiz?.subject || quizResult.subject || 'Subject'
                     };
-                    
+
                     console.log('=== DEBUG: Result data from Marks table:', resultData);
                     console.log('=== DEBUG: Quiz data:', quizData);
-                    
+
                     this.showQuizResultPage(resultData, quizData);
                 } else {
                     console.log('=== DEBUG: Quiz result not found for ID:', quizId);
@@ -2057,7 +2172,7 @@ class StudentDashboard {
         console.log('=== DEBUG: Rendering quizzes with data:', data);
         const quizzesContainer = document.getElementById('quizzes-container');
         console.log('=== DEBUG: Quizzes container found:', quizzesContainer ? 'Yes' : 'No');
-        
+
         if (!quizzesContainer) return;
 
         if (!data.quizzes || data.quizzes.length === 0) {
@@ -2080,7 +2195,7 @@ class StudentDashboard {
             let isDisabled = false;
             let statusText = 'Upcoming';
             const isCompleted = Boolean(quiz.alreadySubmitted);
-            
+
             if (startTime && endTime) {
                 if (now >= startTime && now <= endTime) {
                     status = 'active';
@@ -2099,7 +2214,7 @@ class StudentDashboard {
                 statusText = 'Completed';
                 isDisabled = true;
             }
-            
+
             // Format date/time in student timezone
             const studentTimezone = this.studentTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
             const formatDateTime = (date) => {
@@ -2108,12 +2223,12 @@ class StudentDashboard {
                     // Convert UTC date to student timezone using TimezoneUtils
                     const utcDate = new Date(date);
                     const localDate = TimezoneUtils.convertTimezone(utcDate, 'UTC', studentTimezone);
-                    
-                    return localDate.toLocaleString('en-US', { 
-                        month: 'short', 
+
+                    return localDate.toLocaleString('en-US', {
+                        month: 'short',
                         day: 'numeric',
                         year: 'numeric',
-                        hour: '2-digit', 
+                        hour: '2-digit',
                         minute: '2-digit',
                         hour12: true
                     });
@@ -2122,7 +2237,7 @@ class StudentDashboard {
                     return 'Invalid Date';
                 }
             };
-            
+
             return `
             <div class="quiz-row">
                 <div class="quiz-info">
@@ -2150,11 +2265,15 @@ class StudentDashboard {
                 <div class="quiz-status">
                     <span class="status-pill ${status}">${statusText}</span>
                     ${isCompleted
-                        ? `<button class="btn-start completed" onclick="studentDashboard.handleQuizClick('${quiz.quizId || quiz._id}', true)">View Results</button>`
-                        : `<button class="btn-start" ${isDisabled ? 'disabled' : ''} onclick="studentDashboard.startQuiz('${quiz.quizId || quiz._id}')">
-                            ${isDisabled ? 'Locked' : 'Start'}
-                           </button>`
-                    }
+                    ? `<div class="completed-indicator">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Completed</span>
+                    </div>`
+                    : `<div class="available-indicator">
+                        <i class="fas fa-play-circle"></i>
+                        <span>Available</span>
+                    </div>`
+                }
                 </div>
             </div>
             `;
@@ -2175,46 +2294,46 @@ class StudentDashboard {
     async startQuiz(quizId) {
         try {
             console.log('=== DEBUG: Starting quiz:', quizId);
-            
+
             // Ensure currentUser is properly set
             if (!this.currentUser) {
                 console.log('=== DEBUG: currentUser is undefined, reloading user data...');
                 await this.checkAuthentication();
             }
-            
+
             console.log('=== DEBUG: Current user after check:', this.currentUser);
-            
+
             // Check if student has teacherId assigned
             if (!this.currentUser.teacherId) {
                 this.showNotification('You must be assigned to a teacher before attempting quizzes. Please contact your administrator.', 'error');
                 return;
             }
-            
+
             // Check if student has already attempted this quiz
             console.log('=== DEBUG: Checking attempt status...');
             const attemptData = await window.apiService.get(`/quizzes/student/${quizId}/attempt-status`);
             console.log('=== DEBUG: Attempt status:', attemptData);
-            
+
             if (attemptData.alreadySubmitted) {
                 this.showNotification('You have already submitted this quiz. You can only attempt it once.', 'error');
                 return;
             }
-            
+
             // Load quiz data
             console.log('=== DEBUG: Loading quiz data...');
             const data = await window.apiService.get(`/quizzes/student/${quizId}`);
             console.log('=== DEBUG: Quiz data loaded:', data);
-            
+
             if (data.quiz) {
                 console.log('=== DEBUG: Quiz found, setting up modal...');
                 console.log('=== DEBUG: Quiz questions:', data.quiz.questions);
                 console.log('=== DEBUG: Number of questions:', data.quiz.questions?.length || 0);
-                
+
                 if (!data.quiz.questions || data.quiz.questions.length === 0) {
                     this.showNotification('This quiz has no questions available.', 'error');
                     return;
                 }
-                
+
                 this.currentQuiz = data.quiz;
                 this.currentQuizId = quizId; // Store the quiz ID separately
                 this.currentQuestionIndex = 0;
@@ -2222,7 +2341,7 @@ class StudentDashboard {
                 this.quizStartTime = new Date();
                 this.quizTimeExpired = false;
                 this.isAutoSubmit = false;
-                
+
                 // Show quiz modal
                 this.showQuizModal();
                 this.renderQuizQuestion();
@@ -2257,9 +2376,9 @@ class StudentDashboard {
             background: ${bgColor};
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.remove();
         }, 3000);
@@ -2271,7 +2390,7 @@ class StudentDashboard {
         if (modal) {
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            
+
             // Update quiz title and subject information
             const quizTitleElement = document.getElementById('quiz-title');
             if (quizTitleElement && this.currentQuiz) {
@@ -2286,7 +2405,7 @@ class StudentDashboard {
                     </div>
                 `;
             }
-            
+
             // Add keyboard navigation
             this.setupKeyboardNavigation();
         }
@@ -2299,10 +2418,10 @@ class StudentDashboard {
             modal.classList.remove('quiz-closing', 'quiz-time-expired');
             document.body.style.overflow = 'auto';
             this.stopQuizTimer();
-            
+
             // Close any open timer warning dialog
             this.closeTimerWarningDialog();
-            
+
             // Remove keyboard navigation
             this.removeKeyboardNavigation();
         }
@@ -2310,12 +2429,12 @@ class StudentDashboard {
 
     renderQuizQuestion() {
         if (!this.currentQuiz || !this.currentQuiz.questions) return;
-        
+
         const question = this.currentQuiz.questions[this.currentQuestionIndex];
         const container = document.getElementById('quiz-questions-container');
-        
+
         if (!container) return;
-        
+
         const questionHtml = `
             <div class="quiz-question">
                 <div class="quiz-question-text">
@@ -2333,11 +2452,11 @@ class StudentDashboard {
                 </div>
             </div>
         `;
-        
+
         container.innerHTML = questionHtml;
         this.updateQuizProgress();
         this.updateNavigationButtons();
-        
+
         // Restore previous answer if exists
         if (this.userAnswers[this.currentQuestionIndex] !== undefined) {
             const previousAnswer = this.userAnswers[this.currentQuestionIndex];
@@ -2348,7 +2467,7 @@ class StudentDashboard {
     selectOption(optionIndex) {
         // Prevent answer changes when time has expired
         if (this.quizTimeExpired) return;
-        
+
         // Clear previous selection within current question
         const container = document.getElementById('quiz-questions-container');
         if (container) {
@@ -2356,15 +2475,15 @@ class StudentDashboard {
                 item.classList.remove('selected');
             });
         }
-        
+
         // Select new option
         const selectedOption = document.querySelector(`#option-${this.currentQuestionIndex + 1}-${optionIndex}`).parentElement;
         selectedOption.classList.add('selected');
         document.querySelector(`#option-${this.currentQuestionIndex + 1}-${optionIndex}`).checked = true;
-        
+
         // Store answer
         this.userAnswers[this.currentQuestionIndex] = optionIndex;
-        
+
         // Hide error message if shown
         const errorElement = document.getElementById(`error-${this.currentQuestionIndex + 1}`);
         if (errorElement) {
@@ -2378,9 +2497,9 @@ class StudentDashboard {
             const totalQuestions = this.currentQuiz.questions.length;
             const answeredQuestions = Object.keys(this.userAnswers).length;
             const current = this.currentQuestionIndex + 1;
-            
+
             progressElement.textContent = `Question ${current} of ${totalQuestions} (${answeredQuestions} answered)`;
-            
+
             // Add visual indicator for unanswered questions
             if (answeredQuestions < totalQuestions) {
                 progressElement.style.color = '#3b82f6';
@@ -2394,14 +2513,14 @@ class StudentDashboard {
         const prevBtn = document.getElementById('prevQuestionBtn');
         const nextBtn = document.getElementById('nextQuestionBtn');
         const submitBtn = document.getElementById('submitQuizBtn');
-        
+
         if (!this.currentQuiz) return;
-        
+
         // Previous button
         if (prevBtn) {
             prevBtn.disabled = this.currentQuestionIndex === 0;
         }
-        
+
         // Next/Submit button
         const isLastQuestion = this.currentQuestionIndex === this.currentQuiz.questions.length - 1;
         if (nextBtn && submitBtn) {
@@ -2433,7 +2552,7 @@ class StudentDashboard {
             }
             return;
         }
-        
+
         if (this.currentQuiz && this.currentQuestionIndex < this.currentQuiz.questions.length - 1) {
             this.currentQuestionIndex++;
             this.renderQuizQuestion();
@@ -2445,17 +2564,17 @@ class StudentDashboard {
         const quizDurationMinutes = this.currentQuiz.duration || 10;
         let timeRemaining = quizDurationMinutes * 60; // Convert to seconds
         let warningShown = false; // Track if warning has been shown
-        
+
         this.quizTimer = setInterval(() => {
             timeRemaining--;
-            
+
             const minutes = Math.floor(timeRemaining / 60);
             const seconds = timeRemaining % 60;
-            
+
             const timerElement = document.getElementById('quiz-timer');
             if (timerElement) {
                 timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                
+
                 // Add warning color when less than 2 minutes
                 if (timeRemaining < 120) {
                     timerElement.style.color = '#dc2626';
@@ -2465,13 +2584,13 @@ class StudentDashboard {
                     timerElement.style.color = '#3b82f6';
                 }
             }
-            
+
             // Show warning alert when 1 minute or less remains (show only once)
             if (timeRemaining <= 60 && !warningShown) {
                 warningShown = true;
                 this.showTimerWarning();
             }
-            
+
             // Auto-submit when time is up
             if (timeRemaining <= 0) {
                 this.stopQuizTimer();
@@ -2494,7 +2613,7 @@ class StudentDashboard {
     showTimerWarning() {
         // Close any existing warning dialog
         this.closeTimerWarningDialog();
-        
+
         const dialog = document.createElement('div');
         dialog.id = 'quiz-timer-warning-dialog';
         dialog.className = 'quiz-timer-warning-dialog-overlay';
@@ -2507,9 +2626,9 @@ class StudentDashboard {
                 <button type="button" class="btn btn-primary quiz-timer-warning-ok">OK</button>
             </div>
         `;
-        
+
         document.body.appendChild(dialog);
-        
+
         const closeDialog = () => {
             if (dialog.parentNode) {
                 dialog.classList.add('quiz-timer-warning-dialog-fadeout');
@@ -2520,13 +2639,13 @@ class StudentDashboard {
                 this.timerWarningAutoCloseId = null;
             }
         };
-        
+
         dialog.querySelector('.quiz-timer-warning-ok').addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             closeDialog();
         });
-        
+
         // Auto-close after 3.5 seconds
         this.timerWarningAutoCloseId = setTimeout(closeDialog, 3500);
     }
@@ -2554,13 +2673,13 @@ class StudentDashboard {
         try {
             // Prevent duplicate submissions
             if (this.isSubmitting) return;
-            
+
             // Save current answer before submitting
             this.saveCurrentAnswer();
-            
+
             // Mark as auto-submit (no result modal, stay on quiz list)
             this.isAutoSubmit = true;
-            
+
             // Submit directly without confirmation or "all answered" validation
             await this.performQuizSubmission();
         } catch (error) {
@@ -2574,23 +2693,23 @@ class StudentDashboard {
     async submitQuiz() {
         try {
             console.log('=== DEBUG: submitQuiz called');
-            
+
             // Prevent multiple submissions
             if (this.isSubmitting) {
                 console.log('=== DEBUG: Quiz already submitting, preventing duplicate submission');
                 return;
             }
-            
+
             // Validate quiz data exists
             if (!this.currentQuiz || !this.currentQuizId) {
                 this.showNotification('Quiz data is missing. Please restart the quiz.', 'error');
                 return;
             }
-            
+
             // Validation: Prevent submit if unanswered questions remain
             const totalQuestions = this.currentQuiz.questions.length;
             const answeredQuestions = Object.keys(this.userAnswers).length;
-            
+
             if (answeredQuestions < totalQuestions) {
                 // Show inline message
                 const unansweredMessage = document.getElementById('unanswered-message');
@@ -2602,20 +2721,20 @@ class StudentDashboard {
                         <i class="fas fa-exclamation-triangle"></i>
                         Please answer all questions before submitting.
                     `;
-                    
+
                     const container = document.getElementById('quiz-questions-container');
                     container.insertBefore(messageDiv, container.firstChild);
                 }
                 this.showNotification('Please answer all questions before submitting', 'error');
                 return;
             }
-            
+
             // Remove unanswered message if it exists
             const existingMessage = document.getElementById('unanswered-message');
             if (existingMessage) {
                 existingMessage.remove();
             }
-            
+
             // Show custom confirmation alert
             this.showConfirmAlert(
                 'Are you sure you want to submit the quiz?',
@@ -2627,7 +2746,7 @@ class StudentDashboard {
                     cancelText: 'No'
                 }
             );
-            
+
         } catch (error) {
             console.error('=== DEBUG: Error in submitQuiz:', error);
             this.showNotification('An error occurred while preparing submission', 'error');
@@ -2639,31 +2758,31 @@ class StudentDashboard {
             // Check if student has teacherId assigned
             if (!this.currentUser?.teacherId) {
                 console.log('=== ERROR: No teacherId found in currentUser');
-                
+
                 // TEMPORARY BYPASS FOR TESTING - REMOVE IN PRODUCTION
                 console.log('=== WARNING: Using temporary teacherId bypass for testing');
                 this.currentUser.teacherId = "507f1f77bcf86cd799439011"; // Dummy teacher ID
-                
+
                 // Uncomment the line below for production (no bypass)
                 // this.showNotification('You must be assigned to a teacher before submitting quizzes. Please contact your administrator.', 'error');
                 // return;
             }
-            
+
             // Set submission flag to prevent multiple submissions
             this.isSubmitting = true;
-            
+
             // Disable submit button and show loader
             const submitBtn = document.querySelector('.btn-success');
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
             }
-            
+
             // Calculate time taken
             const timeTaken = Math.floor((new Date() - this.quizStartTime) / 1000);
             const minutes = Math.floor(timeTaken / 60);
             const seconds = timeTaken % 60;
-            
+
             // Submit quiz with proper data structure
             const submitData = {
                 quizId: this.currentQuizId,
@@ -2675,12 +2794,12 @@ class StudentDashboard {
                 timeTakenSeconds: timeTaken,
                 submittedAt: new Date().toISOString()
             };
-            
+
             console.log('=== DEBUG: Submitting quiz with ID:', this.currentQuizId);
             console.log('=== DEBUG: Submit data:', JSON.stringify(submitData, null, 2));
-            
+
             this.submitQuizAPI(submitData);
-            
+
         } catch (error) {
             console.error('=== DEBUG: Error in performQuizSubmission:', error);
             this.showNotification('An error occurred while submitting', 'error');
@@ -2693,15 +2812,15 @@ class StudentDashboard {
             // Use the stored quiz ID
             const data = await window.apiService.post(`/quizzes/student/${this.currentQuizId}/submit`, submitData);
             console.log('=== DEBUG: Submit response:', data);
-            
+
             if (data.success) {
                 const wasAutoSubmit = this.isAutoSubmit;
                 this.isAutoSubmit = false;
-                
+
                 if (wasAutoSubmit) {
                     // Close quiz modal - keep student on Quiz List, do NOT open result modal
                     this.closeQuizModal();
-                    
+
                     // Toast message
                     this.showNotification('Time is up! Your quiz was auto-submitted.', 'info');
                 } else {
@@ -2709,11 +2828,11 @@ class StudentDashboard {
                     this.closeQuizModal();
                     this.showNotification('Quiz submitted successfully!', 'success');
                 }
-                
+
                 // Update quiz cards (Completed badge, View Result button)
                 this.loadQuizzesForAssignments();
                 this.loadDashboardQuizzes();
-                
+
             } else {
                 throw new Error(data.message || 'Submission failed');
             }
@@ -2727,17 +2846,17 @@ class StudentDashboard {
     handleSubmissionError(error) {
         // Show retry option
         this.showNotification(`Submission failed: ${error.message}. Please try again.`, 'error');
-        
+
         // Re-enable submit button
         const submitBtn = document.querySelector('.btn-success');
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-check"></i> Submit Quiz';
         }
-        
+
         // Reset submission flag
         this.resetSubmissionState();
-        
+
         let errorMessage = '';
         if (error.status === 403) {
             errorMessage = 'You are not allowed to submit this quiz';
@@ -2748,7 +2867,7 @@ class StudentDashboard {
         } else {
             errorMessage = error.message || 'Submission failed';
         }
-        
+
         this.showNotification(errorMessage, 'error');
     }
 
@@ -2937,7 +3056,7 @@ class StudentDashboard {
     showQuizResultPage(resultData, quizData) {
         try {
             console.log('=== DEBUG: Showing quiz result modal with data:', resultData, quizData);
-            
+
             // Create modal overlay
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'quiz-result-modal-overlay';
@@ -2986,18 +3105,18 @@ class StudentDashboard {
                     </div>
                 </div>
             `;
-            
+
             // Add modal to body
             document.body.appendChild(modalOverlay);
-            
+
             // Prevent background scrolling
             document.body.style.overflow = 'hidden';
-            
+
             // Add fade-in animation
             setTimeout(() => {
                 modalOverlay.classList.add('show');
             }, 10);
-            
+
             // Close on outside click
             modalOverlay.addEventListener('click', (e) => {
                 if (e.target === modalOverlay) {
@@ -3005,22 +3124,22 @@ class StudentDashboard {
                     document.body.style.overflow = '';
                 }
             });
-            
+
             // Restore scrolling when modal is removed
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
                     if (mutation.removedNodes) {
                         mutation.removedNodes.forEach((node) => {
                             if (node === modalOverlay) {
-                        document.body.style.overflow = '';
-                        observer.disconnect();
+                                document.body.style.overflow = '';
+                                observer.disconnect();
+                            }
+                        });
                     }
                 });
-            }
-        });
-    });
-    observer.observe(document.body, { childList: true });
-            
+            });
+            observer.observe(document.body, { childList: true });
+
         } catch (error) {
             console.error('Error showing quiz result modal:', error);
             this.showNotification('Failed to load quiz results', 'error');
@@ -3032,27 +3151,27 @@ class StudentDashboard {
             // Update quiz info
             const quizTitleElement = document.getElementById('result-quiz-title');
             const quizSubjectElement = document.getElementById('result-quiz-subject');
-            
+
             if (quizTitleElement && quizData) {
                 quizTitleElement.textContent = quizData.title || 'Quiz';
             }
-            
+
             if (quizSubjectElement && quizData) {
                 quizSubjectElement.textContent = quizData.subject || 'Subject';
             }
-            
+
             // Update score
             const scorePercentageElement = document.getElementById('score-percentage');
             if (scorePercentageElement && resultData) {
                 scorePercentageElement.textContent = `${resultData.scorePercentage || 0}%`;
             }
-            
+
             // Update stats
             const totalQuestionsElement = document.getElementById('total-questions');
             const correctAnswersElement = document.getElementById('correct-answers');
             const wrongAnswersElement = document.getElementById('wrong-answers');
             const attemptedQuestionsElement = document.getElementById('attempted-questions');
-            
+
             if (resultData) {
                 if (totalQuestionsElement) {
                     totalQuestionsElement.textContent = resultData.totalQuestions || 0;
@@ -3067,10 +3186,10 @@ class StudentDashboard {
                     attemptedQuestionsElement.textContent = resultData.totalQuestions || 0;
                 }
             }
-            
+
             // Update performance message
             this.updatePerformanceMessage(resultData ? resultData.scorePercentage : 0);
-            
+
         } catch (error) {
             console.error('Error updating result page data:', error);
         }
@@ -3080,11 +3199,11 @@ class StudentDashboard {
         try {
             const performanceMessageElement = document.getElementById('performance-message');
             if (!performanceMessageElement) return;
-            
+
             let message = '';
             let className = '';
             let icon = 'fa-trophy';
-            
+
             if (scorePercentage >= 80) {
                 message = 'Excellent Work!';
                 className = 'excellent';
@@ -3098,13 +3217,13 @@ class StudentDashboard {
                 className = 'needs-improvement';
                 icon = 'fa-chart-line';
             }
-            
+
             performanceMessageElement.className = `performance-message ${className}`;
             performanceMessageElement.innerHTML = `
                 <i class="fas ${icon}"></i>
                 <span>${message}</span>
             `;
-            
+
         } catch (error) {
             console.error('Error updating performance message:', error);
         }
@@ -3117,16 +3236,16 @@ class StudentDashboard {
             if (mainContent) {
                 mainContent.style.display = 'none';
             }
-            
+
             // Hide dashboard page
             const dashboardPage = document.getElementById('dashboard-page');
             if (dashboardPage) {
                 dashboardPage.style.display = 'none';
             }
-            
+
             // Hide quiz modal
             this.closeQuizModal();
-            
+
         } catch (error) {
             console.error('Error hiding pages:', error);
         }
@@ -3135,17 +3254,17 @@ class StudentDashboard {
     backToDashboard() {
         try {
             console.log('=== DEBUG: Navigating back to dashboard');
-            
+
             // Hide result page
             const resultPage = document.getElementById('quiz-result-page');
             if (resultPage) {
                 resultPage.style.display = 'none';
                 resultPage.classList.remove('show');
             }
-            
+
             // Show dashboard
             this.loadDashboard();
-            
+
         } catch (error) {
             console.error('Error navigating back to dashboard:', error);
             this.showNotification('Failed to navigate back', 'error');
@@ -3155,11 +3274,11 @@ class StudentDashboard {
     viewAnswers() {
         try {
             console.log('=== DEBUG: Viewing quiz answers');
-            
+
             // This would show a detailed answer review
             // For now, show a notification
             this.showNotification('Answer review feature coming soon!', 'info');
-            
+
         } catch (error) {
             console.error('Error viewing answers:', error);
             this.showNotification('Failed to view answers', 'error');
@@ -3169,7 +3288,7 @@ class StudentDashboard {
     setupKeyboardNavigation() {
         this.keyboardHandler = (e) => {
             if (!this.currentQuiz || this.quizTimeExpired) return;
-            
+
             // Number keys (1-4) for selecting options
             if (e.key >= '1' && e.key <= '4') {
                 const optionIndex = parseInt(e.key) - 1;
@@ -3178,9 +3297,9 @@ class StudentDashboard {
                     this.selectOption(optionIndex);
                 }
             }
-            
+
             // Arrow keys for navigation
-            switch(e.key) {
+            switch (e.key) {
                 case 'ArrowLeft':
                     e.preventDefault();
                     if (this.currentQuestionIndex > 0) {
@@ -3211,7 +3330,7 @@ class StudentDashboard {
                     break;
             }
         };
-        
+
         document.addEventListener('keydown', this.keyboardHandler);
     }
 

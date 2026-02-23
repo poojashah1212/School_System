@@ -1,10 +1,20 @@
 class AuthSystem {
     constructor() {
-        // Use production backend URL when deployed, localhost for development
-        this.apiBaseUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:5001/api/auth'
-            : 'https://smartschool-je18.onrender.com/api/auth';
+        // Dynamic API base URL - works for both local and production
+        // Check if we're in development or production
+        this.apiBaseUrl = this.getApiBaseUrl();
         this.init();
+    }
+
+    getApiBaseUrl() {
+        // If accessing from localhost, use local server
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Get the port from current location or default to 5000
+            const port = window.location.port || '5000';
+            return `http://localhost:${port}/api/auth`;
+        }
+        // Otherwise use production server
+        return 'https://smartschool-je18.onrender.com/api/auth';
     }
 
     init() {

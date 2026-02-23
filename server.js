@@ -8,8 +8,18 @@ const app = express();
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: ['http://localhost:5001', 'https://smartschool-je18.onrender.com'],
-  credentials: true
+  origin: [
+    'http://localhost:5001',
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+    'http://127.0.0.1:5001',
+    /^http:\/\/192\.168\.\d+\.\d+:\d+$/, // Allow any local network IP
+    /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/, // Allow any private network IP
+    'https://smartschool-je18.onrender.com'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
