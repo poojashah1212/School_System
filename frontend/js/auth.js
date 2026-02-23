@@ -242,13 +242,21 @@ class AuthSystem {
 
         this.showLoading();
         try {
-            // Use apiService for consistency
-            const result = await window.apiService.postFormData(`${this.apiBaseUrl}/signup`, formData);
+            // Use dynamic API URL with fetch
+            const res = await fetch(`${this.apiBaseUrl}/signup`, {
+                method: 'POST',
+                body: formData
+            });
 
-            this.showMessage(result.message || 'Account created successfully!', 'success');
-            setTimeout(() => {
-                window.location.href = '/html/login.html';
-            }, 1500);
+            const result = await res.json();
+            if (res.ok) {
+                this.showMessage(result.message || 'Account created successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/html/login.html';
+                }, 1500);
+            } else {
+                this.showMessage(result.message || 'Signup failed', 'error');
+            }
         } catch (error) {
             console.error('Signup error:', error);
             if (error.errors) {
