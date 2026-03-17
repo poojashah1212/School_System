@@ -1,12 +1,12 @@
 const moment = require("moment-timezone");
-const TeacherAvailability = require("../models/TeacherAvailability");
-const SessionSlot = require("../models/SessionSlot");
+const TeacherAvailability = require("../../models/TeacherAvailability");
+const SessionSlot = require("../../models/SessionSlot");
 
-const User = require("../models/user");
-const { redisClient } = require("../config/redis");
-const generateAvailableSlots = require("../utils/generateAvailableSlots");
-// const { sendEmail } = require("../utils/emailService");
-// const emailTemplates = require("../services/emailTemplates");
+const User = require("../../models/user");
+const { redisClient } = require("../../config/redis");
+const generateAvailableSlots = require("../../utils/generateAvailableSlots");
+// const { sendEmail } = require("../../utils/emailService");
+// const emailTemplates = require("../../services/emailTemplates");
 
 const normalizeTimezone = (tz) => {
   if (!tz || typeof tz !== 'string') return "Asia/Kolkata";

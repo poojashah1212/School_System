@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - SmartSchool</title>
+    <link rel="stylesheet" href="../css/student.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- No FullCalendar needed - using custom calendar -->
+</head>
+
+<body>
+    <div class="student-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Smart<span>School</span></span>
+                </div>
+                <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="#" class="nav-item active" data-page="dashboard">
+                        <i class="fas fa-th-large"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+
+                <!-- 2. Academic Calendar -->
+                <div class="nav-section">
+                    <a href="#" class="nav-item" data-page="view-calendar">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Academic Calendar</span>
+                    </a>
+                </div>
+
+                <!-- 3. Announcements -->
+                <div class="nav-section">
+                    <a href="#" class="nav-item" data-page="view-announcements">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>Announcements</span>
+                    </a>
+                </div>
+
+                <!-- 4. Manage Examinations -->
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-file-signature"></i>
+                            <span>My Examinations</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="exam-timetable">
+                                <i class="fas fa-table"></i>
+                                <span>Exam Timetable</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="view-result">
+                                <i class="fas fa-poll"></i>
+                                <span>View My Result</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Attendance -->
+                <div class="nav-section">
+                    <a href="#" class="nav-item" data-page="view-attendance">
+                        <i class="fas fa-user-check"></i>
+                        <span>My Attendance</span>
+                    </a>
+                </div>
+
+                <!-- 6. Timetable -->
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-clock"></i>
+                            <span>Timetable</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="weekly-schedule">
+                                <i class="fas fa-calendar-week"></i>
+                                <span>Weekly Schedule</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Study Materials -->
+                <div class="nav-section">
+                    <a href="#" class="nav-item" data-page="view-materials">
+                        <i class="fas fa-book"></i>
+                        <span>Study Materials</span>
+                    </a>
+                </div>
+
+                <!-- 8. Assignments -->
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>My Assignments</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="pending-assignments">
+                                <i class="fas fa-hourglass-start"></i>
+                                <span>Pending Assignments</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="submitted-assignments">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Submitted Assignments</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Live Classes -->
+                <div class="nav-section">
+                    <a href="#" class="nav-item" data-page="join-session">
+                        <i class="fas fa-video"></i>
+                        <span>Join Live Session</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <a href="#" class="nav-item" data-page="change-password">
+                        <i class="fas fa-key"></i>
+                        <span>Change Password</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <a href="#" class="nav-item logout" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="navbar-left">
+                    <button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="page-title">
+                        <h2 id="page-title-text">Student Dashboard</h2>
+                    </div>
+                </div>
+
+                <div class="navbar-right">
+                    <div class="navbar-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search...">
+                    </div>
+
+                    <div class="navbar-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </div>
+
+                    <div class="navbar-profile" onclick="toggleProfileDropdown()">
+                        <div class="profile-avatar">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-name" id="student-name-display">Student</span>
+                            <span class="profile-role">Scholar</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+
+                        <div class="profile-dropdown" id="profile-dropdown">
+                            <a href="#" data-page="view-profile">
+                                <i class="fas fa-id-card"></i>
+                                View Profile
+                            </a>
+                            <a href="#" data-page="change-password">
+                                <i class="fas fa-key"></i>
+                                Change Password
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" onclick="handleLogout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="dashboard-content" id="main-content">
+                <!-- Dashboard Home -->
+                <div id="page-dashboard" class="page-section active">
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon students">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total Subjects</span>
+                                <span class="stat-value" id="student-subject-count">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon teachers">
+                                <i class="fas fa-chalkboard"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Today's Lessons</span>
+                                <span class="stat-value" id="student-lesson-count">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon applications">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Pending Assignments</span>
+                                <span class="stat-value" id="student-assignment-count">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon attendance">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Attendance Rate</span>
+                                <span class="stat-value" id="student-attendance-rate">95%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-row">
+                        <!-- Today's Schedule -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-calendar-day"></i> Today's Schedule</h3>
+                                <a href="#" class="nav-item view-all" data-page="today-schedule"
+                                    style="padding: 0; background: transparent; color: var(--primary-blue); font-size: 13px;">View
+                                    All</a>
+                            </div>
+                            <div class="card-body">
+                                <div class="activities-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Time</th>
+                                                <th>Class</th>
+                                                <th>Subject</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="today-schedule-container">
+                                            <tr>
+                                                <td colspan="4" class="loading-cell">
+                                                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mini Calendar / Announcements Placeholder -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-bullhorn"></i> Recent Announcements</h3>
+                            </div>
+                            <div class="card-body" id="recent-announcements-container">
+                                <div class="placeholder-page"
+                                    style="padding: 20px; box-shadow: none; background: transparent; border-radius: 0;">
+                                    <div class="placeholder-icon"
+                                        style="width: 50px; height: 50px; font-size: 20px; margin-bottom: 12px;"><i
+                                            class="fas fa-info-circle"></i></div>
+                                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0;">No recent
+                                        announcements from administration.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-edit-profile" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-user-edit"></i></div>
+                        <h3>Edit Profile</h3>
+                        <p>Update your profile details and settings.</p>
+                    </div>
+                </div>
+
+                <!-- Change Password Section -->
+                <div id="page-change-password" class="page-section">
+                    <div class="page-content-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                        <div class="header-info">
+                            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Security Settings</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Update your password to keep your account secure.</p>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card" style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; border: 1px solid #f1f5f9; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                        <div class="card-header" style="padding: 0 0 20px 0; border-bottom: 1px solid #f1f5f9; margin-bottom: 24px;">
+                            <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">
+                                <i class="fas fa-lock" style="color: #3b82f6; margin-right: 12px;"></i>Change Password
+                            </h3>
+                        </div>
+                        
+                        <form id="student-change-password-form">
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Current Password</label>
+                                <div style="position: relative;">
+                                    <i class="fas fa-shield-alt" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                                    <input type="password" id="current-password" required placeholder="Enter current password" 
+                                        style="width: 100%; padding: 12px 12px 12px 42px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; transition: all 0.2s;">
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #1e293b; margin-bottom: 8px;">New Password</label>
+                                <div style="position: relative;">
+                                    <i class="fas fa-key" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                                    <input type="password" id="new-password" required placeholder="Min. 6 characters" 
+                                        style="width: 100%; padding: 12px 12px 12px 42px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; transition: all 0.2s;">
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 30px;">
+                                <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Confirm New Password</label>
+                                <div style="position: relative;">
+                                    <i class="fas fa-check-double" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                                    <input type="password" id="confirm-password" required placeholder="Repeat new password" 
+                                        style="width: 100%; padding: 12px 12px 12px 42px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; transition: all 0.2s;">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                                <button type="submit" class="btn-primary" style="flex: 2; padding: 14px; font-size: 15px; border-radius: 10px; border: none; cursor: pointer; background: #3b82f6; color: white; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <i class="fas fa-save"></i> Update Password
+                                </button>
+                                <button type="reset" class="btn-secondary" style="flex: 1; padding: 14px; font-size: 15px; border-radius: 10px; border: 1px solid #e2e8f0; cursor: pointer; background: #f8fafc; color: #475569; font-weight: 500;">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div style="max-width: 600px; margin: 24px auto 0; padding: 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; display: flex; gap: 12px;">
+                        <i class="fas fa-exclamation-triangle" style="color: #d97706; margin-top: 3px;"></i>
+                        <p style="font-size: 0.85rem; color: #92400e; margin: 0; line-height: 1.5;">
+                            <b>Important:</b> After changing your password, you will be automatically logged out and must sign in again with your new credentials.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="page-view-calendar" class="page-section">
+                    <div class="dashboard-row" style="grid-template-columns: 1.6fr 1fr; gap: 24px; align-items: start;">
+                        <!-- Custom Month Calendar -->
+                        <div class="dashboard-card">
+                            <div class="card-header"
+                                style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+                                <h3><i class="fas fa-calendar-alt" style="color: var(--primary-blue);"></i> Academic
+                                    Calendar</h3>
+                            </div>
+                            <div class="card-body" style="padding: 20px;">
+                                <!-- Month Title + Nav -->
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                    <h2 id="tc-month-title"
+                                        style="font-size: 1.6rem; font-weight: 700; color: var(--text-dark); margin: 0;">
+                                    </h2>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button onclick="tcNavigateMonth(-1)" title="Previous month"
+                                            style="width: 38px; height: 38px; border-radius: 8px; background: #334155; color: white; border: none; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <button onclick="tcNavigateMonth(1)" title="Next month"
+                                            style="width: 38px; height: 38px; border-radius: 8px; background: #334155; color: white; border: none; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Day Headers -->
+                                <div id="tc-day-headers"
+                                    style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 4px;">
+                                </div>
+                                <!-- Calendar Grid -->
+                                <div id="tc-calendar-grid"
+                                    style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Events & Holidays Schedule Panel -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-list-ul"></i> Events &amp; Holidays Schedule</h3>
+                            </div>
+                            <div class="card-body" id="tc-events-list" style="padding: 0;">
+                                <p
+                                    style="color: var(--text-muted); text-align: center; padding: 40px; font-size: 13px;">
+                                    Loading events...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (No FullCalendar modal needed - custom calendar used) -->
+
+                <!-- View Announcements Section -->
+                <div id="page-view-announcements" class="page-section">
+                    <div class="page-content-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                        <div class="header-info">
+                            <h3
+                                style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">
+                                School Announcements</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">View official announcements and news
+                                from school administration.</p>
+                        </div>
+                        <button class="btn-refresh-simple" onclick="loadTeacherAnnouncements()"
+                            style="background: var(--light-bg); border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition);">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+
+                    <div id="student-announcements-list" class="notices-container"
+                        style="display: flex; flex-direction: column; gap: 16px; max-height: 700px; overflow-y: auto; padding-right: 12px;">
+                        <div class="loading-cell" style="text-align: center; padding: 60px;">
+                            <i class="fas fa-spinner fa-spin"
+                                style="font-size: 24px; color: #3b82f6; margin-bottom: 16px;"></i>
+                            <p style="color: #64748b;">Loading announcements...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post Announcement Section -->
+                <div id="page-post-announcement" class="page-section">
+                    <div class="page-content-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                        <div class="header-info">
+                            <h3
+                                style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">
+                                Post Class Announcement</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Share instructions, news or updates
+                                with your students.</p>
+                        </div>
+                    </div>
+
+                    <div class="notice-management-grid"
+                        style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; align-items: start;">
+                        <!-- Post Form -->
+                        <div class="dashboard-card"
+                            style="background: white; border-radius: 16px; border: 1px solid #f1f5f9; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <div class="card-header"
+                                style="padding: 0 0 20px 0; border-bottom: 1px solid #f1f5f9; margin-bottom: 20px;">
+                                <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0;"><i
+                                        class="fas fa-pen-fancy" style="color: #3b82f6; margin-right: 10px;"></i> Create
+                                    New Announcement</h3>
+                            </div>
+                            <form id="teacher-post-notice-form" class="admin-form">
+                                <div class="form-group" style="margin-bottom: 18px;">
+                                    <label
+                                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Target
+                                        Class</label>
+                                    <select id="teacher-notice-class"
+                                        style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc;">
+                                        <option value="">All My Students</option>
+                                        <!-- Options will be populated via JS -->
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 18px;">
+                                    <label
+                                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Announcement
+                                        Title</label>
+                                    <input type="text" id="teacher-notice-title"
+                                        placeholder="e.g. Tomorrow's Lab Requirements" required
+                                        style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 18px;">
+                                    <label
+                                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Category
+                                        Type</label>
+                                    <select id="teacher-notice-category"
+                                        style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc;">
+                                        <option value="General">General Announcement</option>
+                                        <option value="Academic">Academic Update</option>
+                                        <option value="Event">School Event</option>
+                                        <option value="Holiday">Holiday Notice</option>
+                                        <option value="Urgent">Urgent / Important</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 18px;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                        <label
+                                            style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b;">Message
+                                            Content</label>
+                                        <span id="teacher-char-count" style="font-size: 0.75rem; color: #94a3b8;">0 /
+                                            500</span>
+                                    </div>
+                                    <textarea id="teacher-notice-content" rows="6"
+                                        placeholder="Type your message to students here..." required maxlength="500"
+                                        style="width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc; resize: vertical; min-height: 120px;"></textarea>
+                                </div>
+                                <div style="display: flex; gap: 12px; margin-top: 10px;">
+                                    <button type="submit" class="btn-primary"
+                                        style="flex: 2; padding: 12px; font-size: 14px; border-radius: 10px; border: none; cursor: pointer; background: #2563eb; color: white; font-weight: 600;">
+                                        <i class="fas fa-paper-plane" style="margin-right: 8px;"></i> Broadcast to
+                                        Students
+                                    </button>
+                                    <button type="button" class="btn-secondary" onclick="clearTeacherNoticeForm()"
+                                        style="flex: 1; padding: 12px; font-size: 14px; border-radius: 10px; border: 1px solid #e2e8f0; cursor: pointer; background: #f8fafc; color: #475569; font-weight: 500;">
+                                        <i class="fas fa-undo" style="margin-right: 8px;"></i> Clear
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- My Posts -->
+                        <div class="dashboard-card"
+                            style="background: white; border-radius: 16px; border: 1px solid #f1f5f9; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <div class="card-header"
+                                style="padding: 0 0 20px 0; border-bottom: 1px solid #f1f5f9; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0;"><i
+                                        class="fas fa-history" style="color: #3b82f6; margin-right: 10px;"></i> My
+                                    Recent Posts</h3>
+                            </div>
+                            <div id="teacher-own-notices" class="notices-container"
+                                style="display: flex; flex-direction: column; gap: 12px; max-height: 550px; overflow-y: auto;">
+                                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                                    <p>Your broadcast history will appear here.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-exam-timetable" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-table"></i></div>
+                        <h3>Exam Timetable</h3>
+                        <p>View the schedule for upcoming examinations.</p>
+                    </div>
+                </div>
+
+                <div id="page-upload-paper" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-file-upload"></i></div>
+                        <h3>Upload Question Paper</h3>
+                        <p>Securely upload your subject's exam question papers.</p>
+                    </div>
+                </div>
+
+                <div id="page-enter-marks" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-pen-fancy"></i></div>
+                        <h3>Enter Marks</h3>
+                        <p>Digitally record student exam scores.</p>
+                    </div>
+                </div>
+
+                <div id="page-view-result" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-poll"></i></div>
+                        <h3>View Results</h3>
+                        <p>Review compiled results for your assigned subjects.</p>
+                    </div>
+                </div>
+
+                <div id="page-submit-result" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-paper-plane"></i></div>
+                        <h3>Submit to Admin</h3>
+                        <p>Send finalized results for administrative approval and publishing.</p>
+                    </div>
+                </div>
+
+                <div id="page-view-attendance" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-calendar-check"></i></div>
+                        <h3>View Attendance</h3>
+                        <p>Monitor student attendance history.</p>
+                    </div>
+                </div>
+
+                <div id="page-edit-attendance" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-edit"></i></div>
+                        <h3>Edit Attendance</h3>
+                        <p>Correct or update attendance records.</p>
+                    </div>
+                </div>
+
+                <div id="page-submit-attendance" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-check-double"></i></div>
+                        <h3>Submit Attendance</h3>
+                        <p>Finalize and submit daily attendance for your classes.</p>
+                    </div>
+                </div>
+
+                <div id="page-today-schedule" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-calendar-day"></i></div>
+                        <h3>Today's Schedule</h3>
+                        <p>View your personalized daily class routine.</p>
+                    </div>
+                </div>
+
+                <div id="page-assigned-classes" class="page-section">
+                    <div class="assigned-classes-layout">
+                        <!-- Left Pillar: Classes Selection -->
+                        <div class="classes-sidebar">
+                            <div class="sidebar-header-compact">
+                                <div class="header-main-row">
+                                    <h3 class="panel-title"><i class="fas fa-chalkboard-teacher"></i> My Classes</h3>
+                                    <div class="count-badge" id="teacher-class-count">0</div>
+                                </div>
+                                <div class="filter-controls-row">
+                                    <div class="search-box-compact">
+                                        <i class="fas fa-search"></i>
+                                        <input type="text" id="assigned-class-search" placeholder="Search..."
+                                            onkeyup="filterAssignedClasses()">
+                                    </div>
+                                    <div class="sort-box-compact">
+                                        <select id="assigned-class-sort" onchange="sortAssignedClasses()">
+                                            <option value="name">Name</option>
+                                            <option value="grade">Grade</option>
+                                            <option value="students">Size</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="classes-list-container" id="assigned-classes-grid">
+                                <!-- Rendered by JS -->
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Pillar: Detailed Timetable -->
+                        <div class="timetable-main-panel">
+                            <div class="timetable-top-bar">
+                                <div class="tt-info">
+                                    <h3 id="timetable-class-name">Select Class</h3>
+                                    <div class="tt-stats">
+                                        <span id="timetable-subtitle"><i class="fas fa-clock"></i> Weekly
+                                            Schedule</span>
+                                        <span class="divider">|</span>
+                                        <span id="session-count-display">0 Sessions Total</span>
+                                    </div>
+                                </div>
+                                <button class="btn-refresh-tt" onclick="loadAssignedClasses()" title="Refresh Data">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="timetable-view-area" id="class-timetable-content">
+                                <!-- Rendered by JS -->
+                                <div class="empty-tt-state">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <p>Select a class from the left to view timetable</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div id="page-weekly-schedule" class="page-section">
+                    <div class="dashboard-card main-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <i class="fas fa-calendar-week"></i>
+                                <div>
+                                    <h3>Weekly Class Schedule</h3>
+                                    <p>View your scheduled classes and sessions for the week</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="student-weekly-timetable-container">
+                                <!-- Timetable will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-students-list" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-users"></i></div>
+                        <h3>Students List</h3>
+                        <p>Access records and details of all students in your classes.</p>
+                    </div>
+                </div>
+
+                <div id="page-student-profile" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-user-circle"></i></div>
+                        <h3>Student Profile</h3>
+                        <p>Search and view detailed academic profiles of individual students.</p>
+                    </div>
+                </div>
+
+                <div id="page-upload-notes" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-file-pdf"></i></div>
+                        <h3>Upload PDF Notes</h3>
+                        <p>Share study materials and lecture notes in PDF format.</p>
+                    </div>
+                </div>
+
+                <div id="page-upload-videos" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-video"></i></div>
+                        <h3>Upload Video Lectures</h3>
+                        <p>Upload educational videos for student reference.</p>
+                    </div>
+                </div>
+
+                <div id="page-update-material" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-sync-alt"></i></div>
+                        <h3>Update Study Material</h3>
+                        <p>Manage and revise existing learning resources.</p>
+                    </div>
+                </div>
+
+                <div id="page-delete-material" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-trash-alt"></i></div>
+                        <h3>Delete Material</h3>
+                        <p>Remove outdated or incorrect study materials.</p>
+                    </div>
+                </div>
+
+                <div id="page-create-assignment" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-plus-square"></i></div>
+                        <h3>Create Assignment</h3>
+                        <p>Design new assignments for your students.</p>
+                    </div>
+                </div>
+
+                <div id="page-upload-assignment-file" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-file-upload"></i></div>
+                        <h3>Upload Assignment File</h3>
+                        <p>Attach task descriptions or question sheets for assignments.</p>
+                    </div>
+                </div>
+
+                <div id="page-set-deadline" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-hourglass-half"></i></div>
+                        <h3>Set Deadline</h3>
+                        <p>Configure submission dates and times for student work.</p>
+                    </div>
+                </div>
+
+                <div id="page-view-submissions" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-tasks"></i></div>
+                        <h3>View Submissions</h3>
+                        <p>Review and download student assignment submissions.</p>
+                    </div>
+                </div>
+
+                <div id="page-evaluate-assignment" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-check-double"></i></div>
+                        <h3>Evaluate Assignment</h3>
+                        <p>Grade student submissions and provide feedback.</p>
+                    </div>
+                </div>
+
+                <div id="page-publish-marks" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-poll"></i></div>
+                        <h3>Publish Marks</h3>
+                        <p>Release assignment grades to students.</p>
+                    </div>
+                </div>
+
+                <div id="page-delete-assignment" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-trash"></i></div>
+                        <h3>Delete Assignment</h3>
+                        <p>Remove assignment entries and related data.</p>
+                    </div>
+                </div>
+
+                <div id="page-create-session" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-plus-circle"></i></div>
+                        <h3>Create Live Session</h3>
+                        <p>Schedule a new live online class.</p>
+                    </div>
+                </div>
+
+                <div id="page-generate-link" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-link"></i></div>
+                        <h3>Generate Meeting Link</h3>
+                        <p>Get the URL for your upcoming live sessions.</p>
+                    </div>
+                </div>
+
+                <div id="page-send-session-notification" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-bell"></i></div>
+                        <h3>Send Notification</h3>
+                        <p>Alert students about the live class schedule.</p>
+                    </div>
+                </div>
+
+                <!-- Join Live Session Page -->
+                <div id="page-join-session" class="page-section">
+                    <div class="page-content-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                        <div class="header-info">
+                            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">
+                                <i class="fas fa-video" style="color: #3b82f6; margin-right: 10px;"></i>Join Live Session
+                            </h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Join your live classes. Click on any active session to enter the virtual classroom.</p>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <button class="btn-refresh-simple" onclick="loadStudentLiveSessions()" style="background: var(--light-bg); border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition);">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="student-sessions-loading" style="display: none; text-align: center; padding: 60px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: #3b82f6; margin-bottom: 16px;"></i>
+                        <p style="color: #64748b;">Loading live sessions...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="student-sessions-empty" style="display: none; text-align: center; padding: 60px; background: white; border-radius: 16px; border: 1px dashed #e2e8f0;">
+                        <div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <i class="fas fa-video-slash" style="font-size: 32px; color: #94a3b8;"></i>
+                        </div>
+                        <h4 style="color: #1e293b; font-weight: 600; margin-bottom: 8px;">No Live Sessions</h4>
+                        <p style="color: #64748b; max-width: 400px; margin: 0 auto;">There are no active live sessions for your class at the moment.</p>
+                    </div>
+
+                    <!-- Live Sessions Grid -->
+                    <div id="student-sessions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                        <!-- Cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div id="page-session-attendance" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-user-check"></i></div>
+                        <h3>Mark Session Attendance</h3>
+                        <p>Record attendance specifically for live session participants.</p>
+                    </div>
+                </div>
+
+                <div id="page-end-session" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon"><i class="fas fa-stop-circle"></i></div>
+                        <h3>End Session</h3>
+                        <p>Successfully conclude your live online class.</p>
+                    </div>
+                </div>
+
+                <!-- Study Materials Section -->
+                <div id="page-view-materials" class="page-section">
+                    <div class="page-content-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <div class="header-info">
+                            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Study Materials</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Access notes, videos and resources shared by your teachers.</p>
+                        </div>
+                        <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
+                            <div class="navbar-search" style="margin: 0;">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Search materials..." onkeyup="filterMaterials(this.value)" style="width: 200px; padding: 8px 12px 8px 36px; border-radius: 10px; background: white; font-size: 13px;">
+                            </div>
+                            <button class="btn-refresh-simple" onclick="loadStudyMaterials()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="study-materials-container" class="materials-grid">
+                        <div class="loading-cell" style="grid-column: 1 / -1; text-align: center; padding: 60px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #3b82f6; margin-bottom: 16px;"></i>
+                            <p style="color: #64748b;">Loading study materials...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification-toast" class="notification-toast">
+        <div class="toast-icon"><i class="fas fa-info-circle"></i></div>
+        <div class="toast-message" id="toast-message">Notification message here</div>
+        <button class="toast-close" onclick="hideToast()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <script src="../../js/apiService.js"></script>
+    <script src="../js/student-dashboard.js"></script>
+    <script src="../../js/studentLiveSession.js"></script>
+</body>
+
+</html>

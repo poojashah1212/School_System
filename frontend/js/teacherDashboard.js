@@ -29,7 +29,7 @@ class TeacherDashboard {
     checkAuth() {
         const token = localStorage.getItem('token');
         if (!token) {
-            window.location.href = '/html/index.html';
+            window.location.href = '/login.html';
             return;
         }
 
@@ -39,7 +39,7 @@ class TeacherDashboard {
             if (payload.role !== 'teacher') {
                 this.showMessage('Access denied. Teacher account required.', 'error');
                 setTimeout(() => {
-                    window.location.href = '/html/index.html';
+                    window.location.href = '/login.html';
                 }, 5000);
                 return;
             }
@@ -824,6 +824,14 @@ class TeacherDashboard {
             });
         }
 
+        // My Classes - timetable class select
+        const timetableClassSelect = document.getElementById('timetableClassSelect');
+        if (timetableClassSelect) {
+            timetableClassSelect.addEventListener('change', (e) => {
+                this.loadClassTimetable(e.target.value);
+            });
+        }
+
         // Close modals on outside click
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
@@ -1038,7 +1046,8 @@ class TeacherDashboard {
             quiz: 'Quiz Center',
             availability: 'Schedule',
             holidays: 'Academic Holidays',
-            sessions: 'Learning Sessions'
+            sessions: 'Learning Sessions',
+            'my-classes': 'My Classes'
         };
         const headerTitle = document.querySelector('.header h1');
         if (headerTitle) {
@@ -1480,6 +1489,9 @@ class TeacherDashboard {
                 break;
             case 'sessions':
                 await this.loadSessionsData();
+                break;
+            case 'my-classes':
+                await this.loadMyClassesData();
                 break;
         }
     }
@@ -6951,6 +6963,302 @@ class TeacherDashboard {
         }
     }
 
+    async loadMyClassesData() {
+        try {
+            this.showLoading();
+
+            const response = await fetch('/api/teacher/assigned-classes', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const classes = result.data || [];
+                this.renderAssignedClasses(classes);
+                this.populateTimetableSelect(classes);
+            } else {
+                const error = await response.json();
+                this.showMessage(error.message || 'Failed to load classes', 'error');
+                document.getElementById('assignedClassesList').innerHTML = '<p class="empty">Failed to load classes</p>';
+            }
+        } catch (error) {
+            console.error('Error loading assigned classes:', error);
+            this.showMessage('Error loading classes', 'error');
+            document.getElementById('assignedClassesList').innerHTML = '<p class="empty">Error loading classes</p>';
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    renderAssignedClasses(classes) {
+        const container = document.getElementById('assignedClassesList');
+        
+        if (!classes || classes.length === 0) {
+            container.innerHTML = '<p class="empty">No classes assigned yet</p>';
+            return;
+        }
+
+        let html = '<div class="classes-grid">';
+        classes.forEach(cls => {
+            const isClassTeacher = cls.isClassTeacher ? '<span class="badge-teacher">Class Teacher</span>' : '';
+            html += `
+                <div class="class-card" data-class-id="${cls._id}">
+                    <div class="class-header">
+                        <h4>${cls.name}</h4>
+                        ${isClassTeacher}
+                    </div>
+                    <div class="class-details">
+                        <p><i class="fas fa-layer-group"></i> Grade: ${cls.grade}</p>
+                        <p><i class="fas fa-users"></i> Students: ${cls.studentCount || 0}</p>
+                        <p><i class="fas fa-book"></i> Subjects: ${cls.subjects?.length || 0}</p>
+                    </div>
+                    <button class="btn-view-timetable" onclick="dashboard.viewClassTimetable('${cls._id}')">
+                        <i class="fas fa-calendar-alt"></i> View Timetable
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    populateTimetableSelect(classes) {
+        const select = document.getElementById('timetableClassSelect');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Select a class to view timetable</option>';
+        
+        classes.forEach(cls => {
+            select.innerHTML += `<option value="${cls._id}">${cls.name}</option>`;
+        });
+    }
+
+    async loadClassTimetable(classId) {
+        const container = document.getElementById('classTimetable');
+        
+        if (!classId) {
+            container.innerHTML = '<p class="empty">Select a class to view its timetable</p>';
+            return;
+        }
+
+        try {
+            container.innerHTML = '<p class="empty">Loading timetable...</p>';
+
+            const response = await fetch(`/api/teacher/assigned-classes/${classId}/timetable`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const sessions = result.data || [];
+                this.renderTimetable(sessions);
+            } else {
+                const error = await response.json();
+                container.innerHTML = `<p class="empty">${error.message || 'Failed to load timetable'}</p>`;
+            }
+        } catch (error) {
+            console.error('Error loading timetable:', error);
+            container.innerHTML = '<p class="empty">Error loading timetable</p>';
+        }
+    }
+
+    viewClassTimetable(classId) {
+        const select = document.getElementById('timetableClassSelect');
+        if (select) {
+            select.value = classId;
+            this.loadClassTimetable(classId);
+        }
+        // Scroll to timetable section
+        document.querySelector('.timetable-section')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async viewAllClassTimetables() {
+        const container = document.getElementById('classTimetable');
+        const select = document.getElementById('timetableClassSelect');
+        
+        if (select) select.value = '';
+        
+        try {
+            container.innerHTML = '<p class="empty">Loading all timetables...</p>';
+
+            const response = await fetch('/api/teacher/all-timetables', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const sessions = result.data || [];
+                this.renderAllTimetables(sessions);
+            } else {
+                const error = await response.json();
+                container.innerHTML = `<p class="empty">${error.message || 'Failed to load timetables'}</p>`;
+            }
+        } catch (error) {
+            console.error('Error loading all timetables:', error);
+            container.innerHTML = '<p class="empty">Error loading timetables</p>';
+        }
+    }
+
+    renderAllTimetables(sessions) {
+        const container = document.getElementById('classTimetable');
+        
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = '<p class="empty">No timetables scheduled</p>';
+            return;
+        }
+
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const daysMap = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
+        
+        const daySessions = {};
+        sessions.forEach(session => {
+            const day = session.dayName || days[session.dayOfWeek] || 'Unknown';
+            if (!daySessions[day]) {
+                daySessions[day] = [];
+            }
+            daySessions[day].push(session);
+        });
+
+        let html = '<div class="all-timetable">';
+        
+        days.forEach(day => {
+            const dayData = daySessions[day];
+            if (dayData && dayData.length > 0) {
+                html += `
+                    <div class="timetable-day">
+                        <h4 class="day-header">${day} <span class="class-count">${dayData.length} session(s)</span></h4>
+                        <div class="day-sessions">
+                `;
+                
+                dayData.sort((a, b) => {
+                    const timeA = new Date(a.startTime).getTime();
+                    const timeB = new Date(b.startTime).getTime();
+                    return timeA - timeB;
+                });
+
+                dayData.forEach(session => {
+                    const startTime = new Date(session.startTime).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: true 
+                    });
+                    const endTime = new Date(session.endTime).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: true 
+                    });
+                    
+                    html += `
+                        <div class="session-item">
+                            <div class="session-time">
+                                <span class="time-start">${startTime}</span>
+                                <span class="time-separator">-</span>
+                                <span class="time-end">${endTime}</span>
+                            </div>
+                            <div class="session-info">
+                                <h5>${session.title}</h5>
+                                <p class="class-name"><i class="fas fa-school"></i> ${session.className || 'N/A'}</p>
+                                <p class="teacher-name"><i class="fas fa-user"></i> ${session.teacherName || 'TBA'}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div></div>';
+            }
+        });
+
+        html += '</div>';
+        
+        if (Object.keys(daySessions).length === 0) {
+            container.innerHTML = '<p class="empty">No timetables scheduled</p>';
+        } else {
+            container.innerHTML = html;
+        }
+    }
+
+    renderTimetable(sessions) {
+        const container = document.getElementById('classTimetable');
+        
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = '<p class="empty">No timetable scheduled for this class</p>';
+            return;
+        }
+
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const daySessions = {};
+        
+        sessions.forEach(session => {
+            const day = session.dayName || days[session.dayOfWeek] || 'Unknown';
+            if (!daySessions[day]) {
+                daySessions[day] = [];
+            }
+            daySessions[day].push(session);
+        });
+
+        let html = '<div class="timetable-grid">';
+        
+        days.forEach(day => {
+            const dayData = daySessions[day];
+            if (dayData && dayData.length > 0) {
+                html += `
+                    <div class="timetable-day">
+                        <h4 class="day-header">${day}</h4>
+                        <div class="day-sessions">
+                `;
+                
+                dayData.sort((a, b) => {
+                    const timeA = new Date(a.startTime).getTime();
+                    const timeB = new Date(b.startTime).getTime();
+                    return timeA - timeB;
+                });
+
+                dayData.forEach(session => {
+                    const startTime = new Date(session.startTime).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: true 
+                    });
+                    const endTime = new Date(session.endTime).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: true 
+                    });
+                    
+                    html += `
+                        <div class="session-item">
+                            <div class="session-time">
+                                <span class="time-start">${startTime}</span>
+                                <span class="time-separator">-</span>
+                                <span class="time-end">${endTime}</span>
+                            </div>
+                            <div class="session-info">
+                                <h5>${session.title}</h5>
+                                <p class="teacher-name">${session.teacherName || 'TBA'}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div></div>';
+            }
+        });
+
+        html += '</div>';
+        
+        if (Object.keys(daySessions).length === 0) {
+            container.innerHTML = '<p class="empty">No timetable scheduled for this class</p>';
+        } else {
+            container.innerHTML = html;
+        }
+    }
+
     updateSessionStats(data) {
         const totalSessions = data.pagination?.totalSessions || 0;
         let commonSessions = 0;
@@ -8219,7 +8527,7 @@ class TeacherDashboard {
 
     logout() {
         localStorage.removeItem('token');
-        window.location.href = '/index.html';
+        window.location.href = '/login.html';
     }
 
     async loadTeacherData() {

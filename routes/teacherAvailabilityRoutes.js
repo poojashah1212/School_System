@@ -8,7 +8,7 @@ const {
   addHoliday,
   getHolidays,
   getTeacherAvailabilityForStudent
-} = require("../controllers/teacherAvailabilityController");
+} = require("../controllers/teacher/teacherAvailabilityController");
 
 const {weeklyAvailabilityValidation, addHolidayValidation} = require("../middleware/validation/availabilityValidation");
 const { runValidation } = require("../middleware/validate");

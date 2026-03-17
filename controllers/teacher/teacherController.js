@@ -1,33 +1,65 @@
-const User = require("../models/user");
+const User = require("../../models/user");
+const ClassSubject = require("../../models/ClassSubject");
 const fs = require("fs");
 const csv = require("csv-parser");
 const bcrypt = require("bcryptjs");
 // const { sendEmail } = require("../utils/emailService");
 // const emailTemplates = require("../services/emailTemplates");
 
+exports.getAssignedClasses = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    // Find only classes where the teacher is specifically the assigned Class Teacher
+    const classes = await ClassSubject.find({
+      assignedTeacher: teacherId
+    });
+
+    // For each class, filter only the subjects assigned to this teacher
+    const assignedData = classes.map(cls => {
+      const classObj = cls.toObject();
+      const isClassTeacher = classObj.assignedTeacher && classObj.assignedTeacher.toString() === teacherId;
+      
+      const teacherSubjects = classObj.subjects.filter(sub => 
+        sub.assignedTeacher && sub.assignedTeacher.toString() === teacherId
+      );
+
+      return {
+        _id: classObj._id,
+        name: classObj.name,
+        grade: classObj.grade,
+        isClassTeacher,
+        subjects: teacherSubjects,
+        totalSubjectsInClass: classObj.subjects.length
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: assignedData
+    });
+  } catch (err) {
+    console.error("Error fetching assigned classes:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 exports.getStudentById = async (req, res) => {
   try {
     const studentId = req.params.userId;
+    const teacherId = req.user.id;
     let student = null;
     
     // First try by MongoDB _id
     if (studentId.match(/^[0-9a-fA-F]{24}$/)) {
-      student = await User.findOne({
-        _id: studentId,
-        role: "student",
-        teacherId: req.user.id
-      })
+      student = await User.findOne({ _id: studentId, role: "student" })
         .select("-password")
         .populate("teacherId", "fullName email");
     }
     
     // If not found by _id, try by userId field
     if (!student) {
-      student = await User.findOne({
-        userId: studentId,
-        role: "student",
-        teacherId: req.user.id
-      })
+      student = await User.findOne({ userId: studentId, role: "student" })
         .select("-password")
         .populate("teacherId", "fullName email");
     }
@@ -36,23 +68,57 @@ exports.getStudentById = async (req, res) => {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    res.json(student);
+    // Check if teacher has permission (Created them OR is their class/subject teacher)
+    const isOwner = student.teacherId && student.teacherId._id.toString() === teacherId;
+    const isAssigned = await ClassSubject.exists({
+      grade: student.class,
+      $or: [
+        { assignedTeacher: teacherId },
+        { "subjects.assignedTeacher": teacherId }
+      ]
+    });
+
+    if (!isOwner && !isAssigned) {
+      return res.status(403).json({ message: "Unauthorized access to student profile" });
+    }
+
+    res.json({
+      success: true,
+      data: student
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
 exports.getMyStudents = async (req, res) => {
   try {
+    const teacherId = req.user.id;
+
+    // 1. Find all classes where the teacher is assigned (either Class or Subject teacher)
+    const assignedClasses = await ClassSubject.find({
+      $or: [
+        { assignedTeacher: teacherId },
+        { "subjects.assignedTeacher": teacherId }
+      ]
+    }).select("grade");
+
+    // Get unique grades
+    const grades = [...new Set(assignedClasses.map(c => c.grade))];
+
+    // 2. Fetch students matching those grades OR created by this teacher
     const students = await User.find({
       role: "student",
-      teacherId: req.user.id
-    }).select("-password");
+      $or: [
+        { class: { $in: grades } },
+        { teacherId: teacherId }
+      ]
+    }).select("-password").sort({ class: 1, fullName: 1 });
 
-    res.status(200).json({students});
+    res.status(200).json({ students });
   } catch (err) {
-    console.error(err);
+    console.error("Error in getMyStudents:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -137,13 +203,14 @@ exports.createStudent = async (req, res) => {
     // }
 
     res.status(201).json({
+      success: true,
       message: "Student created successfully",
-      student: student,
+      data: student,
       totalStudents: totalStudents
     });
   } catch (err) {
     console.error("CREATE STUDENT ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -217,31 +284,34 @@ exports.updateStudent = async (req, res) => {
       updateData.profileImage = `/uploads/profiles/${req.file.filename}`;
     }
 
-    let student = null;
-    
-    // First try by MongoDB _id
-    if (userId.match(/^[0-9a-fA-F]{24}$/)) {
-      student = await User.findOneAndUpdate({
-        _id: userId,
-        role: "student",
-        teacherId: teacherId
-      }, updateData, { new: true }).select("-password");
-    }
-    
-    // If not found by _id, try by userId field
-    if (!student) {
-      student = await User.findOneAndUpdate({
-        userId: userId,
-        role: "student",
-        teacherId: teacherId
-      }, updateData, { new: true }).select("-password");
-    }
+    let student = await User.findOne({ 
+      $or: [
+        { _id: userId.match(/^[0-9a-fA-F]{24}$/) ? userId : null }, 
+        { userId: userId }
+      ].filter(q => q !== null),
+      role: "student" 
+    });
 
     if (!student) {
-      return res.status(404).json({
-        message: "Student not found"
-      });
+      return res.status(404).json({ message: "Student not found" });
     }
+
+    // Check if teacher has permission
+    const isOwner = student.teacherId && student.teacherId.toString() === teacherId;
+    const isAssigned = await ClassSubject.exists({
+      grade: student.class,
+      $or: [
+        { assignedTeacher: teacherId },
+        { "subjects.assignedTeacher": teacherId }
+      ]
+    });
+
+    if (!isOwner && !isAssigned) {
+      return res.status(403).json({ message: "You do not have permission to update this student" });
+    }
+
+    // Perform update
+    student = await User.findByIdAndUpdate(student._id, updateData, { new: true }).select("-password");
 
     // Get updated student count
     const totalStudents = await User.countDocuments({
@@ -250,13 +320,15 @@ exports.updateStudent = async (req, res) => {
     });
 
     return res.json({
+      success: true,
       message: "Student profile updated successfully",
-      student: student,
+      data: student,
       totalStudents: totalStudents
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
+      success: false,
       message: "Server error"
     });
   }
@@ -267,32 +339,34 @@ exports.deleteStudent = async (req, res) => {
     const teacherId = req.user.id;
     const studentId = req.params.userId;
     
-    // Try to find and delete the student by either _id or userId
-    let deletedStudent = null;
-    
-    // First try by MongoDB _id
-    if (studentId.match(/^[0-9a-fA-F]{24}$/)) {
-      deletedStudent = await User.findOneAndDelete({
-        _id: studentId,
-        role: "student",
-        teacherId: teacherId
-      });
-    }
-    
-    // If not found by _id, try by userId field
-    if (!deletedStudent) {
-      deletedStudent = await User.findOneAndDelete({
-        userId: studentId,
-        role: "student",
-        teacherId: teacherId
-      });
+    // Try to find the student
+    let student = await User.findOne({ 
+      $or: [
+        { _id: studentId.match(/^[0-9a-fA-F]{24}$/) ? studentId : null }, 
+        { userId: studentId }
+      ].filter(q => q !== null),
+      role: "student" 
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
     }
 
-    if (!deletedStudent) {
-      return res.status(404).json({ 
-        message: "Student not found" 
-      });
+    // Check if teacher has permission
+    const isOwner = student.teacherId && student.teacherId.toString() === teacherId;
+    const isAssigned = await ClassSubject.exists({
+      grade: student.class,
+      $or: [
+        { assignedTeacher: teacherId },
+        { "subjects.assignedTeacher": teacherId }
+      ]
+    });
+
+    if (!isOwner && !isAssigned) {
+      return res.status(403).json({ message: "You do not have permission to delete this student" });
     }
+
+    const deletedStudent = await User.findByIdAndDelete(student._id);
 
     // Get updated student count
     const totalStudents = await User.countDocuments({

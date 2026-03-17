@@ -16,7 +16,7 @@ const {
   updateSingleQuestion,
   uploadQuizCsv,
   checkQuizAttemptStatus
-} = require("../controllers/quizController");
+} = require("../controllers/teacher/quizController");
 
 const router = express.Router();
 

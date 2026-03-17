@@ -7,7 +7,7 @@ const upload = require("../middleware/upload");
 const uploadCsv = require("../middleware/uploadCsv"); 
 const authMiddleware = require("../middleware/authMiddleware");
 const { createQuizValidation } = require("../middleware/validation/quizValidation");
-const { createQuiz, updateQuiz, updateSingleQuestion, getQuizzes, deleteQuiz, getQuizById, uploadQuizCsv } = require("../controllers/quizController");
+const { createQuiz, updateQuiz, updateSingleQuestion, getQuizzes, deleteQuiz, getQuizById, uploadQuizCsv } = require("../controllers/teacher/quizController");
 const { quizSingleQuestionValidation } = require("../middleware/validation/quizValidation");
 const { quizCsvUploadValidation } = require("../middleware/validation/quizCsvValidation");
 
@@ -29,9 +29,20 @@ const {
   uploadStudentsCSV,
   getTeacherProfile,
   updateTeacherProfile
-} = require("../controllers/teacherController");
+} = require("../controllers/teacher/teacherController");
+
+const {
+  createAnnouncement,
+  getAnnouncements,
+  deleteAnnouncement
+} = require("../controllers/admin/AnnouncementController");
 
 router.use(jwtAuth, isTeacher);
+
+// Announcement routes for teachers
+router.post("/announcements", createAnnouncement);
+router.get("/announcements", getAnnouncements);
+router.delete("/announcements/:id", deleteAnnouncement);
 
 router.put(
   "/quiz/:quizId/question/:index",

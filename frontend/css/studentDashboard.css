@@ -1,4 +1,35 @@
-/* Student Dashboard Styles - Matching Teacher Dashboard Design */
+/* Fees Card Styles */
+.fees-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.fees-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.fees-card-header {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+}
+
+.fee-row {
+    transition: background 0.2s ease;
+}
+
+.fee-row:hover {
+    background: #f8fafc;
+}
+
+.info-box {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- End of existing styles --- */
 
 /* Prevent horizontal overflow */
 .dashboard-container,

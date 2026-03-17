@@ -105,9 +105,126 @@ class StudentDashboard {
                 this.redirectToTeacherDashboard();
                 return;
             }
+
+            // 1. Check if profile is completed
+            if (!this.currentUser.profileCompleted) {
+                this.showProfileRequiredModal();
+                this.restrictDashboard(true, "Please fill required details");
+                return;
+            }
+
+            // 2. Check if admin approved
+            if (!this.currentUser.isApproved) {
+                this.restrictDashboard(true, "Waiting for Admin approval");
+                return;
+            }
+
+            // 3. Check fees status
+            await this.verifyFeesStatus();
+
         } catch (error) {
             console.error('Authentication error:', error);
             this.redirectToLogin();
+        }
+    }
+
+    async verifyFeesStatus() {
+        try {
+            const feeResponse = await window.apiService.get('/fees/my-fees');
+            if (feeResponse.success) {
+                const feesData = feeResponse.data;
+                if (!feesData.isFeesPaid) {
+                    this.showFeesRequiredModal(feesData);
+                    this.applyBlurEffect(true);
+                } else {
+                    this.applyBlurEffect(false);
+                }
+            }
+        } catch (error) {
+            console.error('Error verifying fees:', error);
+        }
+    }
+
+    showProfileRequiredModal() {
+        const modalHtml = `
+            <div id="profile-required-modal" class="custom-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                <div class="modal-content" style="background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%;">
+                    <i class="fas fa-user-edit" style="font-size: 48px; color: #2563eb; margin-bottom: 20px;"></i>
+                    <h2>Complete Your Profile</h2>
+                    <p style="margin: 15px 0;">Please fill in all required details to access your dashboard.</p>
+                    <button class="btn btn-primary" onclick="window.studentDashboard.showProfileModal()" style="width: 100%; padding: 12px; margin-top: 10px;">Fill Details Now</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    showFeesRequiredModal(feesData) {
+        // Remove existing modal if any
+        const existing = document.getElementById('fees-required-modal');
+        if (existing) existing.remove();
+
+        const modalHtml = `
+            <div id="fees-required-modal" class="custom-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                <div class="modal-content" style="background: white; padding: 40px; border-radius: 16px; text-align: center; max-width: 450px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+                    <div style="background: #fee2e2; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 32px; color: #ef4444;"></i>
+                    </div>
+                    <h2 style="color: #1e293b; margin-bottom: 10px;">Fees Payment Required</h2>
+                    <p style="color: #64748b; margin-bottom: 24px;">Your school fees are pending. Please complete the payment to access your dashboard modules.</p>
+                    
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 24px; text-align: left;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #64748b;">Class:</span>
+                            <span style="font-weight: 600; color: #1e293b;">${feesData.className}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+                            <span style="color: #64748b;">Total Fees:</span>
+                            <span style="font-weight: 700; color: #2563eb; font-size: 18px;">₹${(feesData.totalFees || 0).toLocaleString()}</span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="window.studentDashboard.navigateToPage('fees')" style="width: 100%; padding: 14px; font-weight: 600; border-radius: 8px;">Pay Fees Now</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    applyBlurEffect(shouldBlur) {
+        const dashboard = document.querySelector('.dashboard');
+        if (dashboard) {
+            if (shouldBlur) {
+                dashboard.style.filter = 'blur(8px)';
+                dashboard.style.pointerEvents = 'none';
+            } else {
+                dashboard.style.filter = 'none';
+                dashboard.style.pointerEvents = 'auto';
+            }
+        }
+    }
+
+    restrictDashboard(shouldRestrict, message) {
+        if (shouldRestrict) {
+            const dashboard = document.querySelector('.dashboard');
+            if (dashboard) {
+                dashboard.style.filter = 'blur(10px)';
+                dashboard.style.pointerEvents = 'none';
+            }
+            
+            // Show restrict message
+            const existing = document.getElementById('restrict-msg');
+            if (existing) existing.remove();
+            
+            const msgHtml = `
+                <div id="restrict-msg" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001; background: white; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                    <i class="fas fa-lock" style="font-size: 48px; color: #64748b; margin-bottom: 20px;"></i>
+                    <h2 style="color: #1e293b;">Access Restricted</h2>
+                    <p style="color: #64748b; margin-top: 10px;">${message}</p>
+                    <button class="btn btn-secondary" onclick="window.studentDashboard.logout()" style="margin-top: 20px;">Logout</button>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', msgHtml);
         }
     }
 
@@ -910,6 +1027,9 @@ class StudentDashboard {
             case 'attendance':
                 this.showPageContent('Attendance', 'attendance');
                 break;
+            case 'fees':
+                this.loadMyFees();
+                break;
             case 'quiz':
                 this.showPageContent('Quizzes', 'quiz');
                 break;
@@ -1520,7 +1640,7 @@ class StudentDashboard {
     }
 
     redirectToLogin() {
-        window.location.href = '/html/index.html';
+        window.location.href = '/login.html';
     }
 
     redirectToTeacherDashboard() {
@@ -1744,6 +1864,226 @@ class StudentDashboard {
                 badge.style.pointerEvents = 'auto';
                 badge.innerHTML = originalContent;
             }
+        }
+    }
+
+    async loadMyFees() {
+        const mainContent = document.getElementById('main-content');
+        const dashboardPage = document.getElementById('dashboard-page');
+
+        if (dashboardPage) dashboardPage.style.display = 'none';
+        if (!mainContent) return;
+
+        mainContent.style.display = 'block';
+        mainContent.innerHTML = `
+            <div class="page-content">
+                <div class="page-header" style="text-align: left; border-bottom: none; margin-bottom: 20px;">
+                    <h2 style="font-size: 24px;"><i class="fas fa-money-bill-wave" style="color: #2563eb; margin-right: 12px;"></i> Fee Management</h2>
+                    <p style="color: #64748b; margin-top: 4px;">View your fee structure and payment history</p>
+                </div>
+                
+                <div class="fees-layout" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; align-items: start;">
+                    <!-- Left: Fee Card -->
+                    <div id="fees-card-container">
+                        <div class="loading-state" style="padding: 40px; text-align: center; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #3b82f6;"></i>
+                            <p style="margin-top: 15px; color: #64748b;">Loading fee structure...</p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Payment History -->
+                    <div class="payment-history-section" style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+                        <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 1.1rem; color: #1e293b;"><i class="fas fa-history" style="color: #64748b; margin-right: 8px;"></i> Recent Transactions</h3>
+                            <button class="btn btn-secondary" onclick="this.closest('.StudentDashboard').loadMyFees()" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                        <div id="payment-history-container" style="min-height: 300px;">
+                            <div class="loading-state" style="padding: 40px; text-align: center;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #94a3b8;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        try {
+            const token = localStorage.getItem('token');
+            
+            // Fetch Fee Structure
+            const feeResponse = await fetch(`${this.apiBaseUrl}/fees/my-fees`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const feeResult = await feeResponse.json();
+
+            if (feeResult.success) {
+                const feesData = feeResult.data;
+                const totalINR = feesData.totalFees || feesData.feesInINR || 0;
+                const annualINR = feesData.annualFees || 0;
+                const examINR = feesData.examFees || 0;
+                
+                const localTotal = TimezoneUtils.getLocalFees(totalINR, this.studentTimezone);
+                const currencyCode = TimezoneUtils.getCurrencyByTimezone(this.studentTimezone);
+                const convertedValue = TimezoneUtils.convertCurrency(totalINR, currencyCode);
+
+                const feesHtml = `
+                    <div class="fees-card" style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+                        <div class="fees-card-header" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 24px; text-align: center;">
+                            <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                                <i class="fas fa-graduation-cap" style="font-size: 24px;"></i>
+                            </div>
+                            <h3 style="margin: 0; font-size: 1.25rem;">Class Fee Structure</h3>
+                            <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Class: ${feesData.className}</p>
+                        </div>
+                        <div class="fees-card-body" style="padding: 24px;">
+                            <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="color: #64748b; font-size: 13px;">Annual Fees</span>
+                                    <span style="color: #1e293b; font-weight: 500;">₹${annualINR.toLocaleString()}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                    <span style="color: #64748b; font-size: 13px;">Exam Fees</span>
+                                    <span style="color: #1e293b; font-weight: 500;">₹${examINR.toLocaleString()}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0;">
+                                    <span style="color: #1e293b; font-weight: 600; font-size: 14px;">Total Payable (${currencyCode})</span>
+                                    <span style="color: #2563eb; font-weight: 700; font-size: 1.5rem;">${localTotal}</span>
+                                </div>
+                                <div style="text-align: right; margin-top: 4px;">
+                                    <span style="font-size: 11px; color: #94a3b8;">Base Total: ₹${totalINR.toLocaleString()}</span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                                <div style="padding: 12px; background: #ecfdf5; border-radius: 8px; text-align: center;">
+                                    <span style="display: block; font-size: 11px; color: #059669; text-transform: uppercase; font-weight: 600;">Status</span>
+                                    <span style="font-size: 14px; color: #065f46; font-weight: 700;">ACTIVE</span>
+                                </div>
+                                <div style="padding: 12px; background: #fff7ed; border-radius: 8px; text-align: center;">
+                                    <span style="display: block; font-size: 11px; color: #9a3412; text-transform: uppercase; font-weight: 600;">Due Date</span>
+                                    <span style="font-size: 14px; color: #7c2d12; font-weight: 700;">31 Dec 2024</span>
+                                </div>
+                            </div>
+
+                            <button onclick="window.studentDashboard.handleFeePayment(${totalINR}, ${convertedValue}, '${currencyCode}')" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-weight: 600; font-size: 15px; border-radius: 10px;">
+                                <i class="fas fa-credit-card" style="margin-right: 8px;"></i> Pay Now
+                            </button>
+                            
+                            <p style="margin: 15px 0 0; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.5;">
+                                <i class="fas fa-shield-alt"></i> Secure payment powered by SmartSchool Pay.
+                            </p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('fees-card-container').innerHTML = feesHtml;
+            }
+
+            // Fetch Payment History
+            const historyResponse = await fetch(`${this.apiBaseUrl}/fees/payment-history`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const historyResult = await historyResponse.json();
+
+            if (historyResult.success) {
+                const historyContainer = document.getElementById('payment-history-container');
+                if (historyResult.data.length === 0) {
+                    historyContainer.innerHTML = `
+                        <div style="padding: 60px 20px; text-align: center; color: #94a3b8;">
+                            <i class="fas fa-receipt" style="font-size: 40px; opacity: 0.3; margin-bottom: 16px; display: block;"></i>
+                            <p>No transactions found</p>
+                            <span style="font-size: 12px;">Your paid invoices will appear here.</span>
+                        </div>
+                    `;
+                } else {
+                    let historyHtml = `
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <thead>
+                                <tr style="background: #f8fafc; text-align: left;">
+                                    <th style="padding: 12px 20px; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9;">Date</th>
+                                    <th style="padding: 12px 20px; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9;">Transaction ID</th>
+                                    <th style="padding: 12px 20px; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9;">Amount</th>
+                                    <th style="padding: 12px 20px; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    historyResult.data.forEach(txn => {
+                        const date = new Date(txn.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const statusColor = txn.status === 'Completed' ? '#10b981' : '#f59e0b';
+                        const statusBg = txn.status === 'Completed' ? '#ecfdf5' : '#fff7ed';
+
+                        historyHtml += `
+                            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f9fbff'" onmouseout="this.style.background='white'">
+                                <td style="padding: 15px 20px; color: #475569;">${date}</td>
+                                <td style="padding: 15px 20px; font-family: monospace; color: #1e293b; font-weight: 500;">${txn.transactionId}</td>
+                                <td style="padding: 15px 20px;">
+                                    <div style="color: #1e293b; font-weight: 600;">${TimezoneUtils.formatCurrency(txn.localAmount, txn.localCurrency)}</div>
+                                    <div style="font-size: 11px; color: #94a3b8;">(₹${txn.amountINR.toLocaleString()})</div>
+                                </td>
+                                <td style="padding: 15px 20px;">
+                                    <span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                        <i class="fas fa-check-circle" style="font-size: 10px; margin-right: 4px;"></i> ${txn.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    historyHtml += `</tbody></table>`;
+                    historyContainer.innerHTML = historyHtml;
+                }
+            }
+
+        } catch (error) {
+            console.error('Error loading fees:', error);
+            const container = document.getElementById('fees-card-container');
+            if (container) {
+                container.innerHTML = `
+                    <div style="padding: 40px; text-align: center; background: #fff1f2; border: 1px solid #fecaca; border-radius: 12px; color: #b91c1c;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 12px;"></i>
+                        <p>Error loading fee data. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    async handleFeePayment(amountINR, localAmount, localCurrency) {
+        if (!confirm(`Proceed with payment of ${TimezoneUtils.formatCurrency(localAmount, localCurrency)}? (₹${amountINR.toLocaleString()})`)) {
+            return;
+        }
+
+        showToast('Processing secure payment...', 'info');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${this.apiBaseUrl}/fees/record-payment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    amountINR,
+                    localAmount,
+                    localCurrency,
+                    paymentMethod: 'Simulation Credit Card'
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showToast('Payment successful! Your receipt has been generated.', 'success');
+                this.loadMyFees(); // Refresh page
+            } else {
+                showToast(result.message || 'Payment failed', 'error');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            showToast('Error processing payment', 'error');
         }
     }
 

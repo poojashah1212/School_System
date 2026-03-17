@@ -1,8 +1,8 @@
 const moment = require("moment-timezone");
-const Session = require("../models/Session");
-const TeacherAvailability = require("../models/TeacherAvailability");
-const User = require("../models/user");
-const { parseDDMMYYYYWithTime } = require("../utils/dateParser");
+const Session = require("../../models/Session");
+const TeacherAvailability = require("../../models/TeacherAvailability");
+const User = require("../../models/user");
+const { parseDDMMYYYYWithTime } = require("../../utils/dateParser");
 
 const isWithinAvailability = (availability, start, end) => {
   const day = start

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
-const Quiz = require("../models/quiz");
-const User = require("../models/user");
-const Marks = require("../models/marks");
+const Quiz = require("../../models/quiz");
+const User = require("../../models/user");
+const Marks = require("../../models/marks");
 
 exports.getQuizzes = async (req, res) => {
   try {

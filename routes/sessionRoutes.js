@@ -1,9 +1,9 @@
 const express = require("express");
 const jwtAuth = require("../middleware/auth");
 const roleAuth = require("../middleware/roleAuth");
-const {createSession,getStudentSessions} = require("../controllers/sessionController");
+const {createSession,getStudentSessions} = require("../controllers/admin/sessionController");
 const { createSessionValidation, validateSession } = require("../middleware/validation/sessionValidation");
-const { createSessionSlots,getMySessionSlots,confirmSessionSlot,getMyConfirmedSessions,getTeacherSessions,getSessionById,deleteSession,getAllSlotsForSession,assignSlotToStudent,cancelSlot} = require("../controllers/sessionSlotController");
+const { createSessionSlots,getMySessionSlots,confirmSessionSlot,getMyConfirmedSessions,getTeacherSessions,getSessionById,deleteSession,getAllSlotsForSession,assignSlotToStudent,cancelSlot} = require("../controllers/admin/sessionSlotController");
 const { createSessionSlotsValidation, confirmSessionSlotValidation, validateSessionSlot} = require("../middleware/validation/sessionSlotValidation");
 
 

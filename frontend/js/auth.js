@@ -1,14 +1,18 @@
 class AuthSystem {
+    // Static admin credentials
+    static ADMIN_EMAIL = 'admin@gmail.com';
+    static ADMIN_PASSWORD = 'Admin123';
+
     constructor() {
         // Automatically detect environment and set API URL
         const isLocal = false;
-        this.apiBaseUrl = isLocal 
+        this.apiBaseUrl = isLocal
             ? 'http://localhost:5001/api/auth'    // local backend
             : 'https://smartschool-je18.onrender.com/api/auth';  // live backend
 
         // Initialize API service for consistency
         if (window.apiService) {
-            const apiBase = isLocal 
+            const apiBase = isLocal
                 ? 'http://localhost:5001/api'    // local backend
                 : 'https://smartschool-je18.onrender.com/api';  // live backend
             window.apiService.setBaseUrl(apiBase);
@@ -34,10 +38,17 @@ class AuthSystem {
     setupPasswordToggle() {
         document.querySelectorAll('.toggle-password').forEach(btn => {
             btn.addEventListener('click', () => {
-                const input = document.getElementById(btn.dataset.target);
-                const icon = btn.querySelector('.eye-icon');
+                const targetId = btn.dataset.target;
+                if (!targetId) return; // Safely skip if data-target is missing
+                
+                const input = document.getElementById(targetId);
+                if (!input) return; // Safely skip if input is missing
+                
+                const icon = btn.querySelector('.eye-icon') || btn.querySelector('i');
                 input.type = input.type === 'password' ? 'text' : 'password';
 
+                if (!icon) return; // Safely skip if icon isn't found
+                
                 // Toggle Font Awesome icons
                 if (input.type === 'password') {
                     icon.classList.remove('fa-eye-slash');
@@ -197,9 +208,35 @@ class AuthSystem {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target));
 
+        // Check for admin credentials - make API call to get JWT
+        if (data.email === 'admin@gmail.com' && data.password === 'Admin123') {
+            try {
+                const res = await fetch(`${this.apiBaseUrl}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    this.showMessage('Welcome Admin!', 'success');
+                    localStorage.setItem('adminToken', result.token);
+                    localStorage.setItem('adminEmail', result.user.email);
+                    localStorage.setItem('adminName', result.user.fullName);
+                    localStorage.setItem('userRole', result.user.role);
+                    window.location.href = '/admin/html/admin-dashboard.html';
+                } else {
+                    this.showMessage(result.message || 'Login failed', 'error');
+                }
+                return;
+            } catch (error) {
+                this.showMessage('Network error', 'error');
+                return;
+            }
+        }
+
         if (!this.validateLoginForm(data)) return;
 
-        this.showLoading();
         try {
             const res = await fetch(`${this.apiBaseUrl}/login`, {
                 method: 'POST',
@@ -211,26 +248,32 @@ class AuthSystem {
             if (res.ok) {
                 this.showMessage('Welcome back!', 'success');
                 localStorage.setItem('token', result.token);
+                if (result.user) {
+                    localStorage.setItem('userData', JSON.stringify(result.user));
+                }
 
                 // Check user role and redirect accordingly
                 try {
                     const payload = JSON.parse(atob(result.token.split('.')[1]));
                     if (payload.role === 'teacher') {
-                        setTimeout(() => window.location.href = '/html/teacherDashboard.html', 1500);
+                        localStorage.setItem('teacherToken', result.token);
+                        localStorage.setItem('teacherData', JSON.stringify(result.user || {}));
+                        window.location.href = '/teacher/html/teacher-dashboard.html';
+                    } else if (payload.role === 'admin') {
+                        localStorage.setItem('adminToken', result.token);
+                        window.location.href = '/admin/html/admin-dashboard.html';
                     } else {
-                        setTimeout(() => window.location.href = '/html/studentDashboard.html', 1500);
+                        window.location.href = '/student/html/student-dashboard.html';
                     }
                 } catch (jwtError) {
                     // Fallback to student dashboard
-                    setTimeout(() => window.location.href = '/html/studentDashboard.html', 1500);
+                    window.location.href = '/student/html/student-dashboard.html';
                 }
             } else {
                 this.showMessage(result.message || 'Login failed', 'error');
             }
         } catch (error) {
             this.showMessage('Network error', 'error');
-        } finally {
-            this.hideLoading();
         }
     }
 
@@ -240,7 +283,6 @@ class AuthSystem {
 
         if (!this.validateSignupForm(formData)) return;
 
-        this.showLoading();
         try {
             // Use dynamic API URL with fetch
             const res = await fetch(`${this.apiBaseUrl}/signup`, {
@@ -251,9 +293,7 @@ class AuthSystem {
             const result = await res.json();
             if (res.ok) {
                 this.showMessage(result.message || 'Account created successfully!', 'success');
-                setTimeout(() => {
-                    window.location.href = '/html/login.html';
-                }, 1500);
+                window.location.href = '/html/login.html';
             } else {
                 this.showMessage(result.message || 'Signup failed', 'error');
             }
@@ -266,8 +306,6 @@ class AuthSystem {
                 });
             }
             this.showMessage(error.message || 'Signup failed', 'error');
-        } finally {
-            this.hideLoading();
         }
     }
 

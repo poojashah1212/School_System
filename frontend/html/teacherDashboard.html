@@ -664,6 +664,44 @@
                     </div>
                 </div>
 
+                <!-- My Classes Page -->
+                <div class="page" id="my-classes-page">
+                    <div class="page-header">
+                        <h2>My Classes</h2>
+                        <button class="btn-secondary" id="viewAllTimetablesBtn" onclick="dashboard.viewAllClassTimetables()">
+                            <i class="fas fa-calendar-week"></i>
+                            View All Timetables
+                        </button>
+                    </div>
+
+                    <div class="classes-container">
+                        <!-- Classes List -->
+                        <div class="classes-list-section">
+                            <div class="card">
+                                <h3>Assigned Classes</h3>
+                                <div id="assignedClassesList">
+                                    <p class="empty">Loading classes...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timetable Section -->
+                        <div class="timetable-section">
+                            <div class="card">
+                                <h3>Class Timetable</h3>
+                                <div class="timetable-header">
+                                    <select id="timetableClassSelect" class="class-select">
+                                        <option value="">Select a class to view timetable</option>
+                                    </select>
+                                </div>
+                                <div id="classTimetable">
+                                    <p class="empty">Select a class to view its timetable</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Add Student Modal -->
                 <div class="modal" id="addStudentModal">
                     <div class="modal-content modal-wide">

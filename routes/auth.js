@@ -44,4 +44,10 @@ router.put(
   authController.updateProfile
 );
 
+router.put(
+  "/change-password",
+  auth,
+  authController.changePassword
+);
+
 module.exports = router;

@@ -209,6 +209,317 @@ const emailTemplates = {
     `
   },
 
+  student_approved: {
+    subject: "Your Application Has Been Approved - Login Credentials",
+    html: (studentName, username, password, loginUrl) => `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Application Approved</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+          }
+          .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #28a745;
+          }
+          .header h1 {
+            color: #28a745;
+            margin: 0;
+            font-size: 28px;
+          }
+          .content {
+            padding: 20px 0;
+          }
+          .approval-badge {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          .approval-badge h2 {
+            color: #155724;
+            margin: 0;
+          }
+          .credentials-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .credentials-box h3 {
+            color: #856404;
+            margin-top: 0;
+          }
+          .credential-item {
+            background-color: #ffffff;
+            padding: 12px;
+            border-radius: 3px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            border-left: 3px solid #856404;
+          }
+          .credential-label {
+            font-weight: bold;
+            color: #856404;
+            display: block;
+            margin-bottom: 5px;
+          }
+          .warning-box {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .warning-box h3 {
+            color: #721c24;
+            margin-top: 0;
+          }
+          .login-button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+          }
+          .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Application Approved!</h1>
+          </div>
+          <div class="content">
+            <div class="approval-badge">
+              <h2>🎉 Congratulations!</h2>
+              <p>Your admission application has been approved.</p>
+            </div>
+            
+            <p>Dear <strong>${studentName}</strong>,</p>
+            <p>We are pleased to inform you that your application for admission has been approved. Your student account has been created and you can now log in to access the school system.</p>
+            
+            <div class="credentials-box">
+              <h3>Your Login Credentials:</h3>
+              <div class="credential-item">
+                <span class="credential-label">Email (Username):</span>
+                ${username}
+              </div>
+              <div class="credential-item">
+                <span class="credential-label">Password:</span>
+                ${password}
+              </div>
+            </div>
+            
+            <div class="warning-box">
+              <h3>Important Security Notes:</h3>
+              <ul>
+                <li>Please change your password after first login</li>
+                <li>Do not share your credentials with anyone</li>
+                <li>Keep your login information secure</li>
+              </ul>
+            </div>
+            
+            <a href="${loginUrl}" class="login-button">Log In Now</a>
+            
+            <p>If you have any questions or need assistance, please contact the school administration.</p>
+          </div>
+          <div class="footer">
+            <p>Best regards,<br>School System Team</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  },
+
+  student_rejected: {
+    subject: "Your Application Status - School System",
+    html: (studentName, username, password, loginUrl) => `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Application Status</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+          }
+          .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #dc3545;
+          }
+          .header h1 {
+            color: #dc3545;
+            margin: 0;
+            font-size: 28px;
+          }
+          .content {
+            padding: 20px 0;
+          }
+          .status-badge {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          .status-badge h2 {
+            color: #721c24;
+            margin: 0;
+          }
+          .credentials-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .credentials-box h3 {
+            color: #856404;
+            margin-top: 0;
+          }
+          .credential-item {
+            background-color: #ffffff;
+            padding: 12px;
+            border-radius: 3px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            border-left: 3px solid #856404;
+          }
+          .credential-label {
+            font-weight: bold;
+            color: #856404;
+            display: block;
+            margin-bottom: 5px;
+          }
+          .info-box {
+            background-color: #e8f4fd;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .info-box h3 {
+            color: #0066cc;
+            margin-top: 0;
+          }
+          .login-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+          }
+          .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Application Update</h1>
+          </div>
+          <div class="content">
+            <div class="status-badge">
+              <h2>Application Received Login Credentials</h2>
+              <p>Your student account has been created.</p>
+            </div>
+            
+            <p>Dear <strong>${studentName}</strong>,</p>
+            <p>We have received your admission application. Your student account has been created with the following credentials:</p>
+            
+            <div class="credentials-box">
+              <h3>Your Login Credentials:</h3>
+              <div class="credential-item">
+                <span class="credential-label">Email (Username):</span>
+                ${username}
+              </div>
+              <div class="credential-item">
+                <span class="credential-label">Password:</span>
+                ${password}
+              </div>
+            </div>
+            
+            <div class="info-box">
+              <h3>What happens next?</h3>
+              <ul>
+                <li>You can now log in to the student portal</li>
+                <li>You may be able to access certain features</li>
+                <li>Your application is still being reviewed</li>
+                <li>You will be notified once a final decision is made</li>
+              </ul>
+            </div>
+            
+            <a href="${loginUrl}" class="login-button">Log In to Student Portal</a>
+            
+            <p>If you have any questions about your application status, please contact the school administration.</p>
+          </div>
+          <div class="footer">
+            <p>Best regards,<br>School System Team</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  },
+
   student_welcome: {
     subject: "Welcome to School System - Your Account Has Been Created",
     html: (studentName, teacherName, teacherEmail, studentEmail, studentPassword) => `
@@ -727,7 +1038,249 @@ const emailTemplates = {
       </body>
       </html>
     `
+  },
+
+  teacher_approved: {
+    subject: "Your Teacher Application Has Been Approved - Login Credentials",
+    html: (teacherName, email, password, loginUrl) => `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Teacher Application Approved</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+          }
+          .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #28a745;
+          }
+          .header h1 {
+            color: #28a745;
+            margin: 0;
+            font-size: 28px;
+          }
+          .content {
+            padding: 20px 0;
+          }
+          .approval-badge {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          .approval-badge h2 {
+            color: #155724;
+            margin: 0;
+          }
+          .credentials-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .credentials-box h3 {
+            color: #856404;
+            margin-top: 0;
+          }
+          .credential-item {
+            background-color: #ffffff;
+            padding: 12px;
+            border-radius: 3px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            border-left: 3px solid #856404;
+          }
+          .credential-label {
+            font-weight: bold;
+            color: #856404;
+            display: block;
+            margin-bottom: 5px;
+          }
+          .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Teacher Application Approved!</h1>
+          </div>
+          <div class="content">
+            <div class="approval-badge">
+              <h2>🎉 Congratulations!</h2>
+              <p>Your teacher application has been approved.</p>
+            </div>
+            
+            <p>Dear <strong>${teacherName}</strong>,</p>
+            <p>We are pleased to inform you that your teacher application has been approved. Your teacher account has been created and you can now log in to access the school system.</p>
+            
+            <div class="credentials-box">
+              <h3>Your Login Credentials:</h3>
+              <div class="credential-item">
+                <span class="credential-label">Email (Username):</span>
+                ${email}
+              </div>
+              <div class="credential-item">
+                <span class="credential-label">Password:</span>
+                ${password}
+              </div>
+            </div>
+            
+            <div class="warning-box" style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="color: #721c24; margin-top: 0;">Important Security Notes:</h3>
+              <ul>
+                <li>Please change your password after first login</li>
+                <li>Do not share your credentials with anyone</li>
+                <li>Keep your login information secure</li>
+              </ul>
+            </div>
+            
+            <a href="${loginUrl}" class="login-button" style="display: inline-block; background-color: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; text-align: center;">Log In Now</a>
+            
+            <p>If you have any questions or need assistance, please contact the school administration.</p>
+          </div>
+          <div class="footer">
+            <p>Best regards,<br>School System Team</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  },
+
+  teacher_rejected: {
+    subject: "Your Teacher Application Status - School System",
+    html: (teacherName) => `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Teacher Application Status</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+          }
+          .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #dc3545;
+          }
+          .header h1 {
+            color: #dc3545;
+            margin: 0;
+            font-size: 28px;
+          }
+          .content {
+            padding: 20px 0;
+          }
+          .status-badge {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          .status-badge h2 {
+            color: #721c24;
+            margin: 0;
+          }
+          .info-box {
+            background-color: #e8f4fd;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .info-box h3 {
+            color: #0066cc;
+            margin-top: 0;
+          }
+          .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Application Status Update</h1>
+          </div>
+          <div class="content">
+            <div class="status-badge">
+              <h2>Application Not Approved</h2>
+              <p>Thank you for your interest in teaching position.</p>
+            </div>
+            
+            <p>Dear <strong>${teacherName}</strong>,</p>
+            <p>After careful consideration of your teacher application, we regret to inform you that your application has not been approved at this time.</p>
+            
+            <div class="info-box">
+              <h3>What happens next?</h3>
+              <ul>
+                <li>We encourage you to continue developing your teaching skills</li>
+                <li>Consider gaining additional experience in education</li>
+                <li>You may reapply in the future when positions become available</li>
+                <li>We wish you the best in your teaching career</li>
+              </ul>
+            </div>
+            
+            <p style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <strong style="color: #856404;">Better luck next time!</strong> We appreciate your interest in our school system and encourage you to keep pursuing your passion for teaching.
+            </p>
+          </div>
+          <div class="footer">
+            <p>Best regards,<br>School System Team</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
   }
+
 };
 
 module.exports = emailTemplates;

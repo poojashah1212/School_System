@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Admission - Smart School</title>
+    <link rel="stylesheet" href="css/landing.css">
+    <link rel="stylesheet" href="css/forms.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css">
+</head>
+<body>
+    <!-- Header / Navigation -->
+    <header class="header header-scrolled" id="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><i class="fas fa-graduation-cap"></i></span>
+                    <span class="logo-text">Smart<span class="logo-accent">School</span></span>
+                </a>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+                    <li class="nav-item"><a href="/#features" class="nav-link">Features</a></li>
+                    <li class="nav-item"><a href="/#about" class="nav-link">About</a></li>
+                    <li class="nav-item"><a href="/#contact" class="nav-link">Contact</a></li>
+                </ul>
+                <div class="nav-buttons">
+                    <a href="/login" class="btn btn-outline">Sign In</a>
+                    <a href="/student-admission" class="btn btn-primary">Apply Now</a>
+                </div>
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Admission Form Section -->
+    <section class="form-page">
+        <div class="form-background">
+            <div class="form-shape shape-1"></div>
+            <div class="form-shape shape-2"></div>
+        </div>
+        <div class="container">
+            <div class="form-page-header" data-aos="fade-up">
+                <div class="form-page-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <h1>Student Admission</h1>
+                <p>Join Smart School and start your journey to excellence</p>
+            </div>
+            <div class="form-container" data-aos="fade-up" data-aos-delay="100">
+                <form class="admission-form" id="admission-form">
+                    <!-- Student Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-user-graduate"></i> Student Information</h3>
+                        <div class="form-row-three">
+                            <div class="form-group">
+                                <label for="student-name">Full Name <span class="required">*</span></label>
+                                <input type="text" id="student-name" name="studentName" placeholder="Enter student full name" required>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="student-dob">Date of Birth <span class="required">*</span></label>
+                                <input type="date" id="student-dob" name="dob" required>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="student-gender">Gender <span class="required">*</span></label>
+                                <select id="student-gender" name="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <span class="form-error"></span>
+                            </div>
+                        </div>
+                        <div class="form-row-three">
+                            <div class="form-group">
+                                <label for="student-grade">Grade/Class <span class="required">*</span></label>
+                                <select id="student-grade" name="grade" required>
+                                    <option value="">Select Grade</option>
+                                    <option value="nursery">Nursery</option>
+                                    <option value="kg">Kindergarten</option>
+                                    <option value="1">Class 1</option>
+                                    <option value="2">Class 2</option>
+                                    <option value="3">Class 3</option>
+                                    <option value="4">Class 4</option>
+                                    <option value="5">Class 5</option>
+                                    <option value="6">Class 6</option>
+                                    <option value="7">Class 7</option>
+                                    <option value="8">Class 8</option>
+                                    <option value="9">Class 9</option>
+                                    <option value="10">Class 10</option>
+                                    <option value="11">Class 11</option>
+                                    <option value="12">Class 12</option>
+                                </select>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="student-email">Student Email</label>
+                                <input type="email" id="student-email" name="studentEmail" placeholder="student@email.com">
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="student-phone">Contact Number</label>
+                                <input type="tel" id="student-phone" name="studentPhone" placeholder="Student phone number">
+                                <span class="form-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parent/Guardian Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-users"></i> Parent/Guardian Information</h3>
+                        <div class="form-row-three">
+                            <div class="form-group">
+                                <label for="parent-name">Parent/Guardian Name <span class="required">*</span></label>
+                                <input type="text" id="parent-name" name="parentName" placeholder="Enter parent/guardian name" required>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="parent-relation">Relationship <span class="required">*</span></label>
+                                <select id="parent-relation" name="relation" required>
+                                    <option value="">Select Relationship</option>
+                                    <option value="father">Father</option>
+                                    <option value="mother">Mother</option>
+                                    <option value="guardian">Guardian</option>
+                                </select>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="parent-phone">Phone Number <span class="required">*</span></label>
+                                <input type="tel" id="parent-phone" name="phone" placeholder="Enter phone number" required>
+                                <span class="form-error"></span>
+                            </div>
+                        </div>
+                        <div class="form-row-three">
+                            <div class="form-group">
+                                <label for="parent-email">Email Address <span class="required">*</span></label>
+                                <input type="email" id="parent-email" name="email" placeholder="parent@email.com" required>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="parent-occupation">Occupation</label>
+                                <input type="text" id="parent-occupation" name="occupation" placeholder="Enter occupation">
+                                <span class="form-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-map-marker-alt"></i> Address Information</h3>
+                        <div class="form-row">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="address">Street Address <span class="required">*</span></label>
+                                <input type="text" id="address" name="address" placeholder="Enter street address" required>
+                                <span class="form-error"></span>
+                            </div>
+                        </div>
+                        <div class="form-row-three">
+                            <div class="form-group">
+                                <label for="city">City <span class="required">*</span></label>
+                                <input type="text" id="city" name="city" placeholder="Enter city" required>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="state">State <span class="required">*</span></label>
+                                <input type="text" id="state" name="state" placeholder="Enter state" required>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="zip">ZIP Code <span class="required">*</span></label>
+                                <input type="text" id="zip" name="zip" placeholder="Enter ZIP code" required>
+                                <span class="form-error"></span>
+                            </div>
+                        </div>
+                        <div class="form-row-three">
+                            <div class="form-group">
+                                <label for="country">Country <span class="required">*</span></label>
+                                <input type="text" id="country" name="country" placeholder="Enter country" required>
+                                <span class="form-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="timezone">Timezone <span class="required">*</span></label>
+                                <select id="timezone" name="timezone" required>
+                                    <option value="">Select Timezone</option>
+                                    <option value="Pacific/Midway">UTC-11:00 Midway Island</option>
+                                    <option value="Pacific/Honolulu">UTC-10:00 Hawaii</option>
+                                    <option value="America/Anchorage">UTC-09:00 Alaska</option>
+                                    <option value="America/Los_Angeles">UTC-08:00 Pacific Time (US)</option>
+                                    <option value="America/Denver">UTC-07:00 Mountain Time (US)</option>
+                                    <option value="America/Chicago">UTC-06:00 Central Time (US)</option>
+                                    <option value="America/New_York">UTC-05:00 Eastern Time (US)</option>
+                                    <option value="America/Caracas">UTC-04:00 Caracas</option>
+                                    <option value="America/Sao_Paulo">UTC-03:00 Sao Paulo</option>
+                                    <option value="Atlantic/South_Georgia">UTC-02:00 Mid-Atlantic</option>
+                                    <option value="Atlantic/Azores">UTC-01:00 Azores</option>
+                                    <option value="UTC" selected>UTC+00:00 London</option>
+                                    <option value="Europe/Paris">UTC+01:00 Paris</option>
+                                    <option value="Europe/Athens">UTC+02:00 Athens</option>
+                                    <option value="Europe/Moscow">UTC+03:00 Moscow</option>
+                                    <option value="Asia/Dubai">UTC+04:00 Dubai</option>
+                                    <option value="Asia/Karachi">UTC+05:00 Karachi</option>
+                                    <option value="Asia/Kolkata">UTC+05:30 India</option>
+                                    <option value="Asia/Dhaka">UTC+06:00 Dhaka</option>
+                                    <option value="Asia/Bangkok">UTC+07:00 Bangkok</option>
+                                    <option value="Asia/Shanghai">UTC+08:00 China</option>
+                                    <option value="Asia/Singapore">UTC+08:00 Singapore</option>
+                                    <option value="Asia/Tokyo">UTC+09:00 Tokyo</option>
+                                    <option value="Asia/Seoul">UTC+09:00 Seoul</option>
+                                    <option value="Australia/Sydney">UTC+10:00 Sydney</option>
+                                    <option value="Pacific/Auckland">UTC+12:00 Auckland</option>
+                                </select>
+                                <span class="form-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Upload -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-file-upload"></i> Document Upload</h3>
+                        <div class="form-row-four">
+                            <div class="form-group">
+                                <label for="photo">Student Photo</label>
+                                <div class="file-upload">
+                                    <input type="file" id="photo" name="photo" accept="image/*">
+                                    <div class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Choose file</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="birth-cert">Birth Certificate</label>
+                                <div class="file-upload">
+                                    <input type="file" id="birth-cert" name="birthCert" accept=".pdf,.jpg,.jpeg,.png">
+                                    <div class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Choose file</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="previous-marks">Previous Marksheet</label>
+                                <div class="file-upload">
+                                    <input type="file" id="previous-marks" name="previousMarks" accept=".pdf,.jpg,.jpeg,.png">
+                                    <div class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Choose file</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="transfer-cert">Transfer Certificate</label>
+                                <div class="file-upload">
+                                    <input type="file" id="transfer-cert" name="transferCert" accept=".pdf,.jpg,.jpeg,.png">
+                                    <div class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Choose file</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terms and Submit -->
+                    <div class="form-section" style="border-bottom: none;">
+                        <div class="form-checkbox" style="margin-bottom: 30px;">
+                            <input type="checkbox" id="terms" name="terms" required>
+                            <label for="terms">I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Privacy Policy</a></label>
+                        </div>
+                        <div class="form-submit">
+                            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                                <span class="btn-text">Submit Application</span>
+                                <span class="btn-loading"><i class="fas fa-spinner fa-spin"></i> Processing...</span>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Success Message -->
+                <div class="form-success" id="admission-success">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2>Application Submitted!</h2>
+                    <p>Thank you for applying to Smart School. We have received your application and will review it shortly.</p>
+                    <p class="success-id">Application ID: <span id="application-id">SS-2026-XXXX</span></p>
+                    <p class="success-note">You will receive a confirmation email with further instructions.</p>
+                    <a href="/" class="btn btn-primary">
+                        <span>Back to Home</span>
+                        <i class="fas fa-home"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer footer-minimal">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 Smart School. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script src="js/landing.js"></script>
+    <script src="js/admission.js"></script>
+</body>
+</html>

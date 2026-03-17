@@ -216,13 +216,78 @@ class TimezoneUtils {
     }
 
     /**
-     * Display timezone information to the user
-     * @param {string} timezone - Current timezone
-     * @returns {string} User-friendly timezone display
+     * Get currency code based on timezone
+     * @param {string} timezone - Timezone string
+     * @returns {string} Currency code (e.g., 'USD', 'INR', 'AED', 'GBP')
      */
-    static getDisplayTimezone(timezone) {
-        const abbreviation = this.getTimezoneAbbreviation(timezone);
-        return `${timezone} (${abbreviation})`;
+    static getCurrencyByTimezone(timezone) {
+        if (!timezone) return 'INR';
+
+        const tz = timezone.toLowerCase();
+        if (tz.includes('kolkata') || tz.includes('india')) return 'INR';
+        if (tz.includes('america') || tz.includes('us/')) return 'USD';
+        if (tz.includes('dubai') || tz.includes('uae')) return 'AED';
+        if (tz.includes('london') || tz.includes('gb')) return 'GBP';
+        if (tz.includes('europe') || tz.includes('paris') || tz.includes('berlin')) return 'EUR';
+        if (tz.includes('australia')) return 'AUD';
+        if (tz.includes('singapore')) return 'SGD';
+        if (tz.includes('canada')) return 'CAD';
+        
+        return 'INR'; // Default to INR if unknown
+    }
+
+    /**
+     * Convert INR to local currency
+     * @param {number} amountInINR - Amount in Indian Rupees
+     * @param {string} targetCurrency - Target currency code
+     * @returns {number} Converted amount
+     */
+    static convertCurrency(amountInINR, targetCurrency) {
+        // Exchange rates (Static for prototype, normally fetched from API)
+        const rates = {
+            'INR': 1.0,
+            'USD': 0.012,
+            'AED': 0.044,
+            'GBP': 0.0094,
+            'EUR': 0.011,
+            'AUD': 0.018,
+            'SGD': 0.016,
+            'CAD': 0.016
+        };
+
+        const rate = rates[targetCurrency] || 1.0;
+        return amountInINR * rate;
+    }
+
+    /**
+     * Format currency amount based on target currency
+     * @param {number} amount - Amount to format
+     * @param {string} currencyCode - Currency code
+     * @returns {string} Formatted currency string
+     */
+    static formatCurrency(amount, currencyCode) {
+        try {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currencyCode,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        } catch (error) {
+            return `${currencyCode} ${amount.toFixed(2)}`;
+        }
+    }
+
+    /**
+     * Get full formatted local fees from INR amount
+     * @param {number} inrAmount - Amount in INR
+     * @param {string} timezone - Student's timezone
+     * @returns {string} Fully formatted local currency string
+     */
+    static getLocalFees(inrAmount, timezone) {
+        const currency = this.getCurrencyByTimezone(timezone);
+        const convertedAmount = this.convertCurrency(inrAmount, currency);
+        return this.formatCurrency(convertedAmount, currency);
     }
 }
 

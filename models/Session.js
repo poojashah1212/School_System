@@ -8,6 +8,15 @@ const SessionSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    classId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ClassSubject",
+      index: true
+    },
+    subjectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      index: true
+    },
     allowedStudentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Student",
@@ -25,6 +34,10 @@ const SessionSchema = new mongoose.Schema(
     endTime: {
       type: Date,
       required: true
+    },
+    dayOfWeek: {
+      type: Number, // 0-6 (Sun-Sat)
+      default: null
     }
   },
   { timestamps: true }

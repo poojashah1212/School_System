@@ -1,8 +1,9 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const { createToken } = require("../services/tokenService");
-// const { sendEmail } = require("../utils/emailService");
-// const emailTemplates = require("../services/emailTemplates");
+
+const ADMIN_EMAIL = 'admin@gmail.com';
+const ADMIN_PASSWORD = 'Admin123';
 
 exports.signup = async (req, res) => {
   try {
@@ -103,11 +104,84 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Check for admin login
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      // Find or create admin user
+      let adminUser = await User.findOne({ email: ADMIN_EMAIL });
+      
+      if (!adminUser) {
+        // Create admin user if doesn't exist
+        const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
+        adminUser = await User.create({
+          userId: 'ADMIN001',
+          fullName: 'Administrator',
+          email: ADMIN_EMAIL,
+          password: hashedPassword,
+          age: 30,
+          mobileNo: '1234567890',
+          city: 'Admin City',
+          state: 'Admin State',
+          role: 'admin'
+        });
+      }
+
+      const token = createToken(adminUser);
+
+      return res.json({ 
+        message: "Login success", 
+        token, 
+        user: {
+          _id: adminUser._id,
+          userId: adminUser.userId,
+          fullName: adminUser.fullName,
+          email: adminUser.email,
+          role: adminUser.role,
+          profileImage: adminUser.profileImage
+        }
+      });
+    }
+
     const user = await User.findOne({ email }).select("+password");
     if (!user) return res.status(400).json({ message: "Invalid Credentials" });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: "Invalid Credentials" });
+
+    if (user.role === 'student') {
+      const Admission = require('../models/Admission');
+      const admission = await Admission.findOne({ studentId: user.userId });
+      
+      if (!admission) {
+        return res.status(403).json({ 
+          message: "Your account is not yet approved. Please contact the administrator." 
+        });
+      }
+
+      // Allow login for both approved and rejected students
+      if (admission.status !== 'approved' && admission.status !== 'rejected') {
+        return res.status(403).json({ 
+          message: "Your account is not yet approved. Please contact the administrator." 
+        });
+      }
+
+      if (!admission.isActive) {
+        return res.status(403).json({ 
+          message: "Your account has been deactivated. Please contact the administrator." 
+        });
+      }
+
+      const isFirstLogin = admission.firstLogin === true;
+      
+      const token = createToken(user);
+
+      return res.json({ 
+        message: "Login success", 
+        token, 
+        user,
+        firstLogin: isFirstLogin,
+        admissionStatus: admission.status
+      });
+    }
 
     const token = createToken(user);
 
@@ -214,6 +288,75 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: "Profile update failed. Please try again later." 
+    });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All password fields are required"
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New passwords do not match"
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters"
+      });
+    }
+
+    const user = await User.findById(userId).select("+password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect"
+      });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    if (user.role === 'student') {
+      const Admission = require('../models/Admission');
+      const admission = await Admission.findOne({ studentId: user.userId });
+      if (admission) {
+        admission.firstLogin = false;
+        await admission.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Password changed successfully"
+    });
+
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to change password"
     });
   }
 };

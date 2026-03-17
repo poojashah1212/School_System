@@ -23,9 +23,7 @@ const userSchema = new mongoose.Schema(
     teacherId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: function () {
-        return this.role === "student";
-      }
+      required: false
     },
     timezone: {
       type: String,
@@ -69,17 +67,31 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: ["student", "teacher"],
-        message: "Role must be either 'student' or 'teacher'"
+        values: ["student", "teacher", "admin"],
+        message: "Role must be either 'student', 'teacher', or 'admin'"
       },
-      default: "teacher"
+      default: "student"
+    },
+    subject: {
+      type: String,
+      default: ""
     },
     profileImage: {
-  type: String,
-  default: ""
-}
-
-
+      type: String,
+      default: ""
+    },
+    isApproved: {
+      type: Boolean,
+      default: false
+    },
+    profileCompleted: {
+      type: Boolean,
+      default: false
+    },
+    isFeesPaid: {
+      type: Boolean,
+      default: false
+    }
   },
   { timestamps: true }
 );

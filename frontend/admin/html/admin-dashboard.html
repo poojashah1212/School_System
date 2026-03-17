@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SmartSchool</title>
+    <link rel="stylesheet" href="../css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- FullCalendar CDN -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+</head>
+
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Smart<span>School</span></span>
+                </div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="#" class="nav-item active" data-page="dashboard">
+                        <i class="fas fa-th-large"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Application Management</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="check-applications">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Students Applications</span>
+                                <span class="nav-badge" id="pending-badge" style="display: none;">0</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="teacher-application">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                                <span>Teachers Applications</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>Academic Management</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="manage-classes">
+                                <i class="fas fa-chalkboard"></i>
+                                <span>Manage Classes</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="manage-subjects">
+                                <i class="fas fa-book"></i>
+                                <span>Manage Subjects</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-users"></i>
+                            <span>Teacher Management</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="view-teachers">
+                                <i class="fas fa-users-viewfinder"></i>
+                                <span>View Teachers</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="assign-class">
+                                <i class="fas fa-door-open"></i>
+                                <span>Assign Class</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="assign-subject">
+                                <i class="fas fa-clipboard-list"></i>
+                                <span>Assign Subject</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-user-graduate"></i>
+                            <span>Student Management</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="view-students">
+                                <i class="fas fa-users"></i>
+                                <span>View Students</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="student-registration">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Add Student</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-calendar"></i>
+                            <span>Academic Setup</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="academic-year">
+                                <i class="fas fa-calendar-week"></i>
+                                <span>Configure Academic Year</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="timetable">
+                                <i class="fas fa-clock"></i>
+                                <span>Generate Timetable</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-user-check"></i>
+                            <span>Attendance</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="academic-year">
+                                <i class="fas fa-calendar-day"></i>
+                                <span>Daily Attendance</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="timetable">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Monthly Reports</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Fees Management</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="define-fees">
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Define Class Fees</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="update-payments">
+                                <i class="fas fa-credit-card"></i>
+                                <span>Payment Updates</span>
+                            </a>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Notice Management</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="post-notice">
+                                <i class="fas fa-bullhorn"></i>
+                                <span>Post & View Notice</span>
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-clipboard-check"></i>
+                            <span>Examination Management</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="nav-group-items">
+                            <a href="#" class="nav-item" data-page="exam-timetable">
+                                <i class="fas fa-table"></i>
+                                <span>Create Exam Timetable</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="exam-notification">
+                                <i class="fas fa-bell"></i>
+                                <span>Send Exam Notification</span>
+                            </a>
+                            <a href="#" class="nav-item" data-page="publish-results">
+                                <i class="fas fa-poll"></i>
+                                <span>Publish Results</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-group">
+                        <div class="nav-group-title" onclick="toggleNavGroup(this)">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Profile</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <a href="#" class="nav-item logout" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="navbar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="page-title">
+                        <h2 id="page-title-text">Dashboard</h2>
+                    </div>
+                </div>
+
+                <div class="navbar-right">
+                    <div class="navbar-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search...">
+                    </div>
+
+                    <div class="navbar-notifications" onclick="showNotificationPanel()">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">5</span>
+                    </div>
+
+                    <div class="navbar-profile" onclick="toggleProfileDropdown()">
+                        <div class="profile-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-name">Administrator</span>
+                            <span class="profile-role">Admin</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+
+                        <div class="profile-dropdown" id="profile-dropdown">
+                            <a href="#" data-page="view-profile">
+                                <i class="fas fa-id-card"></i>
+                                View Profile
+                            </a>
+                            <a href="#" data-page="edit-profile">
+                                <i class="fas fa-user-cog"></i>
+                                Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" onclick="handleLogout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Home Content -->
+            <main class="dashboard-content" id="main-content">
+                <!-- Dashboard Page -->
+                <div id="page-dashboard" class="page-section active">
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon students">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total Students</span>
+                                <span class="stat-value" id="total-students">-</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon teachers">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total Teachers</span>
+                                <span class="stat-value">86</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon applications">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Pending Applications</span>
+                                <span class="stat-value" id="pending-applications-count">0</span>
+                                <span class="stat-change negative" id="new-applications-today">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>0 new today</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon attendance">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Today's Attendance</span>
+                                <span class="stat-value">94.5%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Row -->
+                    <div class="dashboard-row">
+                        <div class="dashboard-card recent-activity">
+                            <div class="card-header">
+                                <h3><i class="fas fa-history"></i> Recent Student Applications</h3>
+                                <a href="#" class="view-all" data-page="check-applications">View All</a>
+                            </div>
+                            <div class="card-body">
+                                <div class="activities-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Student</th>
+                                                <th>Grade</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dashboard-recent-applications">
+                                            <tr>
+                                                <td colspan="4" class="loading-cell">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card quick-actions">
+                            <div class="card-header">
+                                <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="actions-grid">
+                                    <a href="#" class="action-btn" data-page="student-registration">
+                                        <i class="fas fa-user-plus"></i>
+                                        <span>Add Student</span>
+                                    </a>
+                                    <a href="#" class="action-btn" data-page="teacher-application">
+                                        <i class="fas fa-user-tie"></i>
+                                        <span>Add Teacher</span>
+                                    </a>
+                                    <a href="#" class="action-btn" data-page="manage-classes">
+                                        <i class="fas fa-school"></i>
+                                        <span>Manage Classes</span>
+                                    </a>
+                                    <a href="#" class="action-btn" data-page="assign-class">
+                                        <i class="fas fa-link"></i>
+                                        <span>Assign Class</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Check Applications Page -->
+                <div id="page-check-applications" class="page-section">
+                    <div class="page-header-section">
+                        <div class="page-stats">
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon pending">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="stat-pending">0</span>
+                                    <span class="page-stat-label">Pending</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon approved">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="stat-approved">0</span>
+                                    <span class="page-stat-label">Approved</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon rejected">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="stat-rejected">0</span>
+                                    <span class="page-stat-label">Rejected</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card applications-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-file-alt"></i> Student Admission Applications</h3>
+                            <div class="card-actions">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="application-search" placeholder="Search applications..."
+                                        oninput="searchApplications()">
+                                </div>
+                                <select class="filter-select" id="application-status-filter"
+                                    onchange="filterApplications()">
+                                    <option value="">All Status</option>
+                                    <option value="pending" selected>Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                                <button class="btn-refresh" onclick="loadApplications()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Application ID</th>
+                                            <th>Student Name</th>
+                                            <th>Grade</th>
+                                            <th>Parent Name</th>
+                                            <th>Phone</th>
+                                            <th>Submission Date</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="applications-table-body">
+                                        <tr>
+                                            <td colspan="8" class="loading-cell">
+                                                <div class="loading-spinner">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                    <span>Loading applications...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Placeholder pages for other menu items -->
+                <div id="page-student-admission" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <h3>Student Admission</h3>
+                        <p>Review and manage student admission applications</p>
+                        <a href="/student-admission" target="_blank" class="btn-primary-link">
+                            <i class="fas fa-external-link-alt"></i> Open Admission Form
+                        </a>
+                    </div>
+                </div>
+
+                <div id="page-approve-student" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <h3>Approve / Reject Student</h3>
+                        <p>Review and process student admission approvals</p>
+                    </div>
+                </div>
+
+                <div id="page-send-student-email" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h3>Send Student Email</h3>
+                        <p>Send emails to students regarding their applications</p>
+                    </div>
+                </div>
+
+                <div id="page-teacher-application" class="page-section">
+                    <div class="page-header-section">
+                        <div class="page-stats">
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon pending">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="teacher-pending-count">0</span>
+                                    <span class="page-stat-label">Pending</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon approved">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="teacher-approved-count">0</span>
+                                    <span class="page-stat-label">Approved</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon rejected">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="teacher-rejected-count">0</span>
+                                    <span class="page-stat-label">Rejected</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card applications-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chalkboard-teacher"></i> Teacher Applications</h3>
+                            <div class="card-actions">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="teacher-application-search"
+                                        placeholder="Search applications..." oninput="searchTeacherApplications()">
+                                </div>
+                                <select class="filter-select" id="teacher-application-status-filter"
+                                    onchange="filterTeacherApplications()">
+                                    <option value="">All Status</option>
+                                    <option value="pending" selected>Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                                <button class="btn-refresh" onclick="loadTeacherApplications()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Application ID</th>
+                                            <th>Name</th>
+                                            <th>Position</th>
+                                            <th>Email</th>
+                                            <th>Phone</th>
+                                            <th>Submission Date</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="teacher-applications-table-body">
+                                        <tr>
+                                            <td colspan="7" class="loading-cell">
+                                                <div class="loading-spinner">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                    <span>Loading teacher applications...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-approve-teacher" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <h3>Approve / Reject Teacher</h3>
+                        <p>Review and process teacher applications</p>
+                    </div>
+                </div>
+
+                <div id="page-salary-details" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <h3>Salary Details</h3>
+                        <p>Manage teacher salary information</p>
+                    </div>
+                </div>
+
+                <div id="page-send-teacher-email" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <h3>Send Teacher Email</h3>
+                        <p>Send emails to teachers</p>
+                    </div>
+                </div>
+
+                <div id="page-create-class" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <h3>Create / Update Class</h3>
+                        <p>Manage class information</p>
+                    </div>
+                </div>
+
+                <div id="page-create-subject" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h3>Create Subjects</h3>
+                        <p>Manage subjects for classes</p>
+                    </div>
+                </div>
+
+                <div id="page-view-teachers" class="page-section">
+                    <!-- Teacher Stats -->
+                    <div class="page-header-section">
+                        <div class="page-stats">
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon teachers">
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="teachers-total-count">0</span>
+                                    <span class="page-stat-label">Total Teachers</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon approved">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="teachers-active-count">0</span>
+                                    <span class="page-stat-label">Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card applications-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-users"></i> All Teachers</h3>
+                            <div class="card-actions">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="teachers-search" placeholder="Search by name, email..."
+                                        oninput="searchTeachers()">
+                                </div>
+                                <button class="btn-refresh" onclick="loadTeachers()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Teacher</th>
+                                            <th>Email</th>
+                                            <th>Phone</th>
+                                            <th>Location</th>
+                                            <th>Joined</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="teachers-table-body">
+                                        <tr>
+                                            <td colspan="7" class="loading-cell">
+                                                <div class="loading-spinner">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                    <span>Loading teachers...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Teacher Modal -->
+                <div class="modal-overlay" id="edit-teacher-modal">
+                    <div class="modal-container" style="max-width:540px; width:95%;">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-user-edit"></i> Edit Teacher</h3>
+                            <button class="modal-close" onclick="closeEditTeacherModal()"><i
+                                    class="fas fa-times"></i></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="edit-teacher-id">
+                            <div class="detail-grid" style="grid-template-columns:1fr 1fr; gap:16px;">
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Full
+                                        Name</label>
+                                    <input type="text" id="edit-teacher-fullName" class="edit-field"
+                                        placeholder="Full Name">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Email</label>
+                                    <input type="email" id="edit-teacher-email" class="edit-field" placeholder="Email">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Mobile
+                                        No</label>
+                                    <input type="text" id="edit-teacher-mobileNo" class="edit-field"
+                                        placeholder="Mobile No">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">City</label>
+                                    <input type="text" id="edit-teacher-city" class="edit-field" placeholder="City">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">State</label>
+                                    <input type="text" id="edit-teacher-state" class="edit-field" placeholder="State">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-modal btn-close" onclick="closeEditTeacherModal()">Cancel</button>
+                            <button class="btn-modal btn-approve" onclick="saveTeacherEdit()">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-assign-class" class="page-section">
+                    <div class="page-header-section">
+                        <div class="page-stats">
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon teachers">
+                                    <i class="fas fa-school"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="assign-total-classes">0</span>
+                                    <span class="page-stat-label">Total Classes</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon approved">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="assign-assigned-classes">0</span>
+                                    <span class="page-stat-label">Assigned</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon pending">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="assign-pending-classes">0</span>
+                                    <span class="page-stat-label">Unassigned</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card applications-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-link"></i> Class Assignments</h3>
+                            <div class="card-actions">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="assign-class-search" placeholder="Search class or teacher..."
+                                        oninput="filterAssignments()">
+                                </div>
+                                <select class="filter-select" id="assign-status-filter" onchange="filterAssignments()">
+                                    <option value="">All Status</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="unassigned">Unassigned</option>
+                                </select>
+                                <button class="btn-refresh" onclick="loadAssignments()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Class Name</th>
+                                            <th>Grade</th>
+                                            <th>Assigned Teacher</th>
+                                            <th>Assignment Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="assignments-table-body">
+                                        <tr>
+                                            <td colspan="5" class="loading-cell">
+                                                <div class="loading-spinner">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                    <span>Loading assignments...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-assign-subject" class="page-section">
+                    <div class="page-header-section">
+                        <div class="page-stats">
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon subjects">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="assign-total-subjects">0</span>
+                                    <span class="page-stat-label">Total Subjects</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon approved">
+                                    <i class="fas fa-check-double"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="assign-assigned-subjects">0</span>
+                                    <span class="page-stat-label">Assigned</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon pending">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="assign-pending-subjects">0</span>
+                                    <span class="page-stat-label">Unassigned</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card applications-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clipboard-list"></i> Subject Assignments</h3>
+                            <div class="card-actions">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="assign-subject-search"
+                                        placeholder="Search subject, code or class..."
+                                        oninput="filterSubjectAssignments()">
+                                </div>
+                                <select class="filter-select" id="assign-subject-status-filter"
+                                    onchange="filterSubjectAssignments()">
+                                    <option value="">All Status</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="unassigned">Unassigned</option>
+                                </select>
+                                <button class="btn-refresh" onclick="loadSubjectAssignments()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Subject</th>
+                                            <th>Class</th>
+                                            <th>Assigned Teacher</th>
+                                            <th>Assignment Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="subject-assignments-table-body">
+                                        <tr>
+                                            <td colspan="5" class="loading-cell">
+                                                <div class="loading-spinner">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                    <span>Loading subject assignments...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-view-students" class="page-section">
+                    <!-- Student Stats -->
+                    <div class="page-header-section">
+                        <div class="page-stats">
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon students-total">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="students-total-count">0</span>
+                                    <span class="page-stat-label">Total Students</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon approved">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="students-active-count">0</span>
+                                    <span class="page-stat-label">Active Students</span>
+                                </div>
+                            </div>
+                            <div class="page-stat-card">
+                                <div class="page-stat-icon" style="background: #fff7ed; color: #f97316;">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </div>
+                                <div class="page-stat-info">
+                                    <span class="page-stat-value" id="students-avg-age">0</span>
+                                    <span class="page-stat-label">Avg. Age</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card applications-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-user-graduate"></i> All Students</h3>
+                            <div class="card-actions">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="students-search" placeholder="Search by name, email, ID..."
+                                        oninput="searchStudents()">
+                                </div>
+                                <button class="btn-refresh" onclick="loadStudents()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Email</th>
+                                            <th>Mobile</th>
+                                            <th>Class</th>
+                                            <th>City</th>
+                                            <th>Joined</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="students-table-body">
+                                        <tr>
+                                            <td colspan="7" class="loading-cell">
+                                                <div class="loading-spinner">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                    <span>Loading students...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Student Modal -->
+                <div class="modal-overlay" id="edit-student-modal">
+                    <div class="modal-container" style="max-width:540px; width:95%;">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-user-edit"></i> Edit Student</h3>
+                            <button class="modal-close" onclick="closeEditStudentModal()"><i
+                                    class="fas fa-times"></i></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="edit-student-id">
+                            <div class="detail-grid" style="grid-template-columns:1fr 1fr; gap:16px;">
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Full Name</label>
+                                    <input type="text" id="edit-student-fullName" class="edit-field"
+                                        placeholder="Full Name">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Email</label>
+                                    <input type="email" id="edit-student-email" class="edit-field" placeholder="Email">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Mobile No</label>
+                                    <input type="text" id="edit-student-mobileNo" class="edit-field"
+                                        placeholder="Mobile No">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Grade</label>
+                                    <input type="text" id="edit-student-grade" class="edit-field" placeholder="Grade">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Age</label>
+                                    <input type="number" id="edit-student-age" class="edit-field" placeholder="Age">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">Student ID</label>
+                                    <input type="text" id="edit-student-userId" class="edit-field"
+                                        placeholder="Student ID">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">City</label>
+                                    <input type="text" id="edit-student-city" class="edit-field" placeholder="City">
+                                </div>
+                                <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                                    <label style="font-weight:600; font-size:0.82rem; color:#6b7280;">State</label>
+                                    <input type="text" id="edit-student-state" class="edit-field" placeholder="State">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-modal btn-close" onclick="closeEditStudentModal()">Cancel</button>
+                            <button class="btn-modal btn-approve" onclick="saveStudentEdit()">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-edit-student" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <h3>Edit / Delete Student</h3>
+                        <p>Manage student records</p>
+                    </div>
+                </div>
+
+                <div id="page-academic-year" class="page-section">
+                    <!-- Top Configuration Bar (Horizontal) -->
+                    <div class="dashboard-card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h3><i class="fas fa-file-import"></i> Configure Academic Year Data</h3>
+                            <div class="card-actions">
+                                <button class="btn-modal btn-reject" onclick="clearCalendar()"
+                                    style="background: #fef2f2; color: var(--danger); border: 1px solid #fee2e2; padding: 6px 12px; font-size: 12px; height: auto;">
+                                    <i class="fas fa-trash-alt"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body"
+                            style="padding: 20px; display: flex; gap: 30px; flex-wrap: wrap; align-items: center;">
+                            <!-- Holiday Upload Group -->
+                            <div
+                                style="flex: 1; min-width: 300px; display: flex; align-items: center; gap: 15px; padding: 12px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div
+                                    style="width: 45px; height: 45px; border-radius: 10px; background: #fee2e2; color: var(--danger); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                    <i class="fas fa-umbrella-beach"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <h4 style="font-size: 14px; margin-bottom: 2px;">Holidays List</h4>
+                                    <p style="font-size: 11px; color: var(--text-muted);">Manage academic holidays</p>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn-action btn-view" onclick="downloadSample('holiday')"
+                                        title="Download Sample">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <input type="file" id="holiday-csv" accept=".csv" style="display: none;"
+                                        onchange="handleFileUpload('holiday')">
+                                    <button class="btn-refresh" onclick="document.getElementById('holiday-csv').click()"
+                                        style="background: var(--danger); font-size: 12px; padding: 8px 15px;">
+                                        Upload
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Event Upload Group -->
+                            <div
+                                style="flex: 1; min-width: 300px; display: flex; align-items: center; gap: 15px; padding: 12px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div
+                                    style="width: 45px; height: 45px; border-radius: 10px; background: #dbeafe; color: var(--primary-blue); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <h4 style="font-size: 14px; margin-bottom: 2px;">School Events</h4>
+                                    <p style="font-size: 11px; color: var(--text-muted);">Hackathons, fests, meets</p>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn-action btn-view" onclick="downloadSample('event')"
+                                        title="Download Sample">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <input type="file" id="event-csv" accept=".csv" style="display: none;"
+                                        onchange="handleFileUpload('event')">
+                                    <button class="btn-refresh" onclick="document.getElementById('event-csv').click()"
+                                        style="background: var(--primary-blue); font-size: 12px; padding: 8px 15px;">
+                                        Upload
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-row" style="grid-template-columns: 1.8fr 1.2fr; gap: 24px;">
+                        <!-- Calendar Section -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-calendar-alt"></i> Academic Calendar</h3>
+                            </div>
+                            <div class="card-body" style="padding: 15px;">
+                                <div id="academic-calendar" style="height: 600px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- List View Section -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-list-ul"></i> Events & Holidays Schedule</h3>
+                            </div>
+                            <div class="card-body" id="academic-events-list"
+                                style="padding: 0; max-height: 600px; overflow-y: auto;">
+                                <p style="color: var(--text-muted); text-align: center; padding: 40px;">No events
+                                    scheduled.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-timetable" class="page-section">
+                    <div class="page-header-section">
+                        <div class="dashboard-card" style="margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3><i class="fas fa-magic"></i> Timetable Generator</h3>
+                                <div class="card-header-actions">
+                                    <button class="btn-action" onclick="generateAllTimetables()" 
+                                        style="background: #10b981; color: white; width: auto; padding: 8px 20px; display: flex; gap: 8px;">
+                                        <i class="fas fa-layer-group"></i> Generate All Classes
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body" style="padding: 25px;">
+                                <form id="timetable-form" onsubmit="event.preventDefault(); generateTimetable();"
+                                    style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+                                    <div style="flex: 1; min-width: 200px;">
+                                        <label
+                                            style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Select
+                                            Class</label>
+                                        <select id="timetable-class-select" class="form-select" required
+                                            onchange="loadClassTimetable()">
+                                            <option value="">Choose Class...</option>
+                                        </select>
+                                    </div>
+                                    <div style="width: 150px;">
+                                        <label
+                                            style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Start
+                                            Time</label>
+                                        <input type="time" id="timetable-start" class="form-input" value="08:00"
+                                            required>
+                                    </div>
+                                    <div style="width: 150px;">
+                                        <label
+                                            style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">End
+                                            Time</label>
+                                        <input type="time" id="timetable-end" class="form-input" value="14:00" required>
+                                    </div>
+                                    <div style="width: 180px;">
+                                        <label
+                                            style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Duration
+                                            (min/period)</label>
+                                        <input type="number" id="timetable-duration" class="form-input" value="45"
+                                            min="20" max="120" required>
+                                    </div>
+                                    <button type="submit" class="btn-refresh"
+                                        style="height: 42px; background: var(--primary-blue); padding: 0 25px;">
+                                        <i class="fas fa-cogs"></i> Generate
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-table"></i> Weekly Timetable View</h3>
+                            <div class="card-header-actions">
+                                <button class="btn-action btn-view" onclick="downloadTimetablePDF()"
+                                    title="Download PDF"
+                                    style="background: var(--primary-blue); color: white; width: auto; padding: 0 15px; display: flex; gap: 8px;">
+                                    <i class="fas fa-file-pdf"></i> Download PDF
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="activities-table">
+                                <table id="timetable-display-table"
+                                    style="border-radius: 0; width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background: #f8fafc;">
+                                            <th
+                                                style="width: 140px; text-align: center; border: 1px solid #e2e8f0; color: #475569; font-weight: 600;">
+                                                Time Slot</th>
+                                            <th
+                                                style="text-align: center; border: 1px solid #e2e8f0; color: #475569; font-weight: 600;">
+                                                Monday</th>
+                                            <th
+                                                style="text-align: center; border: 1px solid #e2e8f0; color: #475569; font-weight: 600;">
+                                                Tuesday</th>
+                                            <th
+                                                style="text-align: center; border: 1px solid #e2e8f0; color: #475569; font-weight: 600;">
+                                                Wednesday</th>
+                                            <th
+                                                style="text-align: center; border: 1px solid #e2e8f0; color: #475569; font-weight: 600;">
+                                                Thursday</th>
+                                            <th
+                                                style="text-align: center; border: 1px solid #e2e8f0; color: #475569; font-weight: 600;">
+                                                Friday</th>
+                                            <th
+                                                style="text-align: center; border: 1px solid #e2e8f0; color: #475569; font-weight: 600;">
+                                                Saturday</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="timetable-body">
+                                        <tr>
+                                            <td colspan="7" class="empty-cell"
+                                                style="padding: 60px 0; color: #64748b; text-align: center; border: 1px solid #e2e8f0;">
+                                                <i class="fas fa-calendar-alt"
+                                                    style="font-size: 24px; display: block; margin-bottom: 12px; color: #cbd5e1;"></i>
+                                                Please select a class to view its weekly timetable
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Session Modal -->
+                <div class="modal-overlay" id="edit-session-modal">
+                    <div class="modal-container" style="max-width: 500px; width: 95%;">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-edit"></i> Edit Session</h3>
+                            <button class="modal-close" onclick="closeEditSessionModal()"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="edit-session-id">
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <div>
+                                    <label style="font-weight: 600; font-size: 0.82rem; color: #6b7280; display: block; margin-bottom: 6px;">Subject</label>
+                                    <select id="edit-session-subject" class="form-select" required></select>
+                                </div>
+                                <div>
+                                    <label style="font-weight: 600; font-size: 0.82rem; color: #6b7280; display: block; margin-bottom: 6px;">Day of Week</label>
+                                    <select id="edit-session-day" class="form-select" required>
+                                        <option value="1">Monday</option>
+                                        <option value="2">Tuesday</option>
+                                        <option value="3">Wednesday</option>
+                                        <option value="4">Thursday</option>
+                                        <option value="5">Friday</option>
+                                        <option value="6">Saturday</option>
+                                    </select>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div>
+                                        <label style="font-weight: 600; font-size: 0.82rem; color: #6b7280; display: block; margin-bottom: 6px;">Start Time</label>
+                                        <input type="time" id="edit-session-start" class="form-input" required>
+                                    </div>
+                                    <div>
+                                        <label style="font-weight: 600; font-size: 0.82rem; color: #6b7280; display: block; margin-bottom: 6px;">End Time</label>
+                                        <input type="time" id="edit-session-end" class="form-input" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-modal btn-delete" onclick="deleteSession()">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                            <div style="flex: 1;"></div>
+                            <button class="btn-modal btn-close" onclick="closeEditSessionModal()">Cancel</button>
+                            <button class="btn-modal btn-approve" onclick="saveSessionEdit()">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-daily-attendance" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <h3>Daily Attendance</h3>
+                        <p>Track daily student attendance</p>
+                    </div>
+                </div>
+
+                <div id="page-monthly-report" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h3>Monthly Report</h3>
+                        <p>Generate monthly attendance and performance reports</p>
+                    </div>
+                </div>
+
+                <div id="page-define-fees" class="page-section">
+                    <div class="page-header-section">
+                        <div class="dashboard-card" style="margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3><i class="fas fa-money-check-alt"></i> Define Class Fees Structure</h3>
+                            </div>
+                            <div class="card-body" style="padding: 25px;">
+                                <form id="fees-form" onsubmit="event.preventDefault(); saveClassFees();"
+                                    style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+                                    <div style="flex: 1; min-width: 250px;">
+                                        <label
+                                            style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Select
+                                            Class</label>
+                                        <select id="fees-class-select" class="form-select" required>
+                                            <option value="">Choose Class...</option>
+                                        </select>
+                                    </div>
+                                    <div
+                                        style="flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; min-width: 500px;">
+                                        <div>
+                                            <label
+                                                style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Annual
+                                                Fee (INR ₹)</label>
+                                            <div style="position: relative;">
+                                                <span
+                                                    style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">₹</span>
+                                                <input type="number" id="annual-fees" class="form-input"
+                                                    placeholder="e.g. 45000" style="padding-left: 25px;" required
+                                                    min="0" oninput="calculateTotalFees()">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label
+                                                style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Exam
+                                                Fee (INR ₹)</label>
+                                            <div style="position: relative;">
+                                                <span
+                                                    style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">₹</span>
+                                                <input type="number" id="exam-fees" class="form-input"
+                                                    placeholder="e.g. 5000" style="padding-left: 25px;" required min="0"
+                                                    oninput="calculateTotalFees()">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label
+                                                style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Total
+                                                Fee (INR ₹)</label>
+                                            <div style="position: relative;">
+                                                <span
+                                                    style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">₹</span>
+                                                <input type="number" id="total-fees-display" class="form-input"
+                                                    style="padding-left: 25px; background: #f8fafc; font-weight: 700; color: var(--primary-blue);"
+                                                    readonly value="0">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="btn-refresh"
+                                        style="height: 42px; background: var(--success); padding: 0 30px;">
+                                        <i class="fas fa-save"></i> Save Fees
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-list-alt"></i> Current Fees Structure</h3>
+                            <button class="btn-refresh" onclick="loadClassFeesList()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Class Name</th>
+                                            <th>Annual Fees</th>
+                                            <th>Exam Fees</th>
+                                            <th style="background: #eff6ff; color: var(--primary-blue);">Total Fees
+                                                (INR)</th>
+                                            <th>Last Updated</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fees-table-body">
+                                        <tr>
+                                            <td colspan="6" class="loading-cell">Loading fees structure...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-update-payments" class="page-section">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-history"></i> Global Payment History</h3>
+                            <button class="btn-refresh" onclick="loadAllPayments()">
+                                <i class="fas fa-sync-alt"></i> Refresh List
+                            </button>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="activities-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Student</th>
+                                            <th>Class</th>
+                                            <th>Local Amount</th>
+                                            <th>INR Amount</th>
+                                            <th>Txn ID</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-payments-table-body">
+                                        <tr>
+                                            <td colspan="7" class="loading-cell">Loading payments...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-pending-fees" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3>Check Pending Fees</h3>
+                        <p>View students with pending fee payments</p>
+                    </div>
+                </div>
+
+                <div id="page-generate-receipt" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <h3>Generate Receipt</h3>
+                        <p>Create payment receipts for students</p>
+                    </div>
+                </div>
+
+                <div id="page-post-notice" class="page-section">
+                    <div class="page-content-header">
+                        <div class="header-info">
+                            <h3>Notice Management</h3>
+                            <p>Create and manage announcements for teachers, students, and parents.</p>
+                        </div>
+                        <div class="header-stats">
+                            <div class="mini-stat">
+                                <span class="label">Total Notices</span>
+                                <span class="value" id="total-notices-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="notice-management-grid">
+                        <!-- Post Notice Form -->
+                        <div class="dashboard-card notice-form-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-pen-fancy"></i> Post New Notice</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="post-notice-form" class="admin-form">
+                                    <div class="form-group">
+                                        <label>Notice Title</label>
+                                        <input type="text" id="notice-title" placeholder="Enter a descriptive title" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Target Audience</label>
+                                        <select id="notice-audience" class="form-select">
+                                            <option value="all">All (Teachers, Students & Parents)</option>
+                                            <option value="teachers">Teachers Only</option>
+                                            <option value="students">Students Only</option>
+                                            <option value="parents">Parents Only</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Priority Level</label>
+                                        <div class="priority-options">
+                                            <label>
+                                                <input type="radio" name="notice-priority" value="low">
+                                                <span>Low</span>
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="notice-priority" value="medium" checked>
+                                                <span>Medium</span>
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="notice-priority" value="high">
+                                                <span>High</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="label-with-count">
+                                            <label>Notice Content</label>
+                                            <span id="char-count" class="char-counter">0 / 500</span>
+                                        </div>
+                                        <textarea id="notice-content" rows="6" placeholder="Write your announcement message here..." required maxlength="500"></textarea>
+                                    </div>
+                                    <div class="form-actions-notice">
+                                        <button type="submit" class="login-btn btn-post">
+                                            <i class="fas fa-paper-plane"></i> Send Announcement
+                                        </button>
+                                        <button type="button" class="btn-modal btn-close btn-clear" onclick="clearNoticeForm()">
+                                            <i class="fas fa-undo"></i> Clear
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Recent Notices -->
+                        <div class="dashboard-card notice-list-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-history"></i> Recent Notices</h3>
+                                <button class="btn-refresh-simple" onclick="loadAnnouncements()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="notices-list" class="notices-container">
+                                    <div class="loading-cell">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <p>Loading notices...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-send-notice" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <h3>Send Notice</h3>
+                        <p>Send notices via email to specific groups</p>
+                    </div>
+                </div>
+
+                <div id="page-exam-timetable" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <h3>Create Exam Timetable</h3>
+                        <p>Schedule exams for different classes and subjects</p>
+                    </div>
+                </div>
+
+                <div id="page-exam-notification" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <h3>Send Exam Notification</h3>
+                        <p>Notify students about upcoming exams</p>
+                    </div>
+                </div>
+
+                <div id="page-publish-results" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-poll"></i>
+                        </div>
+                        <h3>Publish Results</h3>
+                        <p>Publish exam results for students</p>
+                    </div>
+                </div>
+
+                <div id="page-view-profile" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <h3>View Profile</h3>
+                        <p>View admin profile information</p>
+                    </div>
+                </div>
+
+                <div id="page-edit-profile" class="page-section">
+                    <div class="placeholder-page">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <h3>Edit Profile</h3>
+                        <p>Edit admin profile settings</p>
+                    </div>
+                </div>
+
+                <!-- Manage Classes Page -->
+                <div id="page-manage-classes" class="page-section">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chalkboard"></i> Manage Classes</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Class Name</th>
+                                            <th>Grade</th>
+                                            <th>Created</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="classes-table-body">
+                                        <!-- Classes will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manage Subjects Page -->
+                <div id="page-manage-subjects" class="page-section">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-book"></i> Manage Subjects</h3>
+                            <div class="header-actions">
+                                <select id="subject-class-filter" class="form-select"
+                                    onchange="filterSubjectsByClass()">
+                                    <option value="">All Classes</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                                <button class="btn-refresh" onclick="openAddSubjectModal()">
+                                    <i class="fas fa-plus"></i> Add Subject
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="applications-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Subject Name</th>
+                                            <th>Code</th>
+                                            <th>Class</th>
+                                            <th>Credits</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="subjects-table-body">
+                                        <!-- Subjects will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Class Modal -->
+    <div class="modal-overlay" id="edit-class-modal">
+        <div class="modal-container" style="max-width:500px; width:95%;">
+            <div class="modal-header">
+                <h3><i class="fas fa-chalkboard"></i> Edit Class</h3>
+                <button class="modal-close" onclick="closeEditClassModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-class-id">
+                <div class="detail-grid" style="grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Class Name</label>
+                        <input type="text" id="edit-class-name" class="edit-field">
+                    </div>
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Grade</label>
+                        <input type="text" id="edit-class-grade" class="edit-field">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-close" onclick="closeEditClassModal()">Cancel</button>
+                <button class="btn-modal btn-approve" onclick="saveClassEdit()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Subject Modal -->
+    <div class="modal-overlay" id="edit-subject-modal">
+        <div class="modal-container" style="max-width:500px; width:95%;">
+            <div class="modal-header">
+                <h3><i class="fas fa-book"></i> Edit Subject</h3>
+                <button class="modal-close" onclick="closeEditSubjectModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-subject-class-id">
+                <input type="hidden" id="edit-subject-id">
+                <div class="detail-grid" style="grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Subject Name</label>
+                        <input type="text" id="edit-subject-name" class="edit-field">
+                    </div>
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Subject Code</label>
+                        <input type="text" id="edit-subject-code" class="edit-field">
+                    </div>
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Credits</label>
+                        <input type="number" id="edit-subject-credits" class="edit-field">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-close" onclick="closeEditSubjectModal()">Cancel</button>
+                <button class="btn-modal btn-approve" onclick="saveSubjectEdit()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Subject Modal -->
+    <div class="modal-overlay" id="add-subject-modal">
+        <div class="modal-container" style="max-width:500px; width:95%;">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle"></i> Add New Subject</h3>
+                <button class="modal-close" onclick="closeAddSubjectModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid" style="grid-template-columns:1fr; gap:16px;">
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Select Class</label>
+                        <select id="add-subject-class-id" class="form-select" style="width:100%"></select>
+                    </div>
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Subject Name</label>
+                        <input type="text" id="add-subject-name" class="edit-field" placeholder="e.g. Mathematics">
+                    </div>
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Subject Code</label>
+                        <input type="text" id="add-subject-code" class="edit-field" placeholder="e.g. MATH101">
+                    </div>
+                    <div class="detail-item" style="display:flex; flex-direction:column; gap:6px;">
+                        <label>Credits</label>
+                        <input type="number" id="add-subject-credits" class="edit-field" value="3">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-close" onclick="closeAddSubjectModal()">Cancel</button>
+                <button class="btn-modal btn-approve" onclick="saveAddSubject()">
+                    <i class="fas fa-save"></i> Save Subject
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Teacher Modal -->
+    <div class="modal-overlay" id="assign-teacher-modal">
+        <div class="modal-container" style="max-width:500px; width:95%;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Assign Teacher to Class</h3>
+                <button class="modal-close" onclick="closeAssignTeacherModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assign-teacher-class-id">
+                <div class="detail-section">
+                    <div class="detail-grid" style="grid-template-columns:1fr;">
+                        <div class="detail-item">
+                            <label>Select Teacher</label>
+                            <select id="assign-teacher-select" class="form-select" style="width: 100%;">
+                                <option value="">Choose a teacher...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-close" onclick="closeAssignTeacherModal()">Cancel</button>
+                <button class="btn-modal btn-approve" onclick="saveAssignment()">
+                    <i class="fas fa-check-circle"></i> Assign Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Subject Teacher Modal -->
+    <div class="modal-overlay" id="assign-subject-teacher-modal">
+        <div class="modal-container" style="max-width:500px; width:95%;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Assign Teacher to Subject</h3>
+                <button class="modal-close" onclick="closeAssignSubjectTeacherModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assign-subject-class-id">
+                <input type="hidden" id="assign-subject-id">
+                <div class="detail-section">
+                    <div class="detail-grid" style="grid-template-columns:1fr;">
+                        <div class="detail-item">
+                            <label>Subject Information</label>
+                            <div id="assign-subject-info"
+                                style="padding: 10px; background: var(--light-bg); border-radius: var(--radius-sm); font-size: 0.9rem; margin-bottom: 15px;">
+                                <!-- Subject info will be populated here -->
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Select Teacher</label>
+                            <select id="assign-subject-teacher-select" class="form-select" style="width: 100%;">
+                                <option value="">Choose a teacher...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-close" onclick="closeAssignSubjectTeacherModal()">Cancel</button>
+                <button class="btn-modal btn-approve" onclick="saveSubjectAssignment()">
+                    <i class="fas fa-check-circle"></i> Assign Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Details Modal -->
+    <div class="modal-overlay" id="application-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-alt"></i> Application Details</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Content dynamically populated by JS -->
+            </div>
+            <div class="modal-footer" id="modal-footer">
+                <!-- Buttons dynamically populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="../js/admin-dashboard.js"></script>
+    <script src="../js/announcement.js"></script>
+</body>
+
+</html>

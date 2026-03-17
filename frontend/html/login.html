@@ -1,66 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School System - Sign In</title>
+    <title>Sign In - SmartSchool</title>
     <link rel="stylesheet" href="../css/login.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-
 <body>
-    <div class="container">
-        <div class="auth-container">
-            <!-- Header -->
-            <div class="auth-header">
-                <h1 class="auth-title">Welcome Back</h1>
-                <p class="auth-subtitle">Sign in to your account</p>
+    <!-- Background -->
+    <div class="login-bg">
+        <div class="bg-grid"></div>
+        <div class="bg-glow glow-1"></div>
+        <div class="bg-glow glow-2"></div>
+        <div class="bg-glow glow-3"></div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-card">
+        <!-- Logo -->
+        <div class="login-logo">
+            <span class="logo-icon"><i class="fas fa-graduation-cap"></i></span>
+            <span class="logo-text">Smart<span class="logo-accent">School</span></span>
+        </div>
+
+        <div class="login-header">
+            <h1>Welcome Back</h1>
+            <p>Sign in to continue to SmartSchool</p>
+        </div>
+        
+        <form class="login-form" id="login-form">
+            <div class="form-group">
+                <label for="login-email">Email Address</label>
+                <input type="email" id="login-email" name="email" placeholder="Enter your email" required>
             </div>
 
-            <!-- Login Form -->
-            <div class="form-content">
-                <form class="auth-form" id="login-form">
-                    <div class="form-group">
-                        <label for="login-email">Email</label>
-                        <input type="email" id="login-email" name="email" placeholder="Enter your email">
-                        <span class="error-message"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="login-password">Password</label>
-                        <div class="password-input">
-                            <input type="password" id="login-password" name="password"
-                                placeholder="Enter your password">
-                            <button type="button" class="toggle-password" data-target="login-password">
-                                <i class="fas fa-eye eye-icon"></i>
-                            </button>
-                        </div>
-                        <span class="error-message"></span>
-                    </div>
-
-                    <button type="submit" class="auth-btn">Sign In</button>
-                </form>
-
-                <!-- Page Link -->
-                <div class="page-link">
-                    <p>Don't have an account? <a href="/signup">Sign Up</a></p>
+            <div class="form-group password-group">
+                <label for="login-password">Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="login-password" name="password" placeholder="Enter your password" required>
+                    <button type="button" class="toggle-password" data-target="login-password">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- Loading Spinner -->
-            <div class="loading-spinner" id="loading">
-                <div class="spinner"></div>
-                <p>Signing in...</p>
+            <div class="form-options">
+                <label class="remember">
+                    <input type="checkbox" name="remember">
+                    <span>Remember me</span>
+                </label>
+                <a href="#" class="forgot">Forgot password?</a>
             </div>
 
-            <!-- Success/Error Messages -->
-            <div class="message-container" id="message-container"></div>
+            <button type="submit" class="login-btn">Sign In</button>
+        </form>
+
+        <div class="login-footer">
+            <p>Don't have an account? <a href="/signup">Create Account</a></p>
         </div>
     </div>
 
-    <script src="../js/auth.js"></script>
-</body>
+    <div class="loading-overlay" id="loading">
+        <div class="loader">
+            <div class="loader-ring"></div>
+        </div>
+    </div>
 
+    <div class="message-container" id="message-container"></div>
+
+    <script src="../js/auth.js"></script>
+
+</body>
 </html>

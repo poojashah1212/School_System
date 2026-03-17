@@ -1,5 +1,5 @@
-const TeacherAvailability = require("../models/TeacherAvailability");
-const { parseDDMMYYYY } = require("../utils/dateParser");
+const TeacherAvailability = require("../../models/TeacherAvailability");
+const { parseDDMMYYYY } = require("../../utils/dateParser");
 
 exports.getWeeklyAvailability = async (req, res) => {
   try {
